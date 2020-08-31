@@ -1,0 +1,2119 @@
+          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                  
+
+            
+            
+Iñigo Quilez 
+            
+            
+       2002
+
+
+                                                                1
+                                        De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                  
+
+                                  ÈNDICE 
+ 
+ 
+1.   INTRODUCCIÌN     ..............................................................................................3 
+2.   CARACTERÈSTICAS DEL CONJUNTO DE MANDELBROT...................................4 
+  2.1.   CONJUNTOS DE JULIA.................................................................................... 4 
+  2.2.   EL CONJUNTO DE MANDELBROT..................................................................... 5 
+  2.3.   OBSERVACIONES........................................................................................... 7 
+3.   EL CONJUNTO DE MANDELBROT ES SIMÉTRICO RESPECTO AL EJE REAL.....9 
+4.   TEOREMA DE LOS BULBOS      ............................................................................11 
+  4.1.   OBJETIVO....................................................................................................11 
+  4.2.   PROCEDIMIENTO..........................................................................................12 
+  4.3.   DEMOSTRACIÌN DEL TEOREMA (I)................................................................14 
+  4.4.   DEMOSTRACIÌN DEL TEOREMA (II)...............................................................15 
+  4.5.   APLICACIÌN DEL TEOREMA...........................................................................17 
+    4.5.1. Caso N=1..................................................................................................17 
+    4.5.2. Caso N=2..................................................................................................20 
+    4.5.3. Caso N=3..................................................................................................23 
+
+5.   LOS POLINOMIOS QN     ....................................................................................25 
+  5.1.   DEFINICIÌN DE “CENTRO“ DE LOS BULBOS...................................................25 
+  5.2.   APLICACIÌN DE LOS POLINOMIOS Q, PARA UNA N DADA................................29 
+  5.3.   APLICACIÌN DE LOS POLINOMIOS QN, PARA CUALQUIER N.............................31 
+6.   LOS POLINOMIOS P Y LA ECUACIÌN LOGÈSTICA.........................................33 
+  6.1.   EL EJE REAL DEL CONJUNTO DE MANDELBROT..............................................33 
+  6.2.   POLINOMIOS P  .............................................................................................36 
+  6.3.   POLINOMIOS P Y LA ECUACIÌN LOGÈSTICA....................................................37 
+  6.4.   LOS CAMINOS DE P SOBRE LA ECUACIÌN LOGÈSTICA   .....................................39 
+  6.5.   ALGO MÊS SOBRE LOS POLINOMIOS P...........................................................41 
+7.   DEMOSTRACIONES DEL BULBO N=1............................................................42 
+
+  7.1.   DEMOSTRACIÌN DE LA RELACIÌN ENTRE Z Y CL1   ...........................................42 
+  7.2.   OBSERVACIÌN DE LOS PUNTOS DE TANGENCIA CT1N    ......................................43 
+8.   CONCLUSIONES     ............................................................................................45 
+9.   REFERENCIAS................................................................................................46 
+
+
+                                                                                2
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       1. INTRODUCCIÌN 
+ 
+  En este trabajo se hará una descripción de algunas de las características más importantes 
+del conjunto de Mandelbrot. Tal descripción consistirá sobre todo en una análisis de la dinámica 
+subyacente al conjunto de la cual deduciremos parte de su geometría. Este paso —de la 
+dinámica a la geometría“, que da nombre al trabajo, resulta natural en un objeto matemático 
+como el que estudiamos, puesto que la definición de su geometría está dado en términos de un 
+sistema dinámico discreto no lineal. Tal sistema, como casi todos los sistemas con estas 
+características, se comporta de forma caótica en determinadas zonas, lo que origina una 
+geometría de estructura fractal. 
+    
+  El presente trabajo está basado, como casi la totalidad de los artículos sobre el tema, en la 
+pura observación experimental del conjunto estudiado. Sabido es que en la única manera (o 
+cuanto menos la mejor manera) de describir los objetos de geometría fractal y la teoría del caos 
+es, aún hoy en día, la basada en la mera observación. En nuestro caso, que trabajamos con el 
+objeto rey de la geometría fractal, no podía ser de otra manera. Como bien describió James 
+Cleick en su libro —Caos“, —el conjunto de Mandelbrot no admite atajos, a diferencia de las 
+figuras geométricas tradicionales,... El único método de saber qué clase de figura corresponde a 
+una ecuación determinada es proceder por tanteo“ [1]. No obstante, con el atrevimiento que 
+caracteriza al  ingenuo, en este trabajo intentaremos encontrar alguno de esos inexistentes 
+atajos, con el fin de tener una descripción más tradicional del conjunto de Mandelbrot. Eso sí, 
+no por eso dejaremos de temer al gran monstruo, que con su infinita belleza sigue siendo el 
+animal que más tiempo constará domesticar a los matemáticos. 
+   
+  Así, como prefacio a la labor de deducción matemática que sostiene este trabajo, el capítulo 
+segundo consiste en un ejercicio de matemática experimental, que nos abrirá las puertas a 
+conceptos e ideas que en sucesivos capítulos demostraremos formalmente. Estos mismos 
+conceptos teóricos nos llevarán a acabar descubriendo en el penúltimo capítulo nuevos dilemas 
+sobre el conjunto de Mandelbrot. 
+   
+  En cualquier caso, a lo largo del trabajo, no se ha dudado en —echar mano“ de la ayuda del 
+ordenador para resolver determinadas dudas o resolver de manera parcial ciertos puntos 
+dudosos. Es evidente, filosóficamente hablando, que a nivel matemático el tanteo por 
+ordenador es incapaz de demostrar nada, tal y como las matemáticas adoptan el término 
+—demostrar“. Sin embargo, siendo una mucho mejor herramienta que el papel y el lápiz, el 
+ordenador puede orientar al matemático sobre la dirección en la que debe mirar y qué cosas 
+debe intentar demostrar. En el mismo sentido, un matemático puede temporalmente dejar un 
+cabo suelo en su cadena deductiva para poder continuar con ella, para, más adelante, atacarla 
+con el fin de consolidar su teoría completa, si el ordenador —muestra“ que tal cabo es como el 
+matemático espera poder demostrar que  es. Así, siguiendo la corriente de esta filosofía 
+práctica, en este trabajo de investigación el ordenador ha jugado tanto este papel de 
+—indicador“ como de —corroborador“ de ideas, además del papel de —pintor“ de las ilustraciones 
+presentadas a lo largo del mismo. 
+   
+
+
+                                                                                  3
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       2. CARACTERÈSTICAS DEL CONJUNTO DE 
+          MANDELBROT 
+ 
+  En los dos primeros apartados de este capítulo se hará una brevísima descripción de lo que 
+es el conjunto de Mandelbrot. Para mayor información consúltese la bibliografía. A partir del 
+tercer apartado, se comenzará con el trabajo de investigación en sí, explicándose de manera 
+cualitativa nada más, como ya se dijo, los conceptos básicos que en subsiguientes capítulos se 
+utilizarán. 
+ 
+ 
+       2.1.  Conjuntos de Julia 
+   
+  Como  se sabe, el conjunto de Mandelbrot nació en 1979 gracias al ya famoso matemático 
+polaco con el objeto de catalogar los conjuntos de Julia estudiados por Fatou y Julia en la 
+segunda década del siglo XX, si bien el propio conjunto en sí se ha convertido en objeto de 
+estudio hoy en día [2]. 
+   
+  Sólo a modo de resumen, se puede decir que la aplicación estudiada por Julia y Fatou 
+ 
+                                     Z →  Z 2 + C  
+   
+definida en el plano complejo Z consiste en un sistema dinámico que transforma cada punto 
+inicial del plano Z en otros sucesivos según la aplicación es iterada. Algunos puntos se alejan 
+del centro de coordenadas al infinito, mientras que otros comienzan a oscilar periódica o 
+caóticamente más o menos cerca del mismo. Ambas actitudes definen en el plano regiones de 
+puntos periódicos y regiones de puntos divergentes. El límite entre ambos tipos de regiones 
+constituyen el Conjunto de Julia, y depende fuertemente de la constante C. Los conjuntos de 
+Julia presentan una extraordinaria complejidad geométrica y salvo para C=0, caso en el que el 
+conjunto es la circunferencia de radio unidad, las figuras que los representan son tan bellas 
+como las mostradas en la figura 2.1: 
+
+
+                                                                                
+                                      Figura 2.1 
+
+                                                                                  4
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  En  un intento por catalogar la infinita variedad de conjuntos de Julia posibles, se puede 
+adoptar el siguiente criterio: los conjuntos de Julia forman parte de dos grupos posibles, uno 
+formado por aquellos conjuntos de Julia —de una única pieza“ (o conjunto compacto) y el otro 
+formado por los que se componen de una infinidad de islas inconexas (o nube de Cantor). De 
+los cuatro conjuntos de la figura 2.1 tan sólo el inferior derecho pertenece a este segundo 
+grupo, mientras que el resto pertenecen al primero, a pesar de que el superior izquierdo es tan 
+frágil que está a punto de despedazarse en infinitos fragmentos y pasar a formar parte del 
+segundo grupo. 
+   
+  Se puede demostrar que es posible conocer fácilmente a cual de estos dos grupos pertenece 
+un conjunto de Julia sin más que realizar la iteración Z->Z2+C en el punto 0, que es el punto 
+crítico de la transformación, y ver si dicho punto escapa al infinito o no. En caso de hacerlo, el 
+conjunto de Julia será inconexo, mientras que en caso contrario el conjunto se mantendrá 
+sólidamente unido en una única pieza. 
+   
+   
+       2.2.  El conjunto de Mandelbrot 
+   
+  Benoît Mandelbrot decidió marcar sobre el plano C aquellos puntos que originaban conjuntos 
+de Julia conexos (de una sola pieza). Para cada C del plano calculó la iteración definida para los 
+
+conjuntos de Julia con el valor inicial Z0=0 y marcó aquellos puntos que no escapaban al 
+infinito. El conjunto de tales puntos forman el conjunto de Mandelbrot. Su definición formal es: 
+   
+                                                  ∞
+                                             n            
+                             M (C) = {c ∈ C {f c (0)}n=1 ≠ ∞}
+   
+  El conjunto de Mandelbrot, resultado de aplicar dicha definición, resulta también, como los 
+conjuntos de Julia, extremadamente complicado, como se muestra en la figura 2.2: 
+   
+
+
+                                                                                
+                                      Figura 2.2 
+                                            
+
+                                                                                  5
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Su contorno es increíblemente complicado y está aún en estudio [3][4] desde el mismo día 
+en que Mandelbrot lo pudo observar en el monitor de su ordenador. Un ejemplo es el siguiente: 
+   
+
+
+                                                                                
+                                      Figura 2.3 
+                                            
+  Su  contorno fractal está lleno de espirales, zig-zags, caballitos de mar y bucles [5]. Sin 
+embargo, el conjunto está formado realmente por una infinidad de discos que se agrupan en 
+una cascada de dimensiones cada vez menores. La figura 2.3 representa puntos —equidistantes“ 
+al conjunto. He aquí el —verdadero“ aspecto de M para la misma posición que la figura 2.3: 
+
+
+                                                                                
+                                      Figura 2.4 
+
+                                                                                  6
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       2.3.  Observaciones 
+   
+  Puesto que el conjunto de Mandelbrot está constituido por los puntos del plano C para los 
+cuales el sistema dinámico 
+   
+                                    Z    = Z 2 + C
+                                      n+1   n     
+                                    Z0 = 0
+     
+se comporta de manera no divergente, cabe preguntarse en qué consiste esa —no divergencia“. 
+Al contrario de lo que en la mayoría de los libros de texto universitarios se nos pretende hacer 
+creer, —no divergencia“ no equivale a —convergencia“. Los comportamientos posibles son más 
+ricos que estas dos simples posiciones extremas, aunque tal vez se intenten ocultar a los 
+alumnos por la falta de herramientas matemáticas que existen para tratarlos. La teoría del caos, 
+una de las más jóvenes corrientes matemáticas junto con la geometría fractal, tiene respuesta 
+para tales comportamientos, y ejemplo de ello es que el conjunto de Mandelbrot, símbolo de 
+ambas  teorías, que es rico en tales comportamientos. Dichos comportamientos son el 
+movimiento periódico y el caótico. Éste último, sin duda el más sorprendente, permite a un 
+sistema dinámico pasar por una infinidad de estados saltando de uno a otro sin orden alguno y 
+sin divergir jamás. 
+   
+  Así, el conjunto de Mandelbrot, por definición, está formado por puntos que generan 
+secuencias de valores convergentes, periódicas o caóticas. En general, sin embargo, sin entrar 
+demasiado en disertaciones filosóficas, podemos —agrupar“ los tres comportamientos en uno, 
+conviniendo en que todos ellos son periódicos. Siendo así, el comportamiento convergente se 
+trataría de un comportamiento periódico de período 1, mientras que el comportamiento caótico 
+podría ser un comportamiento de período infinito, en el que, en la práctica, jamás se vuelve a 
+pasar dos veces por un mismo estado.  
+   
+  En  la figura 2.5 se pueden observar el comportamiento de los puntos de la secuencia 
+resultado de la iteración anterior para el caso de dos valores de C que generan secuencias que 
+se vuelven periódicas. En el dibujo de la izquierda se observa un comportamiento periódico de 
+período igual a 3, mientras que en el de la derecha la secuencia converge a un ciclo de período 
+igual a 5: 
+   
+
+
+                                                                                 
+                                      Figura 2.5 
+   
+  Un primer estudio del conjunto de Mandelbrot consiste, pues, en determinar cuales de sus 
+puntos originan secuencias periódicas de determinado período. De las figuras 2.2 y 2.4, así 
+como de  cualquier viaje que uno realice por el conjunto de Mandelbrot a bordo de un 
+ordenador, surge la tentación de afirmar que éste está formado por una infinidad de —bulbos“ 
+circulares que, pegados unos a otros por frágiles puntos de tangencia manteniendo la cohesión 
+del conjunto, se encadenan de forma fractal hasta allí donde la precisión del ordenador es 
+capaz de llevarnos. Por otra parte, unidos por infinitamente delgados hilos de bulbos, aparecen 
+
+                                                                                  7
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+de vez en cuando —copias“ del conjunto de Mandelbrot completo con sus respectivos racimos 
+infinitos de bulbos. 
+   
+  Resulta, como se describirá ahora, que los puntos de comportamientos periódicos de mismo 
+período se agolpan en estos bulbos, de tal manera que todos los puntos interiores a cierto 
+bulbo generan  comportamientos  periódicos de  un  determinado  período, que  puede 
+interpretarse como la —firma“ del bulbo. 
+   
+  Este hecho se comprueba  fácilmente mediante un programa de ordenador que computa 
+para cada punto del conjunto de Mandelbrot el período de la secuencia de valores generados a 
+partir del sistema dinámico generado para tal punto. La figura 2.6 muestra el resultado de tal 
+experimento, en la cual se ha marcado con  un color diferente los puntos que originan 
+secuencias periódicas del mismo período, tal y como indica la leyenda: 
+   
+
+
+                                                                                    
+                                      Figura 2.6 
+                                            
+  Lo primero que llama la atención de esta figura es que parece claro que pueden existir 
+varios bulbos del mismo periodo. Por ejemplo, para el caso de período 3 (N=3) se observan dos 
+grandes bulbos colocados encima y debajo respectivamente del gran cuerpo gris del conjunto. 
+Si nos fijamos un poco más, vemos otro bulbo de N=3 a la izquierda del conjunto de tamaño 
+pequeño. Así mismo, a simple vista (a esta escala de representación) podemos observar 3 
+bulbos de N=4 y al menos 6 bulbos de N=5, si bien tan sólo parece haber un bulbo de N=1 
+(puntos de convergencia) y otros de N=2. 
+   
+  El cálculo preciso del número de bulbos existentes repartidos por la infinita estructura fractal 
+del conjunto de Mandelbrot es parte de unos de los capítulos de este trabajo, y nos llevará a 
+deducir una fórmula exacta para calcular dicho número en función de N. 
+
+
+                                                                                  8
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       3. EL CONJUNTO DE MANDELBROT ES SIMÉTRICO 
+          RESPECTO AL EJE REAL 
+   
+  El  resultado de esta sencilla demostración nos será de  utilidad en las sucesivas 
+demostraciones, y corrobora matemáticamente el hecho experimental de que el conjunto de 
+Mandelbrot parece ser simétrico respecto al eje real. 
+   
+  Tal y como está definido, el conjunto de Mandelbrot es el conjunto de puntos del plano C 
+para los cuales la iteración 
+   
+                                    Z    = Z 2 + C
+                                      n+1   n     
+                                    Z0 = 0
+   
+no diverge en el sentido de que el módulo de Zn no escapa a infinito. El comportamiento de la 
+iteración está totalmente definido por C, siendo los valores Zn dependientes tan sólo de C. De 
+hecho, la dependencia de Zn puede expresarse mediante un polinomio en C cuyo grado va 
+creciendo al aumentar el número de iteraciones (n).  
+   
+
+                                Z0 = 0
+
+                                Z1 = C
+                                      2
+                                Z2 = C + C             
+                                      4     3    2
+                                Z3 = C + 2C  + C  + C
+                               ...
+   
+  Para algunos valores de C los polinomios (su módulo) alcanzarán valores crecientes al 
+aumentar el número de iteraciones (n) sin límite alguno, mientras que otros se estancarán. Por 
+definición del conjunto, se dice que estos puntos son los que pertenecen al conjunto de 
+Mandelbrot. 
+   
+  Queremos  demostrar que el conjunto de Mandelbrot es simétrico respecto al eje real (a 
+partir de ahora cuando se diga —simétrico“ se sobreentenderá que es respecto al eje real). 
+Según lo visto, esto equivale a que Zn tenga el mismo módulo tanto para un C determinada 
+como para su conjugada. Es decir, se cual sea —n“, el módulo del polinomio generado deberá 
+comportarse de la misma forma para a C y C*. 
+   
+  En general Zn y C tendrán una parte real y una imaginaria: 
+   
+                                 Z  = x (C) + jy (C)
+                                   n   n        n    
+                                 C = a + jb
+   
+  Supongamos que  
+   
+                                   x (C) = x (C*)
+                                    n       n       
+                                                 *
+                                   yn (C) = −yn (C )
+   
+de tal manera que |Zn| es simétrica, ya que 
+   
+
+                      Zn (C) = xn (C) + jyn (C)
+                                                                 
+                           *        *        *
+                      Zn (C ) = xn (C ) + jyn (C ) = xn (C) − jyn (C)
+   
+
+                                                                                  9
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+y por tanto: 
+                                            
+                              * 2    2  *     2  *         2
+                         Zn (C )  = xn (C ) + yn (C ) = Zn (C)  
+                                            
+ 
+  Miremos ahora, con estas condiciones, qué ocurre a Zn+1: 
+ 
+               À               2        2
+                xn+1(C) = xn (C) − yn (C) + a
+      Zn+1(C) = Ã
+               Õyn+1(C) = 2 ⋅ xn (C) ⋅ yn (C) + b
+      y                                                                          
+                À      *        * 2      * 2           2        2
+            *    xn+1(C ) = xn (C ) − yn (C ) + a = xn (C) − yn (C) + a = xn+1(C)
+      Zn+1(C ) = Ã     *          *       *
+                Õyn+1(C ) = 2 ⋅ xn (C ) ⋅ yn (C ) + b = −2 ⋅ xn (C) ⋅ yn (C) − b = −yn+1(C)
+   
+con lo que demostramos que 
+   
+                        x (C) = x (C*)     x  (C) = x   (C*)
+                         n       n      Ω   n+1      n+1       
+                                      *                     *
+                        yn (C) = −yn (C )  yn+1(C) = −yn+1(C )
+ 
+  Es decir, si |Zn| es simétrico, entonces |Zn+1| también lo será.  
+   
+                                                            *                    *
+  Puesto que es evidente que para Z1 se cumple que x1(C)=a=x1(C) y que y1(C)=b=-y1(C), 
+entonces queda demostrado que |Zn| es simétrico para todo n. 
+   
+  Puesto que el conjunto de Mandelbrot depende del comportamiento de |Zn| cuando n tiende 
+a infinito, queda demostrado que M es simétrico respecto al eje real. Es decir 
+   
+   
+                                   M  (C) = M (C * )  
+
+
+                                                                                 10
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       4. TEOREMA DE LOS BULBOS 
+   
+       4.1.  Objetivo 
+   
+  La pretensión inicial con que partimos en este apartado es la de obtener un método analítico 
+que permita determinar qué puntos del plano C pertenecen al conjunto de Mandelbrot, que 
+equivale a determinar dónde se sitúan sus bulbos. Puesto que el límite de este conjunto es 
+caótico y sólo determinable en principio mediante —tanteo“, la búsqueda que comenzamos aquí 
+tan sólo pretende realizar un acercamiento a dicho conjunto. Esta búsqueda nos dará valiosa 
+información sobre el mismo. 
+   
+  El objetivo último es determinar las regiones del plano C que pertenecen al conjunto de 
+Mandelbrot, o lo que es lo mismo, las regiones del plano C que bajo la iteración 
+   
+                                            2
+                                    Z n+1 = Z n + C  
+                                            
+con 
+   
+
+                                        Z 0 = 0  
+   
+terminen convergiendo a órbitas periódicas o caóticas. Como se dijo, podemos considerar la 
+convergencia ordinaria como un caso particular de la convergencia periódica con período igual a 
+uno, y el caso del comportamiento caótico como un caso extremo de convergencia periódica de 
+período infinito. 
+   
+  En esta situación tenemos que estudiar la secuencia de valores generada por dicha iteración, 
+que también representaremos como 
+   
+
+                                 Z n+1 = f c (Z n ), Z 0 = 0  
+   
+siendo  
+   
+                                             2
+                                    f c (Z) = Z + C  
+   
+de modo que 
+   
+                                            i
+                                     Z i = f c (Z o )  
+   
+y que genera una secuencia de valores Zn = { Z0, Z1, Z2, Z3, ... Zn }. 
+   
+  Para que la secuencia de valores arrojados por la iteración converja a una órbita periódica 
+hace falta que exista una —N“ tal que para cierta iteración —i“-ésima 
+   
+
+                                      Z i = Z i+N  
+   
+es decir que 
+   
+                                                  N
+                          f c ( f c ( f c (... f c (Z i )...))) = f c (Z i )= Z i  
+   
+                                2        N-1
+  Así, la sub-secuencia { Zi, fc(Zi), fc (Zi), ..., fc (Zi) } = {Zi, Zi+1, Zi+2, ... Zi+N-1} forma la órbita 
+de período N que buscamos. Se dice que estos N puntos son puntos periódicos por pertenecer a 
+la órbita periódica. En el caso de N=1, el punto recibiría el nombre de —punto fijo“. La secuencia 
+
+
+                                                                                 11
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+completa Zn se dice que es —cuasi-periódica“ porque tiende a la órbita periódica, —cayendo“ 
+completamente en ella a partir de la iteración —i“-esima. 
+   
+  Una vez que se cumpla esta condición, es decir, una vez que un valor de la secuencia (Zi+N) 
+repita un valor previo de la propia secuencia (Zi), la órbita será periódica para el resto de las 
+iteraciones. Evidentemente, un sistema (fc en este caso) que pasa por un estado (Zi+N) por el 
+que ya pasó anteriormente (Zi), habrá de pasar un número infinito de veces más por tal estado. 
+   
+  Un  ejemplo hipotético permite visualizar con mayor facilidad la situación que estamos 
+describiendo: 
+   
+                  2     3     4    5     6     7
+  Zn = { 0,   fc(0), fc (0), fc (0), fc (0), fc (0), fc (0) , fc (0) ...} =  
+         { Z0,  Z1,    Z2,      Z3,     Z4,      Z5,     Z6,      Z7      ... } = 
+         { Z0,  Z1,    Z2,      Z3,     Z4,      Z5,     Z3,      Z4     ... } = 
+   
+que gráficamente queda como sigue: 
+
+
+                                                                                
+                                      Figura 4.1 
+   
+   
+       4.2.  Procedimiento 
+   
+  Para nuestra búsqueda aprovechamos que conocemos  la condición que una secuencia de 
+iteraciones de la forma x = g(x) debe cumplir, para que converja a algún valor (llamado punto 
+fijo de la iteración). Esta condición, válida cuando g(x) es continua en el intervalo de valores 
+posibles de —x“, viene dada por el —teorema del punto fijo“: 
+   
+                                     g′(x) ≤ 1,∀x  
+   
+  Los puntos —x“ que cumplen la desigualdad están dentro de la región de convergencia de la 
+aplicación —g“, siendo el límite de la misma aquellos puntos que cumplen la igualdad. 
+   
+  Para poder  utilizar este teorema en nuestra búsqueda de los puntos C que bajo —fc“ 
+provocan órbitas periódicas echamos mano de la siguiente observación: 
+   
+  Supongamos una órbita de período N bajo la transformación —fc“: 
+   
+                                   2        N −1     N
+                    {..., Z i , f c (Z i ), f c (Z i ),... f c (Z i ), f c (Z i ) = Z i ,...} 
+
+                                                                                 12
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+   
+  Entonces, la secuencia formada por la aplicación de —fc“ N veces por cada iteración forma 
+                                                                            N
+una secuencia constante de valor Zi. Es decir, la secuencia resultante de aplicar —fc “ sobre 
+cualquiera de los N puntos forma la secuencia constante. La figura 4.2 recoge esta observación, 
+para el caso de N=3: 
+
+
+                                                                                
+                                      Figura 4.2 
+ 
+                                            “
+  De manera análoga, una secuencia que bajo —fc  converge a una órbita periódica de período 
+                                                                  N
+N, ha de ser convergente en el sentido ordinario bajo la aplicación de —fc “. Evidentemente, 
+podremos construir N secuencias de este estilo, las cuales convergerán a cada uno de los 
+puntos que formaban la órbita de la secuencia original, que son, por tanto, puntos fijo de la 
+               N
+transformación —fc “. La figura 4.3 muestra esta idea para N=2: 
+   
+
+
+                                                                               
+                                      Figura 4.3 
+   
+  De  modo que  si, mediante el teorema del punto fijo, encontramos la región para la cual 
+                                               N
+alguna de estas secuencias generadas mediante —fc “ converge, estaremos obteniendo las 
+regiones para las cuales la iteración de —fc“ genera órbitas periódicas de período N, que es 
+precisamente lo que buscamos. 
+   
+   
+ 
+ 
+ 
+
+
+                                                                                 13
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       4.3.  Demostración del teorema (I) 
+   
+                                                        N
+  Como se explicó, fijamos una N, formamos las aplicación —fc “ y buscamos su condición de 
+convergencia: 
+   
+                                             2
+                                    f c (Z ) = Z + C
+                                 f 2 (Z ) = ( f (Z ))2 + C
+                                  c        c           
+                                          ...
+                                 N         N −1  2
+                                f c (Z ) = ( f c (Z )) + C
+   
+                 N
+  Para que “Z = fc (Z)“ converja se debe cumplir la condición del teorema del punto fijo, de 
+modo que 
+   
+
+                                     N ′
+                                    f c (Z ) ≤ 1,∀Z  
+
+   
+  Para lo cual necesitamos calcular la derivada de la aplicación. Lo hacemos recursivamente a 
+                                        n
+partir del la forma general de la derivada de —fc “: 
+   
+
+                               n′         n−1     n−1′
+                             f c (Z)= 2 ⋅ f c (Z) ⋅ f c (Z)  
+   
+de modo que 
+ 
+
+                             N ′         N −1     N −1′
+                            f c (Z)= 2 ⋅ f c (Z) ⋅ f c (Z)=
+                              N −1        N −2     N −2′
+                          2 ⋅ f c (Z) ⋅ 2 ⋅ f c (Z) ⋅ f c (Z)=  
+                                          ...
+                           N    N −1     N −2        1
+                          2  ⋅ f c (Z) ⋅ f c (Z) ⋅...⋅ f c (Z) ⋅ Z
+   
+  Para que  la condición del teorema se cumpla, Z ha de ser un punto de la región de 
+convergencia, es decir, ha de ser uno de los puntos de la órbita periódica de —fc“. Así, teniendo 
+                  1      2                             N-1
+en cuenta que los —fc (Z)“, —fc (Z)“ y sucesivos valores hasta —fc (Z)“ no son sino los siguientes 
+N-1 puntos de la órbita periódica, podemos rescribir el resultado anterior como: 
+   
+                                 N               N
+                              dfc  (Z)      N
+                                        =  2  ⋅ ∏   Z pi  
+                                 dZ             i=1
+   
+siendo las Zpi los puntos de la órbita periódica. 
+   
+  De modo que, aplicando en este punto el teorema del punto fijo, tenemos que: 
+   
+                                         N
+                                    N
+                                   2  ⋅∏   Z pi ≤1 
+                                        i=1
+   
+   
+                                            
+                                            
+                                            
+                                            
+
+                                                                                 14
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+de donde 
+   
+                                    N           1
+                                       Z
+                                   ∏     pi ≤    N  
+                                   i=1         2
+   
+donde los —Zpi“ son los N puntos de la órbita periódica asociada a —fc“. Como consecuencia del 
+teorema del punto fijo, la desigualdad del teorema de los bulbos se cumplirá para el interior de 
+las regiones de convergencia y la igualdad para sus límites. Todos los puntos C que generan 
+una —fc“ para la que no  se cumpla  el teorema demostrado,  no generarán  secuencias 
+convergentes a órbitas periódicas y por tanto no pertenecerán a ninguno de los bulbos del 
+conjunto de Mandelbrot. 
+   
+   
+                                             N            1
+                        C  ⊂   M  (C)  Ω        Z     ≤
+                                            ∏      pi      N    
+                                             i=1         2
+                                            
+   
+       4.4.  Demostración del teorema (II) 
+   
+  También  se puede  demostrar esta propiedad que cumplen las regiones periódicas del 
+conjunto de Mandelbrot (sus bulbos) mediante el uso del exponente de Lyapunov —λ“, muy 
+utilizado para el estudio de sistemas dinámicos discretos caóticos [6][7]. Este exponente se 
+define como: 
+   
+                                        1 n    df (x)
+                               λ = lim   ƒln            
+                                   n→∞  n i=1   dx   xi
+   
+  Este exponente, claro indicador del caos, toma valores menores que cero para las zonas en 
+las que la órbita de las —X i“ no diverge. 
+   
+  Para nuestro propósito, rescribiremos λ como 
+                                            
+                                       ≈               ’
+                                       ∆   n  df (x)   ÷
+                             λ =limln   n                 
+                                n→∞    ∆  ∏            ÷
+                                       «  i=1   dx   xi ◊
+   
+  En el caso particular que nos atañe, en el que —f(x) = fc(Z)“, tenemos que 
+   
+                                    ′      d(Z 2 + C)
+                             f ′(x)= f (Z ) =        =2Z   
+                                   c          dZ
+   
+de modo que 
+   
+                                         ≈   n       ’
+                                         ∆ n         ÷
+                               λ =limln         2Zi     
+                                   n→∞   ∆  ∏        ÷
+                                         «   i=1     ◊
+                                            
+
+
+                                                                                 15
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                                        ≈       n     ’
+                                        ∆   n         ÷
+                              λ  =limln   2⋅      Zi    
+                                  n→∞   ∆     ∏       ÷
+                                        «      i=1    ◊
+   
+                                                      2
+que debería tomarse para infinitas Zi resultado de la iteración Z +C, desde Z1 hasta Z∞. 
+   
+  Supongamos ahora que las Zi pertenecen a un secuencia que tiende a una órbita periódica 
+(estamos suponiendo que la —fc“ es tal que C está en alguno de los bulbos del conjunto). En 
+esta situación, perteneciendo C a una región de convergencia de período N, podemos decir que 
+a partir de cierta iteración j-ésima tal que la secuencia ya haya convergido a la órbita periódica, 
+las Zi se repetirán cada N iteraciones. Puesto que n se extiende hasta infinito, y al ser λ una 
+especie de —media geométrica“, podemos asegurar que el valor del límite no se ve afectado por 
+los primeros j valores de la secuencia, que visto así, no son sino un régimen transitorio hasta el 
+estado estable. De este modo: 
+   
+                                      ≈              n / N ’
+                                      ∆     ≈ N     ’    ÷
+                                          n ∆       ÷
+                           λ = limln   2⋅   ∆    Zi ÷       
+                               n→∞    ∆      ∏           ÷
+                                      «     « i=1   ◊    ◊
+   
+donde ahora los —Zi“ son los N puntos de la órbita, que llamaremos, como en la primera 
+demostración del teorema de los bulbos, —Zpi“. 
+   
+  Desarrollando tenemos que 
+                                            
+                                       ≈ ≈  N      ’1/ N ’
+                                       ∆ ∆         ÷   ÷
+                             λ =limln   2∆     Z pi ÷     
+                                  n→∞  ∆   ∏           ÷
+                                       « « i=1     ◊   ◊
+                                            
+                                    ≈   ≈  N      ’1/ N ’
+                                    ∆   ∆     Z   ÷   ÷
+                              λ = ln∆2⋅∆∏       pi ÷  ÷  
+                                    «   « i=1     ◊   ◊
+   
+que, por definición de λ, y según la suposición hecha, ha de ser ≤ 0. De aquí, 
+   
+                                   ≈  N      ’1/ N
+                                   ∆         ÷
+                                 2⋅∆∏    Z pi ÷   ≤1 
+                                   « i=1     ◊
+                                            
+                                 ≈  N      ’1/ N
+                                 ∆         ÷      1
+                                 ∆∏    Z pi ÷   ≤    
+                                 « i=1     ◊      2
+                                            
+                                  N              1
+                                      Z  pi  ≤
+                                ∏                 N    
+                                 i=1            2
+   
+
+
+                                                                                 16
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Este teorema  nos dice que, para las C tales que —fc“ haga converger Zi a una órbita 
+periódica, los puntos Zpi de la misma deberán cumplir la desigualdad. Las C que estén en los 
+límites de las regiones de convergencia, al igual que antes, cumplirán la igualdad. 
+  Observamos   que el resultado no  es exactamente  igual al obtenido en la primera 
+demostración del teorema. Sin embargo, ambos resultados son coherentes entre sí, puesto que 
+es inmediato comprobar que 
+   
+
+                                  Z a ⋅ Z b = Z a ⋅ Z b  
+   
+  Para las aplicaciones en las que se utilice este teorema, como las que en sucesivos puntos 
+se verán, se utilizará la versión del teorema que más convenga. 
+   
+   
+       4.5.  Aplicación del teorema 
+   
+  El teorema antes demostrado nos da información de lo que ocurre en las zonas del plano C 
+en las que la iteración no diverge, es decir, en el interior del conjunto de Mandelbrot. En este 
+apartado utilizaremos esta información para intentar deducir dónde se encuentran dichas zonas 
+dentro del plano C, para los casos N=1, 2 y 3. 
+   
+   
+       4.5.1. Caso N=1 
+   
+  Por aplicación inmediata del teorema, sabemos que 
+   
+                                            1
+                                        Z ≤    
+                                            2
+   
+que nos indica que el punto de convergencia de todas las secuencias generadas por las C 
+contenidas en el bulbo N=1 tiene un módulo menor o igual que ².  
+   
+  Tenemos  ahora  que hallar la relación entre C y Z para llevar la información que nos 
+proporciona el teorema de los bulbos —desde Z hasta C“. Podemos hallar dicha relación de 
+manera sencilla puesto que sabemos que Zn+1 ha de ser igual a Zn: 
+   
+                                        Ω         2
+                              Z n+1 = Z n  Z n = Z n + C  
+                                            
+  Podemos  olvidarnos del número de iteración a partir de la cual la secuencia es constante, 
+generalizando a: 
+   
+                                     Z = Z 2 + C  
+   
+  Despejando C tenemos que 
+   
+                                      C =Z − Z 2  
+   
+  El límite de la región de convergencia vendrá dado para la igualdad del teorema, es decir, 
+cuando Z tenga módulo ²: 
+   
+                                          1
+                                       Z =  e jΦ  
+                                          2
+   
+  De donde 
+   
+
+                                                                                 17
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                                      1   jΦ   1   j2Φ
+                                C   =   e   −    e     
+                                 l1   2        4
+   
+  Obtenemos así una curva paramétrica función de φ. Por tratarse de una función exponencial 
+compleja sabemos que dicha curva será periódica con período 2Π. Podemos sin más asumir 
+que  
+   
+                                     Φ  ⊂ [0,2Π)  
+   
+  Podemos  dibujar esta curva delimitante del bulbo N=1 dando valores a φ en el rango 
+indicado. El resultado es el dibujo superior izquierdo de la figura 4.4. 
+   
+
+
+                                                                                 
+                                      Figura 4.4 
+   
+   
+  La figura superior derecha corresponde al interior de la región delimitada, es decir, aquellos 
+valores de C que cumplen la desigualdad del teorema demostrado. Superponiendo esta región 
+(bulbo de período N=1) con el resto del conjunto de Mandelbrot calculado de forma iterativa 
+(en color negro) comprobamos que el resultado es correcto. Demostramos así, además, que el 
+resto de bulbos han de ser de períodos mayores que 1. 
+   
+  La obtención de la región interior al bulbo se logra a partir de una función f(x,y) que toma el 
+valor 0 en el límite de la región y valores negativos en el interior. Se ha usado dicha función 
+para dibujar la región indicada en la esquina superior derecha de la figura 4.4. Dicha función se 
+ha obtenido a partir del propio teorema demostrado: 
+   
+                           Z = Z 2 + C Ω Z 2 − Z + C = 0 Ω  
+                                            
+
+
+                                                                                 18
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                                      1±   1− 4C
+                                    Z=             
+                                           2
+                                            
+  Descomponiendo C en sus partes real e imaginaria (x,y), y haciendo 
+   
+                                            1
+                                        Z ≤    
+                                            2
+   
+en la expresión anteriormente mencionada, se obtiene una inecuación de la forma 
+   
+                                      f (x, y) ≤ 0  
+   
+siendo 
+                                            
+                                         2
+                      f (x, y)=256(x 2 + y 2 ) − 96(x 2 + y 2 )+ 32x − 3  
+   
+  De modo que 
+   
+                            f (x, y) < 0 Ω interior del bulbo N=1 
+                            f (x, y) = 0 Ω límite del bulbo N=1 
+                            f (x, y) > 0 Ω exterior del bulbo N=1 
+   
+  La demostración es la siguiente: 
+                                         2   1
+                                       Z   ≤    
+                                             4
+                                            
+                                    1±  1− 4C  ≤ 1 
+   
+  Si 
+   
+                                      C = x + jy  
+y hacemos 
+   
+                                    1− 4C  = a + jb  
+                                            
+siendo 
+ 
+                                                    2    2
+                            2  1− 4x ±  1− 8x +16(x   + y )
+                          a  =
+                                            2               
+                          b 2 = a 2 −1+ 4x
+   
+resulta que 
+   
+                                   (1± a)2 + b 2 ≤ 1 
+                                            
+                                            2    2
+                             ±  1− 8x +16(x  + y  ) ≤ @2a  
+                                            
+                       −1+16(x 2 + y 2 )≤ ±2 1− 8x +16(x 2 + y 2 )  
+
+                                                                                 19
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                                            
+           1− 32(x 2 + y 2 )+ 256x 4 + 256y 4 + 512x 2 y ≤ 4 + 64(x 2 + y 2 ) − 32x  
+ 
+  de donde ya se obtiene 
+                                    2
+                       256(x 2 + y 2 ) − 96(x 2 + y 2 )+ 32x − 3 ≤ 0  
+                                            
+                                            
+       4.5.2. Caso N=2 
+   
+  Los puntos  C que pertenezcan al bulbo N=2  sabemos  que provocarán una secuencia 
+convergente a una órbita que oscilará entre dos valores, Zp1 y Zp2. Por el teorema demostrado 
+sabemos que: 
+   
+                                                     1
+                               Z  ⋅ Z  = Z    ⋅ Z  ≤    
+                                 p1  p2    p1    p2  4
+   
+  Podemos hallar Zp1 y Zp2 resolviendo la ecuación 
+   
+                                        Ω
+                              Z n+2 = Z n  Z = f c ( f c (Z )) 
+   
+que resulta en el siguiente polinomio de segundo grado en C: 
+   
+                               Z=Z 4 + 2C ⋅ Z 2 + C 2 + C
+                                                           
+                            C 2 + C ⋅ (1+ 2Z 2 )+ (Z 4 − Z ) = 0
+   
+  Cuyas soluciones son: 
+   
+                                     C  = Z − Z 2
+                                      l1            
+                                                  2
+                                  Cl 2 = −1− Z − Z
+   
+siendo Z cualquiera de las dos posibles valores Zp1 o Zp2. 
+   
+  Vemos  que la primera de las soluciones corresponde al resultado que ya obtuvimos para 
+N=1. Este hecho resulta lógico, puesto que toda órbita de período 1 es, de alguna manera, 
+periódica también con período 2, 3, 4 y cualquier otro número entero positivo. Podemos por 
+tanto desechar esta solución que describe el ya conocido bulbo N=1 y centrarnos en la segunda 
+solución. 
+   
+  Podemos  ahora despejar Z de esta solución e intentar introducirlo en la desigualdad dada 
+por el teorema de los bulbos. Así, despejando tenemos que 
+   
+                                                −1±   − 3 − 4C
+                       Z 2 + Z + (C +1) = 0 Ω Z=                
+                                                      2
+                                            
+  Las dos soluciones corresponden con los dos posibles valore de Z (Zp1 o Zp2), de modo que 
+ya podemos introducir éstos en la desigualdad del teorema: 
+   
+                         −1+    − 3 − 4C −1−    − 3 − 4C   1
+                                        ⋅                ≤    
+                                2               2          4
+                                            
+
+
+                                                                                 20
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                         (−1+   − 3 − 4C )⋅ (−1− − 3 − 4C ) ≤ 1 
+                        1+   − 3 − 4C −  − 3 − 4C + 3 + 4C ≤ 1 
+                                      4 + 4C ≤ 1 
+                                     4 ⋅ 1+ C ≤ 1  
+                                              1
+                                      1+ C  ≤    
+                                              4
+o equivalentemente  
+   
+                              f (x, y) = x +1 2 + y 2 − 1  
+                                      (    )          16
+   
+  Vemos que la región N=2 se trata del interior de una circunferencia de radio ³ centrado en 
+C=-1. El límite de la región será, por tanto: 
+   
+
+                                              1  jΦ
+                                  C    = −1+    e   
+                                    l 2       4
+   
+  Al igual que antes, comprobamos gráficamente la situación de ésta: 
+   
+
+
+                                                                                 
+                                      Figura 4.5 
+   
+  De nuevo, en la parte superior izquierda se ha dibujado el límite del bulbo N=2 mediante la 
+curva paramétrica, mientras que el dibujo superior derecho se ha obtenido con la función f(x,y). 
+En la parte inferior, superponiendo la el dibujo superior derecho con el conjunto de Mandelbrot 
+empírico, se nos confirma una vez más la validez del teorema de los bulbos. 
+   
+
+
+                                                                                 21
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Aparentemente, las regiones N=1 y N=2 tienen un punto en común. Podemos  confirmar 
+dicha suposición calculando la intersección entra ambas regiones y comprobando que el sistema 
+resultante tiene una sola solución: 
+   
+                                     C  = Z − Z 2
+                                      l1            
+                                                  2
+                                  Cl 2 = −1− Z − Z
+   
+   
+   
+   
+  De donde, igualando Cl1 y Cl2: 
+   
+                                                         1
+                           Z − Z 2 = −1− Z − Z 2 Ω Z = −    
+                                                         2
+   
+que sustituyendo en cualquiera de las dos ecuaciones resulta 
+   
+                                              3
+                                      C   = −    
+                                       t12    4
+                                            
+
+que es el punto de tangencia entre las regiones N=1 y N=2, y que corresponde con Cl1 (Φ) 
+para φ=±Π. 
+   
+
+
+                                                                               
+                                      Figura 4.6 
+   
+  Como vemos, el valor al que converge la órbita de período N=1 es œ1/2 (que coincide con lo 
+que pronostica el teorema para N=1), que a su vez es el valor al que converge la órbita de 
+período 2, siendo los dos valores de oscilación —el mismo“,  Z=- ², con lo que el teorema 
+también se cumple para N=2, como era de esperar. 
+
+                                                                                 22
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       4.5.3. Caso N=3 
+   
+  En este caso, y una vez más, por el teorema, sabemos que 
+   
+                                                           1
+                          Z  ⋅ Z  ⋅ Z  = Z   ⋅ Z   ⋅ Z   ≤   
+                           p1   p2   p3    p1   p2    p3   8
+   
+  Podemos hallar Zp1,Zp2 y Zp3 resolviendo la ecuación 
+   
+                                    Ω
+                           Z n+3 = Z n Z =  f c ( f c ( f c (Z ))) 
+   
+que resulta en el siguiente polinomio en C de grado cuatro: 
+   
+      Z =Z 8 + (4C)Z 6 + (6C 2 + 2C)Z 4 + (4C 3 + 4C 2 )Z 2 + (C 4 + 2C 3 + C 2 + C)  
+                                            
+       C 4 + C 3 (4Z 2 + 2) + C 2 (6Z 4 + 4Z 2 +1) + C(4Z 6 + 2Z 4 +1) + (Z 8 −1) = 0  
+   
+siendo Z cualquiera de las tres Zpi., y que define cuatro regiones con convergencia a órbitas de 
+período 3. Sin embargo, de antemano sabemos que una de ellas deberá ser el bulbo N=1, 
+puesto que N=1 implica, como ya se dijo, N=3. De modo que este polinomio ha de ser divisible 
+por el resultante de aquella región, que era 
+   
+                                                2
+                                  C= Cl1 =Z − Z   
+   
+  Efectivamente, comprobamos que el polinomio es divisible por éste, resultando: 
+   
+C 4 + C 3 (4Z 2 + 2) + C 2 (6Z 4 + 4Z 2 +1) + C(4Z 6 + 2Z 4 +1) + (Z 8 −1)
+                                                                  =  
+                           C − (Z − Z 2 )
+                                            
+= C 3 + C 2 (3Z 2 + Z + 2) + C(3Z 4 + 2Z 3 + 3Z 2 + 2Z +1) + (Z 6 + Z 5 + Z 4 + Z 3 + Z 2 + Z +1) = 0
+                                          
+  Al ser el polinomio de grado tres, o lo que es lo mismo, al haber eliminado ya una de las 
+regiones, deducimos que existen 3 regiones de convergencia N=3. Puesto que sabemos, como 
+demostramos, que el conjunto de Mandelbrot es simétrico respecto al eje de las abscisas, a la 
+fuerza una de las regiones ha de estar centrada en el eje real y las otras dos han de estar fuera 
+de él siendo simétricas entre sí respecto a aquél o ambas también en el eje real. 
+   
+  Podemos  intentar calcular, al menos, si las regiones de N=3 intersecan a la de N=1. Está 
+claro que es imposible que intersequen con el bulbo N=2, puesto que 2 no es divisor de 3. Para 
+ello, sustituimos 
+   
+                            C = Z − Z 2  (resultado para N=1) 
+   
+en 
+   
+   C 3 + C 2 (3Z 2 + Z + 2) + C(3Z 4 + 2Z 3 + 3Z 2 + 2Z + 1) + (Z 6 + Z 5 + Z 4 + Z 3 + Z 2 + Z + 1) = 0
+                                          
+dando lugar a 
+   
+                                   4Z 2 + 2Z +1 = 0  
+   
+   
+
+                                                                                 23
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+de donde 
+   
+                                        −1±  j  3
+                                    Z =            
+                                            4
+   
+que se comprueba que, como era de esperar, tiene módulo igual a ². 
+   
+  Sustituyendo en Cl1, se obtiene 
+   
+                                         −1±  j3 3
+                                  C    =            
+                                    t13      8
+   
+
+que se comprueba fácilmente que corresponde con Cl1 (Φ) para φ=±2Π⁄3. 
+   
+  Puesto que hemos  obtenido los dos puntos de tangencia simétricos respecto al eje real, 
+estamos ya en disposición de afirmar que existen tres bulbos con N=3, dos —sobre“ el bulbo 
+N=1 y otro en algún lugar del eje real. 
+   
+  En la figura 4.7 se representa el conjunto de Mandelbrot en el que se han coloreado los 
+bulbos N=1 y N=2 y en el que se han marcado los puntos de tangencia ahora calculados. Sobre 
+el eje real, el punto de tangencia Ct12. Un poco a la izquierda del eje imaginario, de manera 
+simétrica respecto al real, los dos puntos de tangencia Ct13. 
+   
+
+
+                                                                               
+                                      Figura 4.7 
+   
+  Evidentemente, gracias a los puntos de tangencia Ct13 podemos afirmar que dos de los tres 
+bulbos de período N=3 son los dos aparentes discos que se apoyan en el bulbo N=1. 
+
+
+                                                                                 24
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       5. LOS POLINOMIOS QN 
+   
+  Como  vimos en el capítulo anterior, la obtención de las zonas de convergencia se vuelve 
+complicado para N mayores que 3. Se nos presenta pues la necesidad de poder conocer la 
+situación de estas zonas dentro del plano C de una manera alternativa. Este nuevo método 
+deberá ser más sencillo de utilizar, en el sentido de que deberá ofrecer relaciones que sean 
+sencillas de resolver, aunque sea a costa de obtener menos información sobre los bulbos. 
+Recordemos que con el teorema de los bulbos, después de todo, fuimos capaces de determinar 
+con total precisión la forma y situación de los bulbos N=1 y N=2, y que obtuvimos valiosa 
+información sobre los bulbos N=3. 
+   
+  De toda la información que nos gustaría obtener sobre los bulbos, la más importante podría 
+ser el número de bulbos existentes de un cierto período N y su situación en el plano C. Su 
+situación la podríamos dar, determinando al menos un punto que pertenezca al bulbo y que 
+represente su posición, su —centro“. Definiremos ahora qué se entiende por —centro“ de un 
+bulbo, puesto que los bulbos son un conjunto compacto de puntos del plano. 
+   
+   
+       5.1.  Definición de “centro“ de los bulbos 
+   
+  Necesitamos definir de alguna manera el —centro“ de los bulbos. En principio, aunque 
+pudiéramos asumir que los bulbos son —circunferencias“ excepto para el caso N=1 atendiendo a 
+las gráficas empíricas del conjunto de Mandelbrot que se presentaron en la introducción y 
+teniendo en cuenta que así se ha demostrado que es para N=2, no optaremos por hacer tal 
+suposición. Queda por tanto desechada la opción de definir el —centro“ de un bulbo como su 
+centro geométrico o centro de masas (suponiendo masa constante en el bulbo), si bien pudiera 
+ocurrir que el —centro de bulbo“ que vallamos a definir coindica con aquél. 
+   
+  La definición del —centro“ de un bulbo la buscamos atendiendo a la información de la que ya 
+disponemos acerca de ellos. Evidentemente, nos fijamos en el teorema de los bulbos: 
+   
+                     N
+                              1                        N       1
+                        Z   ≤       o alternativamente   Z  ≤      
+                    ∏    pi    N                      ∏   pi    N
+                     i=1      2                       i=1     2
+   
+que reconvertimos en  
+   
+                       N                                  N
+                  2N      Z    1   o alternativamente   N           
+                     ⋅∏     pi ≤                     2  ⋅ ∏Z  pi ≤1
+                       i=1                                i=1
+   
+  Sabemos que la igualdad se da en los límites de los bulbos, que son puntos —indiferentes“ en 
+cuanto a convergencia. Para los puntos interiores se da la desigualdad. Podemos interpretar el 
+teorema como 
+   
+                                      g(C)  ≤ 1  
+   
+siendo 
+                                            
+                                       N            N
+                                    N            N
+                           g(C) = 2  ⋅ ∏Z   pi = 2 ⋅∏  Z pi  
+                                       i=1          i=1
+   
+que se trata en una función de C, a pesar de que la expresión anterior lleve a confusión. 
+Recordemos que la secuencia Zi, y por tanto la órbita formada por lo puntos Zpi, es dependiente 
+únicamente del valor de C escogido para la trasformación fc. 
+
+                                                                                 25
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Por otra parte, sabemos que g(C) toma su valor máximo (e igual a uno) en los límites del 
+bulbo correspondiente. En el interior del bulbo ocurre que g(C)<1. Evidentemente, esta función 
+g(C) está directamente relacionada con la f(x,y) que utilizamos en el capítulo anterior para 
+colorear las zonas N=1 y N=2. La relación es, claro está,  
+   
+                              f (x, y) = g(C)−1=g(x, y)−1 
+                                            
+  Dicha función g(C)=g(x,y) se comprueba que es continua, no constante y que tiene un solo 
+mínimo. De este modo, la región de convergencia N sería una especie de —agujero“ con un 
+anillo de valor máximo e igual a uno en su periferia (límite del bulbo) y un punto con valor 
+mínimo (fondo del agujero) en alguno de sus  puntos interiores. Una masa colocada en 
+cualquier punto del bulbo —caería“ a dicho punto como una canica cae por una manta pinchada 
+desde arriba por una vara. Esta especie de —centro de gravedad“ parece un buen candidato 
+para nuestro —centro del bulbo“. 
+   
+  Matemáticamente, el mínimo de g(C) característico de ese punto podría ser nulo. Para que 
+esto pudiera ser verdad, alguna de las Zpi de la órbita debería pasar por el origen de 
+coordenadas para así asegurar que el productorio de g(C) fuera nulo. En tal situación, puesto 
+que 0 sería una de los puntos de la órbita y puesto que Z0 (valor inicial de la iteración) también 
+es 0, la secuencia Zn desde su primera iteración formaría parte de la órbita. 
+   
+  Tomando dicho punto como —centro“ de cada bulbo, se concluye que el —centro“ es tal que 
+la órbita generada para la C a la que representa comienza desde la primera iteración. O lo que 
+                                                             N
+es lo mismo, cualquiera de las N secuencias generadas a partir de fc  alcanzaría su punto fijo 
+desde la primera iteración. Tal punto se denomina —superatractivo“. En nuestro caso, el —centro“ 
+de cada bulbo resulta ser el punto —superatractivo“ del bulbo, queriendo decir con esto que 
+desde el principio la secuencia generada forma la órbita periódica, sin régimen transitorio inicial. 
+   
+  Quedaría por demostrar que tal punto existe dentro de cada bulbo o, en todo caso, que tal 
+punto es único. En cualquier caso, recopilando todo lo anterior, la situación sería la siguiente: 
+   
+                         g(C) > 1 Ω exterior del bulbo 
+                         g(C) = 1 Ω borde del bulbo 
+                         g(C) < 1 Ω interior del bulbo 
+                         g(C) = 0 Ω centro del bulbo 
+                                       
+que se representa también en la figura 5.1: 
+   
+
+
+                                                                        
+                                      Figura 5.1 
+
+                                                                                 26
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Se presenta a continuación un dibujo real del conjunto de Mandelbrot calculado con el fin de 
+corroborar esta situación. Se ha representado el valor de g(C) para N=1 (dibujo izquierdo) y 
+N=3 (dibujo derecho), si bien se encuentra una y otra vez esta situación cualquiera que sea el 
+bulbo elegido de entre los infinitos existentes: 
+   
+
+
+                                                                                 
+                                      Figura 5.2 
+   
+  Atendiendo al gradiente de color indicado abajo a la izquierda de la figura, puede observarse 
+como la situación predicha se cumple. 
+   
+  Con  lo explicado, está claro que para hallar dichos centros no tenemos más que iterar N 
+veces la aplicación fc(Z) con Z0=0 y analizar para qué valores de C el punto ZN vuelve a ser 0. 
+Con esto estaríamos comprobando la existencia de una órbita de período N desde la primera 
+iteración, que por tanto, correspondería con el centro del bulbo. 
+   
+                               N       Ω
+                              f c (0) = 0 centro del bulbo 
+   
+  Realizar este experimento proporciona un polinomio PN en C cuyas raíces hay que encontrar: 
+   
+                                            N
+                                  PN (C) = f c (0)= 0  
+   
+donde los polinomios PN(C) para las primeras N son: 
+   
+
+                 P1 (C) = C
+                           2
+                 P2 (C) = C + C
+                           4     3    2
+                 P3 (C) = C + 2C  + C   + C                          
+                           8     7     6      5     4     3    2
+                 P4 (C) = C + 4C   + 6C  + 6C  + 4C  + 2C   + C  + C
+                 ...
+   
+obteniéndose un PN mediante la ley de recurrencia: 
+   
+                                P   (C) = (P (C))2 + C
+                                 N +1      N           
+                                P1 (C) = C
+   
+  En este punto podemos comenzar a sacar conclusiones acerca de los bulbos y por tanto del 
+propio conjunto de Mandelbrot. 
+   
+
+                                                                                 27
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                                             N-1
+  Evidentemente, el grado del polinomio PN(C) es 2 . Por tanto, PN deberá tener exactamente 
+2N-1 raíces, que representan los centros de los bulbos. Esto nos podría hacer pensar que en el 
+conjunto de Mandelbrot deben  existir 2N-1 bulbos de período —N“. Sin embargo, de los 
+resultados del estudio sobre N=1, 2 y 3 del teorema de los bulbos obtuvimos que existe 1 bulbo 
+para N=1, 1 para N=2 y 3 para N=3, que no coincide con el número de raíces 20, 21 y 22 
+respectivos. Esto se debe a que, como ya dijimos en el capítulo anterior, un bulbo de período N 
+conlleva implícitamente el que también sea un bulbo de período 2N, 3N, 4N, ...nN. Llamemos, 
+pues, —UN“ al número de bulbos —verdaderos“ de período N que, evidentemente, será menor 
+     N-1                                                                   N-1
+que 2  . De hecho, UN es fácilmente computable. En principio basta con restar de 2  tantas 
+unidades como divisores existan del entero N. 
+   
+                                         N −1
+                                 U N = 2    − ƒU  K  
+                                              K N
+   
+donde el símbolo —K|N“ significa —K divide a N“ o, lo que es lo mismo, —K es divisor de N“.  
+   
+  Como ejemplo, para los primeros valores de UN se obtiene: 
+   
+                                 1−1
+                           U1 = 2   = 1
+                                  2−1
+                           U 2 = 2   −U1 = 2 −1 = 1
+                                  3−1
+                           U 3 = 2  −U1  = 4 −1 = 3         
+                                  4−1
+                           U 4 = 2   −U 2 −U1 = 8 −1−1  =6
+                           ...
+   
+  Vemos  que  los valores para N=1, 2 y 3 ahora sí concuerdan con los resultados que 
+obtuvimos mediante el teorema de los bulbos.  Los primeros valores de UN resultan ser: 
+   
+                      UN = {1, 1, 3, 6, 15, 27, 63, 120, 252, 495... } 
+   
+                                                        N-1
+  Cabría decir que cuando N es un  número primo, UN =  2  œ1, y que salvo para estos 
+                         N-1
+números, UN será inferior a 2 -1. Podemos resumirlo como 
+   
+                                          Ω        N −1
+                            N es primo      U N = 2   −1 
+                                         Ω         N −1
+                            N no es primo   U N < 2   −1 
+   
+  En general, puede esperarse que cuando N tienda a infinito UN también lo haga. Esto querría 
+decir que en  el conjunto de  Mandelbrot está formado  por infinitos bulbos, que van 
+multiplicándose en su carrera hacia el caos. 
+   
+  En este punto podemos  volver a los polinomios PN(C). La implicación de que un bulbo de 
+período N implica periodicidad también de la forma nN influye directamente en los polinomios 
+                                    N-1
+PN(C). Puesto que tan sólo UN de las 2  raíces nos interesan (aquellas que representan a 
+centros de bulbos de —verdadero“ período igual a N), el polinomio PN(C) deberá ser divisible por 
+                                                    N-1
+todos los PK(C) tal que —K divida a N“. Es decir, que de la 2  raíces de PN(C), tan sólo UN son 
+raíces indicadoras de bulbos de período N. 
+ 
+  Llamemos  QN(C) o polinomio reducido a aquél resultante de dividir PN(C) por todos sus 
+polinomios divisores, y que por tanto tan sólo contiene raíces correspondientes a centros de 
+bulbos de período N —verdadero“: 
+
+                                            PN (C)
+                                 QN (C) =             
+                                          ∏QK    (C)
+                                           K|N
+
+                                                                                 28
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Estos polinomios resultan ser: 
+   
+   
+
+                       Q1 (C) = C
+
+                       Q2 (C) = C +1
+                                 3      2
+                       Q3 (C) = C  + 2C  + C +1                
+                                 6     5      4     3     2
+                       Q4 (C) = C  + 3C  + 3C  + 3C  + 2C  +1
+                       ...
+   
+  De la forma de estos polinomios (así como de los PN(C) ) obtenemos una conclusión: 
+   
+  Puesto que QN(C) se trata de un polinomio complejo de coeficientes reales que debe ser 
+igual a 0 para los centros de los bulbos, las raíces del polinomio (los centros de los bulbos) han 
+de ser reales o complejos conjugados dos a dos. Eso concuerda, una vez más, con el hecho de 
+que el conjunto de Mandelbrot es simétrico respecto al eje real. 
+   
+   
+       5.2.  Aplicación de los polinomios Q, para una N dada 
+   
+  Busquemos los centros de un bulbo una vez fijada N mediante el método de los polinomios 
+Q. 
+   
+  Para N=1, haciendo Q1(C) = 0 obtenemos 
+   
+
+                                      Q1 (C) = 0  
+                                        C = 0  
+                                            
+que nos indica directamente que el —centro“ de potencial del bulbo N=1 es el origen del plano 
+complejo C. 
+ 
+  Para N=2, haciendo Q2(C) = 0 obtenemos 
+   
+
+                                      Q2 (C) = 0  
+                                      C  +1 = 0  
+                                       C  = −1  
+   
+lo que significa que el bulbo N=2 está centrado en C=-1, algo que ya se demostró en el 
+capítulo anterior. 
+    
+   
+  Para N=3, Q3(C)=0 resulta en 
+   
+
+                                       Q3  = 0  
+                                 C 3 + 2C 2 + C +1 = 0  
+   
+que en este caso deberemos resolver por iteraciones. Por ejemplo, iterando 
+   
+                                  C = −3 1+ C + C 2  
+   
+se obtiene 
+   
+                                   C = −1.7548775 
+
+                                                                                 29
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+   
+que indica que debe existir, como ya dedujimos, un bulbo de N=3 centrado en el eje real. 
+Extrayendo ahora (C+1.7548775) del polinomio, obtenemos 
+   
+                   C 3 + 2C 2 + C +1
+                                    = C 2 + 0.2451224C + 0.5698401 
+                    C +1.7548775
+   
+   
+de donde 
+                            C = −0.1225612  ± j0.7448616  
+   
+   
+que representan dos bulbos simétricos respecto al eje real. Corremos a comprobar, sobre un 
+dibujo del conjunto de Mandelbrot, de qué tres bulbos estamos hablando: 
+   
+
+
+                                                              
+                                      Figura 5.3 
+                                            
+  Comprobamos   que en el caso de los bulbos conjugados se trata de los que ya teníamos 
+—marcados“ mediante el cálculo de los puntos de tangencia Ct13. Como novedad, vemos dónde 
+se sitúa el tercer bulbo N=3, que aunque en la imagen queda tapado por el propio punto rojo 
+utilizado para marcar la posición, en cualquier otro dibujo del conjunto de Mandelbrot podemos 
+apreciar. 
+   
+  Para N=4, Q4(C)=0 lleva a 
+   
+                          C 6 + 3C 5 + 3C 4 + 3C 3 + 2C 2 +1 = 0  
+   
+que mediante cálculos iterativos resulta que tiene las siguientes dos raíces reales: 
+   
+                                   C  = −1.940799
+                                                   
+                                   C  = −1.310702
+   
+  Dividiendo el polinomio entre (C+1.940799)đ(C+1.310702), tenemos que 
+   
+            C 4 − 0.251501C 3 +1.27394662C  2 − 0.5024681C + 0.393097 = 0  
+   
+que al tratarse de cuatro raíces complejas sabemos que deben ser pares de raíces conjugadas. 
+Así, desarrollando 
+   
+                                       *               *
+                         (C − Z a )(C − Z a )(C − Z b )(C − Z b ) = 0  
+                                            
+   
+
+                                                                                 30
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+e identificando coeficientes, o siguiendo con métodos numéricos, se obtiene que 
+   
+                            C = 0.28226546 ±  j0.5300536
+                                                           
+                            C = −0.15651495  ± j1.0787357
+   
+  Como  se ve, el cálculo de la posición de los bulbos (de sus centros) es relativamente 
+sencilla. Basta construir el polinomio QN(C), igualarlo a 0 y calcular, de forma iterativa o 
+mediante cualquier otro método numérico, sus raíces. La figura 5.4 muestra los resultados 
+obtenidos para los casos N=1,2,3 y 4: 
+   
+
+
+                                                                                 
+                                      Figura 5.4 
+   
+  Nos surge la tentación de sugerir que el centro de los bulbos tal y como los hemos definido 
+son también los centros geométricos de los bulbos que además, excepto para N=1, parecen ser 
+discos. No estamos en posición de asegurarlo ni de demostrarlo, de modo que la cuestión habrá 
+que investigarla en el futuro. 
+   
+   
+       5.3.  Aplicación de los polinomios QN, para cualquier N 
+   
+  Si bien el método aquí expuesto para el cálculo de las posiciones de los centros de los 
+bulbos mediante los polinomios QN es sencillo y fácilmente automatizable, existe la posibilidad 
+de tener un boceto rápido de la posición de los bulbos para una determinada N sin más que 
+recorrer el plano complejo C y evaluar en cada punto (muestreando C) el módulo de la función 
+QN(C). La gráfica resultante tendrá unas cuencas en las proximidades de los centros de los 
+bulbos, tomando un valor mínimo e igual a cero (como se demostró) en el centro de cada uno. 
+El número de mínimos (ceros) será igual a UN. 
+   
+   
+   
+   
+
+                                                                                 31
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  La figura 5.5 muestra el resultado de este método para los casos N=4 y N=6: 
+ 
+
+
+                                                                                 
+                                      Figura 5.5 
+   
+   
+  Se ha representado el módulo de QN(C) mediante tonalidades de grises. Las zonas oscuras 
+son los valles de la función, siendo sus centros negros la posición de los ceros, y por tanto, de 
+los centros de los bulbos. Puede observarse fácilmente en las dos gráficas como el número de 
+bulbos coincide con los valores predichos U4=6 y U6=27. 
+   
+
+
+                                                                                 32
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       6. LOS POLINOMIOS P Y LA ECUACIÌN LOGÈSTICA 
+   
+  En  el capítulo anterior, estudiando los puntos periódicos de M, nos encontramos con los 
+polinomios P y Q. Además, utilizamos estos últimos para hallar los centros de los bulbos de un 
+determinado período. Los polinomios P quedaron relegados a ser un mero paso en la obtención 
+del correspondiente polinomio Q, que eran los que realmente nos aportaba la información útil. 
+Sin embargo, como  se expondrá en este capítulo, los polinomios P parecen tener mayor 
+trascendencia de la que se esperaría. 
+   
+  El resultado que se va a exponer en este capítulo, al igual que en el primero, es fruto de la 
+matemática experimental, y nos va a llevar a encontrar un fenómeno peculiar de estos 
+polinomios. 
+   
+  Como  se ha visto, la manera más sencilla de hallar los centros de los bulbos es comenzar 
+por encontrar las raíces reales de los polinomios P o Q. Las propiedades que se van a describir 
+se obtuvieron a  través del estudio de  dichas raíces reales. Así, este capítulo está 
+completamente enmarcado en el estudio del conjunto de Mandelbrot para el caso de Z real. Es 
+por ello que se hará primero una breve descripción de lo que se conoce acerca de M en el eje 
+real. 
+   
+   
+       6.1.  El eje real del conjunto de Mandelbrot 
+   
+  Si nos fijamos en el caso particular de C real, el sistema dinámico descrito para M se 
+convierte en 
+   
+                                     x   = x2 + a
+                                      n+1   n     
+                                     x0 = 0
+                                            
+siendo, como siempre, 
+   
+                                     Z  = x + jy
+                                      n    n    n  
+                                    C  = a + jb
+   
+  La definición de M se mantiene inalterable, por lo cual se define que forman parte del 
+conjunto (segmento en este caso, por estar apoyado en el eje real) todos aquellos valores de 
+—a“ que derivan en secuencias que no escapan al infinito (cuyo valor absoluto no tiende a 
+infinito). Así, el conjunto se convierte en el segmento de recta [-2, ³ ], que es la intersección 
+de la recta real —b=0“ con M(C). Algunos de los puntos del segmento pertenecerán a los bulbos 
+periódicos centrados en el eje real, de modo que en el segmento habrá puntos periódicos 
+correspondientes a esos bulbos. 
+   
+  Es bien conocido que la distribución de dichos puntos periódicos es homóloga a la que 
+ocurre en la ecuación logística estudiada por Mitchell Feigenbaum [8][9] en la década de los 70. 
+La duplicidad de período (de los bulbos en el caso de M), y la transición al caos ocurren de la 
+misma manera que en la ecuación logística. El ratio 4.669 aparece también en la escala relativa 
+de los sucesivos bulbos que nacen a partir del bulbo N=1, y la ventana de período 3, indicador 
+del caos según el teorema de Sarkovoskii [10], aparece en M personificado en el bulbo de N=3 
+centrado sobre el eje real que descubrimos en el anterior capítulo. La característica fractal de la 
+ecuación logística se traslada inalterable a M como no podía ser de otro modo. Pero vayamos 
+por partes. 
+   
+   
+   
+   
+
+                                                                                 33
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Por lo que dedujimos del teorema de los bulbos, sabemos que el conjunto de Mandelbrot 
+para el caso C real debe ser como sigue en la figura 6.1: 
+   
+
+
+                                                                                 
+                                      Figura 6.1 
+   
+  Se ha marcado el segmento real con algo de espesor para poder ser mejor representado. La 
+zona gris es la intersección del bulbo N=1 con el eje real, luego contiene a todos los puntos del 
+segmento cuyas órbitas convergen a un valor. La región azulada corresponde con los puntos 
+periódicos N=2. La zona negra corresponde a regiones de otros períodos que no hemos sido 
+aún capaces de determinar, si bien podemos calcular sus centros fácilmente mediante los 
+polinomios Q. 
+   
+  Puesto que la secuencia xn es real, se puede hacer un gráfica que presente cómodamente 
+los valores la órbita —xpi“ en función de —a“ tal y como se hace en la figura 6.2: 
+
+
+                                                                                 
+                                      Figura 6.2 
+ 
+
+                                                                                 34
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Para realizar la gráfica basta con calcular la órbita para cada —a“ del eje horizontal y dibujar 
+los puntos de la órbita asociada. El resultado, como se ve, es un diagrama como el de la 
+ecuación logística de Feigenbaum. 
+   
+  En la figura 6.3 se ha superpuesto el conjunto de Mandelbrot con el resultado de la figura 
+6.2 para así poder observar la correspondencia entre la aplicación logística y el conjunto de 
+Mandelbrot para el eje real. Efectivamente, apreciamos como la zona de atractor único del árbol 
+de Feigenbaum corresponde al bulbo N=1, la zona de oscilación doble coincide a su vez con el 
+bulbo de N=2. Para el resto de las N ambas gráficas coinciden también. 
+   
+   
+
+
+                                                                                 
+                                      Figura 6.3 
+   
+   
+   
+  Del hecho de que M se comporte como la ecuación de Feigenbaum nos permite exportar de 
+ésta muchas de propiedades útiles a aquella. Sin embargo nosotros no nos vamos a fijar 
+demasiado en ellas. 
+   
+
+
+                                                                                 35
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       6.2.  Polinomios P 
+   
+  Una vez presentada la relación de la ecuación logística con el conjunto M, y asumiendo que 
+se conoce su naturaleza tal y como se describe en la bibliografía, pasamos a estudiar la relación 
+de los polinomios P con ella. Los pasos que se seguirán para mostrar tal relación serán los 
+mismos que se siguieron cuando el autor de este ensayo la encontró repentinamente. 
+   
+  Como   vimos, en el intento de encontrar los centros de los bulbos se definieron los 
+polinomios P cuyas raíces, dada una N, determinan los centros de los bulbos de período N y de 
+todos los bulbos con período K divisor de N. Para hallar dichas raíces habrá que echar mano de 
+métodos numéricos, los cuales requieren, en general, un valor aproximado de la raíz a buscar. 
+Con tal fin, se pueden representar los polinomios en una gráfica en la que se vean los cortes 
+con el eje PN(C)=0. 
+   
+  He aquí una gráfica de tales polinomios para las primeros tres valores de N: 
+   
+
+
+                                                                                 
+                                      Figura 6.4 
+   
+   
+siendo, como se vio en el capítulo anterior, 
+   
+
+                              P1(C) = C
+                              P (C) = C 2 + C
+                               2                        
+                                       4     3    2
+                              P3 (C) = C + 2C  + C  + C
+                              ...
+   
+  Podemos comprobar visualmente que las raíces reales de los polinomios cumplen lo que ya 
+dijimos para los polinomios PN. Efectivamente, comprobamos como, tanto los polinomios P2 
+como P3 pasan por el origen de coordenadas (cortan a PN=0 en a=0) a pesar de que no existe 
+realmente ningún bulbo de período 2 ni 3 cuyo centro esté en tal posición, si no contamos, 
+
+                                                                                 36
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+evidentemente, el de período 1, que por supuesto es periódico con cualquier valor de N. Es por 
+ello precisamente que ambos pasan por dicho punto. Puede observarse esta misma situación en 
+la figura 6.5, en la cual se ha dibujado además el polinomio P6 y que nos permite corroborar el 
+efecto del que hablamos. P6 pasa por cero en los puntos en los que P1, P2 y P3 también lo 
+hacen, aportando realmente tan sólo cuatro raíces reales nuevas de verdadero período 6. 
+   
+   
+
+
+                                                                         
+   
+                                      Figura 6.5 
+   
+   
+       6.3.  Polinomios P y la ecuación logística 
+   
+  Antes de percatarse de la existencia de los polinomios Q y comenzar su estudio, tal y como 
+hicimos en el capítulo anterior, aún quedaba por jugar un poco más con los polinomios P. Así, 
+con el fin de tener una idea del comportamiento general de los polinomios se podía pensar en 
+calcular un dibujo con la superposición de muchos polinomios PN consecutivos. Esto permitiría 
+dar una visión global de dichos polinomios, permitiendo ver la forma —general“ de uno de estos 
+polinomios P. El resultado, para tan sólo los primeros diez polinomios es el mostrado en la 
+figura 6.6. Su silueta nos trae al recuerdo alguna imagen ya vista anteriormente. De hecho, se 
+nos antoja bastante familiar. Inmediatamente repetimos el experimento con el primer centenar 
+de polinomios, coloreados esta vez con un solo color, y que podemos apreciar en la figura 6.7. 
+Esta vez la sensación de parecido es más que razonable: 
+   
+
+
+                                                                                 37
+    De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                            
+
+
+                                                         
+Figura 6.6 
+                                   
+                                   
+
+
+                                                         
+Figura 6.7 
+                                   
+                                   
+
+                                                        38
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  La familia de polinomios tiene un extraordinario parecido con la ecuación logística. Sin 
+embargo, este parecido no es casual. Después de todo la ecuación logística presenta los valores 
+de cada una de las órbitas asociadas a cada valor —a“. Y nuestros polinomios representan el N-
+ésimo valor de la secuencia generada. Si tal secuencia converge a la órbita periódica 
+
+correspondiente en menos de N iteraciones, entonces el polinomio PN(C) evaluado para esa —a“ 
+(C=a) estará pasando por uno de los N puntos del diagrama de la ecuación logística asociados 
+a esa —a“. En el caso extremo de que coincida con la posición del centro de uno de los bulbos, 
+entonces tanto la ecuación logística como evidentemente el polinomio cortarán al eje en ese 
+punto. Para el caso más general en el que la secuencia xi tarda más de N iteraciones en 
+converger a la órbita periódica formada por los puntos xpi, entonces el polinomio tan sólo se 
+acercará a la ecuación logística, sin lograr superponerse a ella completamente. Claro está, no 
+obstante, que cuanto menos tarde la órbita en converger, tanto más se acercará el polinomio a 
+la —sombra“ de la ecuación logística. Como ya sabemos, a menor distancia del centro de un 
+bulbo, mayor velocidad de convergencia. 
+   
+  Esta descripción queda bien reflejada en la figura siguiente: 
+   
+   
+
+
+                                                                                 
+                                            
+                                      Figura 6.8 
+   
+   
+  En el dibujo izquierdo se ha superpuesto P3(C) a la ecuación logística, y a la derecha P8(C). 
+Vemos como  ambas  tienden a seguir la sombra de aquélla, siendo su distancia máxima en 
+aquellos puntos —más alejados“ de los centros de los bulbos, que son, claro está, los puntos de 
+tangencia entre ellos, es decir, los puntos en los que la ecuación logística se bifurca. 
+   
+  Por otra parte, es claro que cuanto mayor sea el orden N del polinomio más se acercará el 
+mismo a la ecuación logística incluso en los puntos más desfavorables como los antes descritos. 
+Efectivamente, al ser mayor N, PN estará representando puntos más alejados en la secuencia, 
+con lo que más se parecerán éstos a la órbita periódica, si es que no forman parte de ella ya. 
+   
+   
+       6.4.  Los caminos de P sobre la ecuación logística 
+   
+  Sabemos que los PN tienden a avanzar —por encima“ de la ecuación logística, especialmente 
+para N grandes. ¿Pero cómo lo hacen? Puesto que PN es un polinomio, tan sólo puede tener un 
+valor para cada C (—a“), mientras que el diagrama de bifurcación tiene N puntos para cada una 
+de las abscisas, según ésta corresponda a una fc de período N. Por tanto, el polinomio tan sólo 
+podrá pasar, o mejor dicho, sólo podrá —tender“ a pasar por una de tales N alternativas. Así, en 
+las cercanías de los puntos de bifurcación, es decir, cerca de los puntos de tangencia entre los 
+bulbos, el polinomio deberá —optar“ por tender hacia uno u otro camino. 
+   
+
+
+                                                                                 39
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+  Para expresar esta idea fijémonos de nuevo en la figura 6.8. Avanzando de derecha a 
+izquierda, es decir, de 0 a œ2, observamos como al llegar al primer punto de bifurcación P3 
+eligió el camino —de abajo“, mientras que P8 eligió el —de arriba“, para después, en la segunda 
+bifurcación elegir —el de abajo“. 
+   
+  Cada  polinomio elige uno de los infinitos caminos existentes hasta llegar a —a“=-2. Eso sí, 
+todos, excepto P1, alcanzan el punto extremo con un valor igual a —2“, como es bien fácil 
+comprobar, puesto que 
+   
+                                 ÀP (−2) = f N (0) = 2
+                                   N        −2        
+                                 Ã          1
+                                 ÕP1(−2) = f−2 (0) = −2
+   
+  La forma en que los polinomios se distribuyen a lo largo de los infinitos caminos posibles 
+depende de N. Realizando pruebas, parece ser que, al menos en las primeras bifurcaciones, los 
+polinomios se van distribuyendo alternativamente entre las dos opciones que ofrece cada 
+bifurcación a medida que aumenta N. 
+   
+  Por ejemplo, en la primera bifurcación todos los polinomios de grado par siguen la rama 
+superior de la bifurcación, mientras que los impares siguen la inferior. A su vez, el —flujo“ de 
+polinomios que entra en cada una de estas dos ramas se vuelve a dividir alternativamente en 
+las siguientes bifurcaciones correspondientes a ambas ramas, y así para el resto de las 
+bifurcaciones. 
+   
+
+
+                                                                                 
+                                      Figura 6.9 
+   
+   
+  Evidentemente esta situación no puede esperarse que continúe indefinidamente, puesto que 
+sabemos, que más allá de estas primeras bifurcaciones existen puntos de N=3, lo cual rompe 
+completamente el esquema. En aquel punto los polinomios se redistribuyen en tríos. 
+   
+   
+
+                                                                                 40
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       6.5.  Algo más sobre los polinomios P 
+   
+  Tal vez sea este punto el más adecuado para hacer resaltar una propiedad de los polinomios 
+P que hasta ahora no hemos  mencionado. Se comprueba  que a medida  que el grado del 
+polinomio aumenta, el número de términos en C se duplica repitiéndose los últimos N términos 
+del polinomio PN en el PN+1. Es decir, a medida que N aumenta los polinomios tienden a fijar sus 
+términos a los valores de una secuencia bien definida. Así, si expresamos PN como 
+   
+                                           2M −1
+                                               n  i
+                                  PN (C) = ƒ  ai C  
+                                           i=1
+   
+resulta que 
+   
+                ∞
+               ai ={1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862,16795, 58786, ... } 
+
+
+                                                                                 41
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       7. DEMOSTRACIONES DEL BULBO N=1 
+     
+  El bulbo N=1 ha sido objeto de mayor estudio que cualquier otra parte del conjunto de 
+Mandelbrot. Debido a que, como vimos, su contorno es sencillo de parametrizar y puesto que el 
+caso N=1 siempre facilita los cálculos derivados de intentar deducir alguna propiedad acerca de 
+M, se hace difícil resistir la tentación de investigar sus propiedades. Sin embargo, toda la 
+información que consiguiésemos  obtener acerca de  él siempre  sería despreciable en 
+comparación con la cantidad de información que contiene la infinidad del conjunto entero. 
+Fijarse tan sólo en el bulbo N=1 y escudriñar sus misterios posiblemente sea como esforzarse 
+en obtener la máxima  información acerca del ojo de un tipo de mosca concreta con la 
+esperanza de así estar haciendo zoología. O tal vez el intento merezca la pena si se demuestra 
+que algo de lo descubierto puede generalizarse a otros bulbos. 
+   
+  En cualquier caso, un tema que atrae la atención es sin duda la distribución de los bulbos 
+tangentes al bulbo N=1. Los períodos de los bulbos, sus puntos de tangencia, los tamaños de 
+los aparentes discos, su disposición parecen a simple vista obedecer leyes sencillas. 
+   
+   
+       7.1.  Demostración de la relación entre Z y Cl1 
+ 
+  Es fácil demostrar que existe una relación directa entre el valor al que converge la órbita 
+periódica de N=1 y el punto de la curva Cl1 que genera la secuencia. Efectivamente, puesto que 
+la secuencia es convergente, se puede obtener el valor del punto fijo haciendo 
+   
+                                   Z = Z 2 + C
+                                   Z 2 − Z + C = 0  
+                                       1±   1− 4C
+                                   Z =
+                                            2
+   
+siendo, como sabemos, 
+   
+                                      1       1
+                                  C =   e jΦ − e j2Φ  
+                                      2       4
+   
+luego 
+   
+                                    1±  1− 2e jΦ + e jΦ
+                                Z =
+                                            2
+                                                2
+                                    1±  (1− e jΦ )
+                                Z =
+                                          2
+                                    1± 1− e jΦ         
+                                Z =    (      )
+                                        2
+                                    À2 − e jΦ
+                                    Œ
+                                    Œ   2
+                                Z = Ã jΦ
+                                    Œe
+                                    ÕŒ 2
+   
+  De estas dos soluciones sólo la segunda tiene módulo igual a ², que por el teorema de los 
+bulbos sabemos debe tener. Por tanto, si C pertenece al límite del bulbo N=1 siendo φ el valor 
+
+                                                                                 42
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+que parametriza su posición en Cl1, entonces la secuencia generada converge a un valor de la 
+forma ²đejφ. 
+   
+                                                 1
+                               C = C  (Φ) Ω  Z =   e jΦ  
+                                     l1          2
+                                            
+                                            
+       7.2.  Observación de los puntos de tangencia Ct1N 
+   
+  En  cuanto a los puntos de tangencia, en el capítulo 4 demostramos que los puntos de 
+tangencia de los bulbos N=2 y N=3 eran respectivamente: 
+   
+                                          3
+                                  Ct12 = −
+                                          4         
+                                         −1±  j3 3
+                                  C    =
+                                    t13      8
+   
+que por supuesto pertenecen a Cl1(φ), y que, como también vimos, corresponden a los puntos  
+   
+                                            1
+                                  Φ  = 2Π  ⋅
+                                    2       2
+                                                     
+                                           1      2
+                                  Φ  = 2Π ⋅  ,2Π ⋅
+                                    3       3     3
+   
+  No se presentará en este trabajo como tema de investigación, sino como de observación el 
+hecho de que se compruebe que los puntos de tangencia de cualquier bulbo de período N con 
+el bulbo N=1 viene dado por la curva Cl1(φ)  para un valor tal que  
+   
+                                               n
+                                    Φ   = 2Π  ⋅   
+                                      N        N
+                                            
+siendo n un número divisor de N tal que la fracción n/N no sea simplificable. Por ejemplo, para 
+N=3 se tienen los dos bulbos de N=3 situados, como se ha visto, a 1/3 y 2/3 del recorrido de la 
+curva Cl1. Para N=2, el único bulbo está a ² del recorrido, como ya hemos demostrado. De la 
+misma manera, se puede comprobar que existen dos bulbos de N=4 tangentes al N=1 y cuatro 
+de N=5 en exactamente los puntos 
+   
+                                          À       1
+                                          ŒCl1 (2Π  )
+                                 N = 4 Ω  Ã       4
+                                                  3
+                                          ŒC  (2Π   )
+                                          Õ  l1   4
+                                          À       1
+                                          ŒCl1 (2Π )
+                                          Œ       5   
+                                                  2
+                                          ŒC  (2Π  )
+                                          Œ l1    5
+                                 N = 5 Ω  Ã
+                                                  3
+                                          ŒC  (2Π  )
+                                          Œ l1    5
+                                          Œ       4
+                                          ŒC  (2Π  )
+                                          Õ l1    5
+
+                                                                                 43
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+                                            
+  Por otra parte, el numerador n parece tener cierto sentido matemático. Representa el —salto“ 
+que toman los puntos sucesivos en la órbita periódica si ordenamos dichos puntos en sentido 
+horario. La figura 7.1 ilustra lo que se pretende decir: 
+   
+
+
+                                                                               
+                                      Figura 7.1 
+   
+   
+   
+   
+
+
+                                                                                 44
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       8. CONCLUSIONES 
+   
+  En este trabajo hemos realizado una labor de investigación experimental y búsqueda teórica 
+de la geometría del conjunto de Mandelbrot a partir de la dinámica subyacente. A modo de 
+resumen, podemos decir que este trabajo ha realizado las siguientes labores de investigación: 
+   
+      •  Demostración de que —M es par“ 
+   
+      •  Definición de la dinámica en los bulbos 
+      •  Descubrimiento y demostración del —Teorema de los bulbos“ 
+      •  Aplicación del teorema para demostrar la geometría de los bulbos N=1, 2 y 3. 
+   
+      •  Definición de —centro de un bulbo“ 
+      •  Definición de —polinomios P y Q“ 
+      •  Demostración   de un —método para hallar los centros de los bulbos mediante los 
+         polinomios Q“ 
+      •  Descubrimiento   y demostración  de  una —fórmula para calcular el número de 
+         bulbos de período N“ 
+      •  Aplicación del método  de los polinomios Q para demostrar la geometría de los 
+         bulbos N=1, 2, 3 y 4 
+      •  Definición de un —método para hallar un boceto de los centros de los bulbos“ 
+   
+      •  Descubrimiento de la —relación entre los polinomios P y la ecuación logística“ 
+      •  Descubrimiento de los —caminos de los polinomio P sobre la ecuación logística“ 
+      •  Descubrimiento de la —forma de PN cuando N tiende a infinito“ 
+   
+      •  Demostración de la —relación entre el punto de convergencia y el punto C de Cl1“ 
+      •  Descubrimiento de la —relación de los puntos de tangencia con Cl1“ 
+ 
+
+
+                                                                                 45
+                                          De la dinámica a la geometría en el conjunto de Mandelbrot 
+                                                                                    
+
+       9. REFERENCIAS 
+   
+   
+[1] James Gleick, —Caos - la creación de una ciencia“, ISBN: 84-322-9585-X, 1988. 
+
+[2] Tan Lei, "Ressemblance entre l'ensemble de Mandelbrot et l'ensemble de Julia au voisinage 
+d'un point de Misiurewicz," p. 139-152 in Douady, A., and Hubbard, J., "Etude dynamique des 
+polynomes complexes II," Publ. Math. Orsay 1985.  
+
+[3] Mitsuhiro Shishikura, "The Hausdorff dimension of the boundary of the Mandelbrot set and 
+Julia sets,". Annals of Mathematics 147 (1998), 225-267. 
+ 
+[4] Mitsuhiro Shishikura, —The Boundary of the Mandelbrot Set has Hausorff Dimension Two“, 
+Tokyo  Institute of Technology,  Mathematics  Subject Classification. Primary 58F23; 
+Secondary:30D05, 1991 
+ 
+[5] Peitgen Heinz-Otto and Peter H.Richter, —The Beauty of Fractals“. Springer-Verlag, 1986. 
+ 
+[6] G.Benetti, L.Galgani, A.Giogilli and J.M.Strelycn, —Lyapunov characteristic exponents for 
+smooth dinamical systems and for Hamiltonian systems; a method for computing all of them. 
+Part I: Theory“. Meccanica 15, 1980. 
+ 
+[7]  Paul   Bourke,   —Random    Attractors  Found   using   Lyapunov    Exponents“. 
+http://astronomy.swin.edu.au/~pbourke/fractals/lyapunov/, 2001. 
+ 
+[8] Mitchell feigenbaum, —Universal Behavior in Nonlinear Systems“. Los Alamos Science 1, 
+1981. 
+ 
+[9] Mitchell feigenbaum, —Quantitative Universality for a Class of Nonlinear Transformations“.  
+Journal of Statistical Physiscs 21, 1979. 
+ 
+[10] A.N.Sarkovoskii, —Coexistencia de ciclos de un diagrama continuo de una sola línea en sí 
+mismo“. Ukrainian Mathematics Journal 16, 1964. 
+   
+
+
+                                                                                 46

@@ -1,0 +1,49 @@
+vec4 hash42(vec2 p)
+{
+    vec4 p4=fract(vec4(p.xyxy)*vec4(.1031,.1030,.0973,.1099));
+    p4+=dot(p4,p4.wzxy+33.33);
+    return fract((p4.xxyz+p4.yzzw)*p4.zywx);
+}
+
+vec4 textureNoTile2(in vec2 uv)
+{
+    vec2 p=floor(uv);
+    vec2 f=fract(uv);
+    
+    vec2 ddx=dFdx(uv);
+    vec2 ddy=dFdx(uv);
+    
+    vec4 va=vec4(0.0);
+    float wt=0.0;
+    
+    for(int j=-1;j<=1;j++)
+        for(int i=-1;i<=1;i++)
+        {
+            vec2 g=vec2(float(i),float(j));
+            vec4 o=hash42(p+g);
+            vec2 r=g-f+o.xy;
+            
+            float d=dot(r,r);
+            float w=exp(-5.*d);
+            
+            vec4 c=textureGrad(iChannel0,uv+o.zw,ddx,ddy);
+            
+            va+=w*c;
+            wt+=w;
+        }
+    return va/wt;
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    vec2 p=(fragCoord*2.-iResolution.xy)/iResolution.y;
+    float ww=smoothstep(0.8,1.2,1.+sin(iTime/2.));
+    p=p*1.+p*4.*ww;
+    
+    float nn=smoothstep(0.8,1.2,1.+sin(iTime/2.+5.));
+    vec4 c1=texture(iChannel0,p);
+    vec4 c2=textureNoTile2(p);
+    
+    vec4 c=mix(c1,c2,nn);
+    fragColor=c.rrrr;
+}
