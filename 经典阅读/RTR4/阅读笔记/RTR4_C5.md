@@ -36,14 +36,83 @@ $$
 
 接下来的一部分，感觉应该是高光部分和漫反射部分，这里只是简单介绍了f~lit~是常数的情况，然后就光源的类型进行了介绍和分析。
 
-Directional light没什么值得注意的。Point light的距离衰减的物理解释有点意思，如下图：
+------
+
+Directional light没什么值得注意的。Punctal Light中的Point light的距离衰减的物理解释有点意思，如下图：
 
 <img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/2.PNG" style="zoom:50%;" />
 
 由此给出了inverse-square light attenuation
 $$
-C_{light})(r)=C_{light_0}(\frac{r_0}{r})^2
+C_{light})(r)=C_{light_0}(\frac{r_0}{r+\varepsilon})^2
 $$
-当然，这个公式有很多问题，第一个问题发生在离光源很近的地方（分母近似为0），解决方法很多，例如：分母加上一个常数项（虚幻的1cm）,或者分母设置成max，给光源加上一个物理半径。
+- 当然，这个公式有很多问题，第一个问题发生在离光源很近的地方（分母近似为0），解决方法很多，例如：分母加上一个常数项（虚幻的1cm）,或者分母设置成max，给光源加上一个物理半径。
 
-第二个问题，不是表现而是性能，产生于离光源很远的地方（原公式，不管离光源多远，远，光强都不会变为0）。
+
+- 第二个问题，不是表现而是性能，产生于离光源很远的地方（原公式，不管离光源多远，远，光强都不会变为0）。为了使得衰减公式变成0，同时避免突然的shutoff，最好使得函数的导数在相同的位置也变成0，一个虚幻和寒霜都在使用的解决方案如下：
+
+$$
+f_{win}(r)=(1-(\frac{r}{r_{max}})^4)^{+2}
+$$
+​		这个作为乘项和之前的inverse-square相乘即是最终解决方案。他们的曲线如下图：
+
+<img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/3.PNG" style="zoom:50%;" />
+
+- 应用要求将影响到所使用的方法的选择。例如，当距离衰减函数在一个相对较低的空间频率下采样时，导数等于0是特别重要的。f_dist(r)
+
+------
+
+一般的Spotlight的参数定义如下图所示，一般light intensity公式：$c_{light}=c_{light_0}f_{dist}(r)f_{dir}(l)$
+
+![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/4.PNG)
+
+- Various directional falloff functions are used for spotlights，如下依次是寒霜引擎和？？的实现方法：
+  $$
+  t=(\frac{cos\theta_{s}-cos\theta_{u}}{cos\theta_{p}-cos\theta_{u}}),\\
+  f_{dir_{F}}(l)=t^2\\
+  f_{dir_{T}}(l)=t^2(3-2t)
+  $$
+
+当然除了上述两种，还有很多其他形式的Punctual Light。对于$f_{dir}$函数来说，除了上述的方案之外，还有很多复杂的方式，IES（Illuminating Engineering Society）为其定义了a standard file format 。
+
+------
+
+还有一些其他类型的灯，有着其他方式计算light direction。例如：古墓丽影中的胶囊灯，将光源视作一个线段而不是点，每次使用离渲染点最近的线段点来计算L。
+
+目前为止讨论的光源都是抽象的，而最近，具有大小和形状的==area Light==在实时渲染中使用的越来越多。区域光技术主要是两个方面：第一个是部分被遮挡的区域光产生的柔和阴影，第二个是整个区域光对于物体表面的作用（对于光滑，mirror-like的物体，这方面的区别是显而易见的）。
+
+未来是区域光的。
+
+> those that simulate the softening of shadow edges that results from the area light being partially occluded  and those that simulate the effect of the area light on surface shading 。
+
+
+
+## 3. Implementing Shading Models
+
+这部分主要是对实现公式向编程的方法的关键考量——如何将公式转化为实际可用的Code呢？
+
+ 设计一个实现方法，计算应该根据评估频率（frequency of evaluation. ）划分成几部分。首先，判断计算结果在整个Draw Call过程中是否是常数（或者变化十分微小，或者变化的频率很慢），如果是，则应该放在程序（CPU）上计算。
+
+理论上，阴影计算可以在任何一个可编程阶段进行，每个级对应一个不同的评估频率。
+
+- 大家都知道，光照计算主要是在片元着色器中实现，为什么不在顶点着色器呢？这主要是顶点着色器会导致Spec部分的错误（color进行线性插值——错误的高光进行插值不会产生正确的高光）
+
+- 在顶点着色器中，各种几何，变换参数进行归一化的重要性。（否则会如下图所示，插值法线倾向于朝向长度较长的法线，这是明显不对的）
+
+  ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/5.PNG)
+
+------
+
+材质系统最重要的任务之一是将不同的着色器功能划分为单独的元素，并控制它们如何组合。在许多情况下，这种类型的组合是有用的，包括以下情况：
+
+- Composing surface shading with ==geometric processing==, such as rigid transforms,vertex blending, morphing, tessellation, instancing, and clipping. 
+- Composing surface shading with ==compositing operations== such as pixel discardand blending. 
+- Composing the operations used to compute the shading model parameters with the computation of the shading model itself. 
+- Composing the shading model and computation of its parameters with light source evaluation
+
+如果图形API能提供这种类型的着色器代码模块化作为核心功能，那就方便了。遗憾的是，与CPU代码不同，GPU着色器不允许代码片段的编译后链接（post-compilation linking of code fragments. ），The program for each shader stage is compiled as a unit。
+
+早期的渲染系统的shader变体数量相对较少，而且往往每个变体都是手动编写的。这有一些好处。例如，每个变体都可以在充分了解最终着色器的情况下进行优化。然而，随着变体数量的增加，这种方法很快就变得不切实际。当考虑到所有不同的部件和选项，可能的不同着色器变体的数量是巨大的。这就是为什么模块化和可组合性如此重要的原因。
+
+当设计一个处理着色器变体的系统时，首先要解决的问题是，选择是在运行时通过动态分支进行，还是在编译时通过条件预处理进行。如今的GPU对于动态分支（dynamic branch）的处理非常好，但是，这会产生额外的消耗：寄存器计数的增加和占用率的相应降低，从而降低性能。因此，编译时的==Shader Variant==仍然是有价值的。它避免包含永远不会执行的复杂逻辑。
+

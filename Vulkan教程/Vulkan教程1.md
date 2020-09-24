@@ -77,9 +77,9 @@ int main() {
 }
 ```
 
-我们首先包含LunarG SDK中的Vulkan标头，其中提供了功能，结构和枚举。在`stdexcept`和`iostream`头都包含用于报告和传播错误。的`cstdlib` 报头提供了`EXIT_SUCCESS`和`EXIT_FAILURE`宏。
+我们首先包含LunarG SDK中的Vulkan.h，提供我们编程所需的函数，结构和枚举。`stdexcept`和`iostream`头用于报告和传播错误（eporting and propagating errors）。`cstdlib` 提供了`EXIT_SUCCESS`和`EXIT_FAILURE`宏。
 
-程序本身被包装到一个类中，在该类中，我们将Vulkan对象存储为私有类成员，并添加函数来初始化每个对象，这些`initVulkan`函数将从函数中调用。一切准备就绪后，我们进入主循环以开始渲染帧。我们将填写`mainLoop` 函数以包含一个循环，该循环将反复执行直到关闭窗口。窗口关闭并返回后，我们将确保在`cleanup`函数中释放已使用的资源。
+程序本身被包装到一个类中，在该类中，我们将Vulkan对象存储为私有类成员，并添加函数来初始化每个对象。一切准备就绪后，我们进入主循环以开始渲染帧。我们将填写`mainLoop` 函数以包含一个循环，该循环将反复执行直到窗口关闭。窗口关闭并返回后，在`cleanup`函数中释放已使用的资源。
 
 添加一个`initWindow`函数，并设置在其他调用之前用。我们将使用该函数初始化并创建一个窗口。写法和OpenGL一样，
 
@@ -88,7 +88,7 @@ const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 void initWindow() {
     glfwInit();
-	//因为GLFW最初的设计目的是创建OpenGL上下文，所以我们需要告诉它不要创建带有后续调		用的OpenGL上下文
+	//initWindow中的第一个调用应该是glfwInit()，它初始化了GLFW库。因为GLFW最初设计用来创建OpenGL上下文，所以我们需要告诉它不要在后续调用中创建OpenGL上下文
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     //因为处理调整大小的窗口需要特别小心，我们稍后将对此进行研究，所以禁用它
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
