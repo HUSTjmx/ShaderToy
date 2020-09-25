@@ -121,7 +121,7 @@ void cleanup() {
 
 #### 实例
 
-第一件事是通过创建*实例*来初始化Vulkan库。实例应用程序和Vulkan库之间的连接，创建该实例涉及：为驱动程序指定有关您的应用程序的一些详细信息。
+第一件事是通过创建实例来初始化Vulkan库（应用程序和Vulkan库之间的连接），创建该实例涉及为驱动程序指定有关应用程序的一些详细信息。
 
 首先添加一个`createInstance`函数并在该`initVulkan`函数中调用它 。另外，添加一个数据成员以持有该实例的句柄：
 
@@ -129,7 +129,7 @@ void cleanup() {
 VkInstance instance;
 ```
 
-现在，要创建实例，我们首先必须在结构中填充一些有关我们应用程序的信息，以优化我们的特定应用程序。该结构称为[`VkApplicationInfo`](https://www.khronos.org/registry/vulkan/specs/1.0/man/html/VkApplicationInfo.html)：
+现在，要创建实例==，我们首先必须在结构中填充一些有关我们应用程序的信息，以优化我们的应用程序==。该结构称为[`VkApplicationInfo`](https://www.khronos.org/registry/vulkan/specs/1.0/man/html/VkApplicationInfo.html)：
 
 ```c#
 void createInstance() {
@@ -143,9 +143,9 @@ void createInstance() {
 }
 ```
 
-如前所述，Vulkan中的许多结构要求您在sType成员中显式地指定类型。这也是许多具有pNext成员的结构中的一个，pNext成员可以在将来指向扩展信息。我们在这里使用值初始化将其保留为nullptr。
+如前所述，Vulkan中的许多结构要求在sType成员中显式地指定类型。这也是许多具有pNext成员的结构中的一个，pNext成员可以在将来指向扩展信息。我们在这里使用值初始化将其保留为nullptr。
 
-Vulkan中有很多信息是通过结构体传递的，而不是通过函数参数传递的，我们必须再填充一个结构体，以便为创建实例提供足够的信息。下一个结构不是可选的，它告诉Vulkan驱动程序我们想要使用哪一个全局扩展和验证层。全局性意味着它们适用于整个程序，而不是特定的设备，这将在接下来的几章中变得清楚。
+Vulkan中有很多信息是通过结构体传递的，而不是通过函数参数传递的，==我们必须再填充一个结构体，以便为创建实例提供足够的信息==。下一个结构不是可选的，它告诉Vulkan驱动程序我们想要使用哪一个全局扩展和验证层。全局性意味着它们适用于整个程序，而不是特定的设备。
 
 ```c#
 VkInstanceCreateInfo createInfo{};
@@ -153,7 +153,7 @@ createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 createInfo.pApplicationInfo = &appInfo;
 ```
 
-下来的两个层指定所需的全局扩展。正如在概述章节中提到的，Vulkan是一个平台无关的API，这意味着您需要一个扩展来与窗口系统进行接口。GLFW有一个方便的内置函数，它返回它需要的扩展名，我们可以将这些扩展名传递给结构体
+==接下来的两个属性指定所需的全局扩展==。正如在概述章节中提到的，Vulkan是一个平台无关的API，这意味着您需要一个扩展来与窗口系统进行接口。GLFW有一个方便的内置函数，它返回它需要的扩展名，我们可以将这些扩展名传递给结构体
 
 ```c++
 uint32_t glfwExtensionCount = 0;
