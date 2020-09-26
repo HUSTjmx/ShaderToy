@@ -122,3 +122,95 @@ $$
 + 代码重用：将一些函数写在可分享的文件中，然后其他需要使用的地方使用'#include'
 + Additive  ：个人理解其作用和代表是：shader可视化编辑器。
 + Template-based ：定义了一个接口，不同的实现只要符合该接口，就可以插入其中。一个常见例子是将模型参数的计算和模型本身的计算分开。
+
+
+
+## 4. Aliasing and Antialiasing
+
+首先介绍的是 Sampling and Filtering Theory，主要是对采样、重建、滤波（filtering）的介绍。
+
+![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/6.PNG)
+
+*Sample*
+
+==采样频率必须是被采样信号最高频率的两倍以上==。这就是通常所说的采样定理（==Nyquist limit==）。相邻采样之间的间隔，信号必须足够平滑。
+
+因为使用point Sample来渲染场景，无论采样频率多高，总有小的物体不会被采样到，所以不可能完全避免走样，但是是可能知道什么时候可以限制采样频率。
+
+> It is possible to compute the frequency of the texture samples compared to the sampling rate of the pixel. If this frequency is lower than the Nyquist limit, then no special action is needed to properly sample the texture. If the frequency is too high, then a variety of algorithms are used  to band-limit the texture 
+
+------
+
+*Reconstruction*
+
+在给定一个受限采样的情况下，我们需要一个合适的filter去重建信号。请注意，滤波器的面积应始终为1，否则重建信号可能会出现增长或收缩，下面是三种常见的filter。Box、Tent、Sinc
+
+<img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/7.PNG" style="zoom: 67%;" />
+
+<img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/8.PNG" style="zoom:67%;" />
+
+<img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/9.PNG" style="zoom:67%;" />
+
+The ideal low-pass filter is the sinc filter :
+$$
+sinc(x)=\frac{sin(\pi x)}{\pi x}
+$$
+为什么这个公式是理想的low-pass滤波器呢？采样过程为图像引入了高频部分，而sinc会去除那些频率高于采样频率1/2的部分，具体详见135页。但是其无限的影响区域以及其它问题，导致这个滤波器实际场景用的比较少。目前使用最广泛的几个filter都是对sinc的近似，但是会对他们影响的像素数量进行限制，例如：Gaussian filters
+
+------
+
+*Resampling*
+
+重采样用于放大或缩小一个采样信号。假设初始信号位于单位坐标系上（间隔为一进行采样）。那么在重采样的过程中，采样间隔a>1，则minification（downSampling），否则a<1，导致magnification（upsampling）。
+
+Magnification比较简单：the reconstructed signal has been resampled at double the sample rate。
+
+Minification：the filter width has doubled in order to double the interval between the samples.
+
+<img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/10.PNG" style="zoom:67%;" />
+
+​           
+
+### 4.1 Antialiasing Patterns
+
+这些算法有助于解决图像中颜色剧烈变化处产生的artifacts（采样和过滤的方法不够好）。主要考虑这些因素：quality, ability to capture sharp details or other phenomena, appearance during movement, memory cost, GPU requirements, and speed.
+
+基本思想是：在屏幕上使用取样模式（ sampling pattern ），然后对样本进行加权加和，以产生像素颜色。
+$$
+p(x,y)=\sum_{i=1}^n{w_ic(i,x,y)}
+$$
+<img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/11.PNG" style="zoom:67%;" />
+
+每个像素计算一个以上完整样本的抗锯齿算法称为==超采样（或过采样）方法==。
+
+- full-scene antialiasing (==FSAA==，or ==SSAA==)：最为简单，用更高的resolution渲染场景：render an image of 2560 × 2048 offscreen and then average each 2 × 2 pixel area on the screen，for 1280× 1024。还有accumulation buffer的一些内容（详见139）。这是比较早期的抗锯齿方法，比较消耗资源，但简单直接。这种抗锯齿方法先把图像映射到缓存并把它放大，再用超级采样把放大后的图像像素进行采样，一般选取2 个或4 个邻近像素，把这些采样混合起来后，生成的最终像素，令每个像素拥有邻近像素的特征，像素与像素之间的过渡色彩，就变得近似，令图形的边缘色彩过渡趋于平滑。再把最终像素还原回原来大小的图像，并保存到帧缓存也就是显存中，替代原图像存储起来，最后输出到显示器，显示出一帧画面。这样就等于把一幅模糊的大图，通过细腻化后再缩小成清晰的小图。
+
+  > Techniques such as ==supersampling and accumulation buffering== work by generating samples that are fully specified with individually computed shades and depths. The overall gains are relatively low and the cost is high, as each sample has to run through a pixel shader
+
+- Multisampling antialiasing (==MSAA==) ：通过每个像素计算一次surface shader，并在采样之间共享这一结果，从而降低了高计算成本。这是一种特殊的超级采样抗锯齿（SSAA）。MSAA首先来自于OpenGL。具体是MSAA只对Z缓存（Z-Buffer）和模板缓存(Stencil Buffer)中的数据进行超级采样抗锯齿的处理。可以简单理解为只对多边形的边缘进行抗锯齿处理。这样的话，相比SSAA 对画面中所有数据进行处理，MSAA 对资源的消耗需求大大减弱，不过在画质上可能稍有不如SSAA。（基本后面的算法都是在MSAA上做新花样，例如：TXAA，HRAA）、
+
+  [博客详解1](https://zhuanlan.zhihu.com/p/32823370)
+
+  <img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/12.PNG" style="zoom:80%;" />
+
+- Temporal Anti-Aliasing（==TXAA==）：将MSAA、时间滤波以及后期处理相结合，用于呈现更高的视觉保真度。与CG 电影中所采用的技术类似，TXAA 集MSAA 的强大功能与复杂的解析滤镜于一身，可呈现出更加平滑的图像效果。此外，TXAA 还能够对帧之间的整个场景进行抖动采样，以减少闪烁情形，闪烁情形在技术上又称作时间性锯齿。目前，TXAA 有两种模式：TXAA 2X 和TXAA 4X。TXAA 2X 可提供堪比8X MSAA 的视觉保真度，然而所需性能却与2X MSAA 相类似；TXAA 4X 的图像保真度胜过8XMSAA，所需性能仅仅与4X MSAA 相当。
+
+------
+
+***Sampling Patterns***
+
+Effective sampling patterns are a key element in reducing aliasing。45度角，近水平和近垂直边缘的锯齿对人类的干扰最大
+
+- ==RGSS==，旋转栅格超级采样（Rotated Grid Super-Sampling，简称RGSS），是N-rooks的一种形式，如下所示，四个采样点都在不同的列和行上，相对常规的2*2采样，这样更加有利于捕捉近乎水平和垂直的边缘 
+
+  ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/13.PNG)
+
+==亚像素网格形式的采样模式具有一些缺点==，例如：对于像素级的微小物体，进行MSAA之类的采样，会产生严重的伪影，因为这种等级的采样频率根本无法完美Capture它们。一个解决方法是==stochastic sampling==：Having a less ordered sampling pattern can break up these patterns. 。随机化倾向于用噪声代替重复的混叠现象，而人类的视觉系统对这种现象是比较宽容的。总结起来就是：每个像素使用不同德抗锯齿算法，例如2X MSAA，TXAA，2X2 RGSS，Quincunx的随机选取使用。
+
+- ==Quincunx==（HRAA）：英伟达提出的一种实时，采样影响不只一个像素的抗锯齿思想。意思是5个物体的排列方式，其中4个在正方形角上，第五个在正方形中心。四个角的采样值被最对四个像素使用，至于权重，则是中心点为$\frac{1}{2}$，边缘采样点为$\frac{1}{8}$，平均下来，一个像素两次采样。
+
+  ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/14.PNG)
+
+  结合HRAA和RGSS，如下图：
+
+  <img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/15.PNG" style="zoom: 80%;" />
