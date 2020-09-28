@@ -18,7 +18,7 @@
 
 ​	==将3D场景参数化成一个矩阵==，其中一列代表这个物体出现与否。如果出现，则指定其几何属性（==其他元素指定其位置、方向、大小和几何属性==）。基于这种矩阵编码，引入稀疏密集生成网络（a sparse dense generative network）来生成三维场景。这种网络设计有效地解决了全连接网络中存在的过拟合问题，同时保持了网络的表达能力。
 
-<img src="C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\2.PNG" style="zoom:50%;" />
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\2.PNG)
 
 ​	为了进一步提高生成的3D生成器的质量，==我们通过结合两个损失项来训练网络==：第一个是标准的基于矩阵的VAE-GAN  loss（基于对象排列）；第二个损失项将生成的场景投影到一个图像域中，并使用具有卷积层的鉴别器来捕获相邻物体之间的几何关系（基于图像）。
 
@@ -72,33 +72,31 @@
 
 ​	==这种直观的3D场景编码的一个技术挑战是==，它不受M~k~列的排列的影响（同一类物体的顺序）。此外，每个物体的位置和方向依赖于每个场景的全局姿态。根据这个观察，我们在矩阵编码M上引入了两个算子。第一个==算子（operator）==将排列表k应用于每个类：(S独立地对每个类的对象应用排列)：个人感觉作用是给每个类的物体加上有序性
 
-![](C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式1.PNG)
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式1.PNG)
 
 ​	第二个算子给予每个物体一定的平移和旋转。我们通过为每个场景i引入一个潜伏矩阵编码$\overline{M_i}$∈R(d+9)×no来==因子化（factor out）==对象的排列组合和每个输入场景的全局姿态，下面描述的反编码器和discriminator  loss将施加在$\overline{M_i}$上，我们通过最小化下面的损失项来执行Mi和$\overline{M_i}$的一致性。
 
-![](C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式2.PNG)
-
-
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式2.PNG)
 
 #### 3D Object Arrangement Module
 
 ​	作者网络的心脏是如下两个网络：
 
-![](C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式3.PNG)
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式3.PNG)
 
 ​	由于我们对3D场景的矩阵编码本质上是一种矢量化的表示(与基于图像的表示相反，行向量与列向量)，对于生成器（generator）网络和编码器（encode）网络，使用FC是很自然的。但是我们观察到，FC直连FC几乎不起作用，且容易对训练数据进行过拟合，从而导致生成的场景质量较差。如下图（FC，卷积层，SC，SC+Image-Based）
 
-![](C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\show1.PNG)
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\show1.PNG)
 
 此外，我们使用卷积层代替fc类型的层。但实验表明，这种方法不能学习成对的对象关系(参见上图第二列）。为了解决这个过拟合的问题，==使用稀疏连接的层==。每一层的每个节点连接到上一层的h个节点，在作者的实现中，设置h = 4，并将连接随机化，即每个节点独立连接上一层的一个节点，其连接概率为h/L，其中L为上一层节点的数量。如下图（编码器Net），网络在稀疏连接的层和完全连接的层之间交错。仍然保留一些完全连接的层，以使网络具有足够的表达能力来进行网络拟合。
 
-![](C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\network1.PNG)
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\network1.PNG)
 
 ​	为什么使用稀疏层作为Decode Net，有两个原因：第一：3D场景中的模式通常涉及到小组对象，例如椅子和桌子，或者床头柜和床，因此期望对象类之间的稀疏关系；第二，避免过拟合。
 
 遵循深度卷积生成对抗网络(DCGAN) ，作者将Decode循环的架构设置为与Encode循环的架构相反。使用VAE-GAN对编码器和解码器网络进行训练：
 
-![](C:\Users\ZoroD\Desktop\IQ--master\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式4.PNG)
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式4.PNG)
 
 the latent distribution p是标准正态分布， and the discriminator Dϕ 和编码器网络有着相同的结构。
 
@@ -108,5 +106,36 @@ the latent distribution p是标准正态分布， and the discriminator Dϕ 和�
 
 ​	正如在概述中所讨论的，我们介绍了基于图像的鉴别器，以更好地捕捉基于几何细节的物体的局部排列，例如在生成的场景中桌椅之间的空间关系和床头柜与床之间的空间关系。如之前图第三列所示，在==没有此模块的情况下，场景生成器出现了各种本地兼容性问题(例如，对象相互交叉）。==
 
-​	鉴于CNN能够很好的捕捉邻近物体之间的局部交互模式，我们俯视场景来进行场景降维，然后在其上使用==CNN（卷积神经网络）==，
+​	鉴于CNN能够很好的捕捉邻近物体之间的局部交互模式，我们俯视场景来进行场景降维，然后在其上使用==CNN（卷积神经网络）==（这里使用的是ResNet-18 ）。$D_{\phi_I}$作为图像表示的鉴别器，$\phi_I$代表了网络参数。We then use the following discriminator loss for learning the object arrangement generator：
 
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式5.PNG)
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式6.PNG)
+
+r = 128, and details of the projection operator are described in detail below。我们根据投影到顶视图中的无符号距离的总和定义了一个模糊（fuzzy）的投影operator（上图类似P的符号）。此外，对于每个物体o，让$E_o(M)$作为该物体在平面内占据的点的集合。
+
+![](C:\Users\Cooler\Desktop\unknow1.PNG)
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\公式7-2.PNG)
+
+其中，c~o~是一个与物体关联的常量，这里，仅仅使用物体分类的编号，
+
+
+
+#### Joint Scene Alignment
+
+​	作为预处理步骤，我们通过为每个场景分配一个刚性变换和一组排列来对齐所有输入训练场景，我们首先执行成对匹配，然后将这些成对匹配聚合为所有场景的一致全局对齐。这种两步方法的常见特征是，第二步可以有效地删除第一步产生的嘈杂的成对匹配，导致高质量的对齐。在我们的例子中，同时优化场景中的每个物体是棘手的（庞大的数据量），We therefore propose to align the input scenes in a sequential manner by first optimizing rotations, then translations, and finally permutations
+
+==Pairwise matching==：
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\unknow2.PNG)
+
+==Consistent scene alignment.==
+
+解决第一步产生的对齐噪声问题。
+
+
+
+#### Network Training
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\论文阅读\智能场景生成\DeepGenerativeModelingforSceneSynthesisviHybridRepresentations.assets\all-2.PNG)
