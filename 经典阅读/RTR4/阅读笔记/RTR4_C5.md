@@ -127,7 +127,7 @@ $$
 
 ## 4. Aliasing and Antialiasing
 
-首先介绍的是 Sampling and Filtering Theory，主要是对采样、重建、滤波（filtering）的介绍。
+首先介绍的是 Sampling and Filtering Theory，主要是对==采样、重建、滤波（filtering）==的介绍。
 
 ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/6.PNG)
 
@@ -140,6 +140,8 @@ $$
 > It is possible to compute the frequency of the texture samples compared to the sampling rate of the pixel. If this frequency is lower than the Nyquist limit, then no special action is needed to properly sample the texture. If the frequency is too high, then a variety of algorithms are used  to band-limit the texture 
 
 ------
+
+
 
 *Reconstruction*
 
@@ -158,6 +160,8 @@ $$
 为什么这个公式是理想的low-pass滤波器呢？采样过程为图像引入了高频部分，而sinc会去除那些频率高于采样频率1/2的部分，具体详见135页。但是其无限的影响区域以及其它问题，导致这个滤波器实际场景用的比较少。目前使用最广泛的几个filter都是对sinc的近似，但是会对他们影响的像素数量进行限制，例如：Gaussian filters
 
 ------
+
+
 
 *Resampling*
 
@@ -197,6 +201,8 @@ $$
 
 ------
 
+
+
 ***Sampling Patterns***
 
 Effective sampling patterns are a key element in reducing aliasing。45度角，近水平和近垂直边缘的锯齿对人类的干扰最大
@@ -211,6 +217,35 @@ Effective sampling patterns are a key element in reducing aliasing。45度角，
 
   ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/14.PNG)
 
-  结合HRAA和RGSS，如下图：
+  ==FILPQUAD==：结合HRAA和RGSS，如下图。而且，也可以用在TXAA上，而且发现FLIPQUAD模式是多种测试中最好的。
 
   <img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/15.PNG" style="zoom: 80%;" />
+
+------
+
+
+
+*Morphological* Methods
+
+锯齿多产生于几何、硬阴影、亮光等边界处。2009年，Reshetov提出了一种以此为根据的新算法——MLAA（morphological antialiasing ）。Rsa的研究目标在于找到MS方法的替代品，着重寻找和重建边缘。==MLAA==：“Morphological means  relating to structure or shape.” ，这个技术作为==后处理==（正常渲染，然后对此结果进行处理）来进行。大概流程如下：找到似乎是边界的地方（对周围的像素进行分析，给出边界的可能性，下图中），然后处理他（根据覆盖值处理颜色，下图右）
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\16.PNG)
+
+近几年，利用深度、法线等额外的Buffer，发展了很多抗锯齿技术：SRAA（subpixel reconstruction antialiasing ，仅对几何边界进行抗锯齿），GBAA（geometry buffer antialiasing ），DEAA（distance-to-edge antialiasing ）
+
+- ==DLAA==（directionally localized antialiasing ）：基于这样的观察：接近垂直的边缘应该在水平方向上模糊，同样接近水平方向上模糊
+
+  应该在垂直方向上模糊。
+
+Iourcha提出根据MSAA的采样结果来寻找边界，以此得到更好的结果。例如，一种每个像素采样四次的技术只能为一个对象的边缘提供五个层次的混合。估计边缘位置可以有更多的位置，从而提供更好的结果。这些方法统称为 image-based 算法。
+
+==基于图像的算法面对几个挑战==：首先，颜色差异太小会导致边界识别失败；多个物体覆盖的像素进行插值是困难的；颜色剧烈变化的地方也可能导致寻边失败；文本应用会导致质量下降；物体的变角会变得圆润。单个像素的变化会导致边缘重建的方式发生较大的变化，从而在帧与帧之间产生明显的伪影。改善这一问题的一种方法是使用MSAA覆盖掩模来改进边缘确定
+
+其中，最流行的两种算法是：==FXAA（fast approximate antialiasing ）和SMAA（subpixel morphological antialiasing ）==，流行的部分原因其高度的可移植性。这两个算法都使用 color-only input，SMAA还有着acess（控制）MSAA采样的优点。自然，也能结合到TXAA中。
+
+
+
+##  5.Transparency, Alpha, andCompositing
+
+从算法的角度去看允许光通过自身的半透明物体，可以分为两种效果：Light-based ，使光衰减或转向（diverted），造成场景的其它物体被lit而渲染不一样的物体；View-based，指那些半透明物体自身被渲染的。本节主要简单介绍
+
