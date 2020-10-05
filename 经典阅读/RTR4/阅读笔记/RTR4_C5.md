@@ -2,6 +2,8 @@
 
 本章将讨论那些适用于真实感渲染（photo realistic）和程序化渲染（stylized，非真实渲染？）的着色器Shading的方方面面。
 
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\23.png)
+
 ## 1. Shading Models
 
 主要介绍模型着色的基础，其中举了个例子——游戏Fire Watch的渲染风格（a illustrative art style）,如下图
@@ -127,7 +129,7 @@ $$
 
 ## 4. Aliasing and Antialiasing
 
-首先介绍的是 Sampling and Filtering Theory，主要是对采样、重建、滤波（filtering）的介绍。
+首先介绍的是 Sampling and Filtering Theory，主要是对==采样、重建、滤波（filtering）==的介绍。
 
 ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/6.PNG)
 
@@ -140,6 +142,8 @@ $$
 > It is possible to compute the frequency of the texture samples compared to the sampling rate of the pixel. If this frequency is lower than the Nyquist limit, then no special action is needed to properly sample the texture. If the frequency is too high, then a variety of algorithms are used  to band-limit the texture 
 
 ------
+
+
 
 *Reconstruction*
 
@@ -158,6 +162,8 @@ $$
 为什么这个公式是理想的low-pass滤波器呢？采样过程为图像引入了高频部分，而sinc会去除那些频率高于采样频率1/2的部分，具体详见135页。但是其无限的影响区域以及其它问题，导致这个滤波器实际场景用的比较少。目前使用最广泛的几个filter都是对sinc的近似，但是会对他们影响的像素数量进行限制，例如：Gaussian filters
 
 ------
+
+
 
 *Resampling*
 
@@ -197,6 +203,8 @@ $$
 
 ------
 
+
+
 ***Sampling Patterns***
 
 Effective sampling patterns are a key element in reducing aliasing。45度角，近水平和近垂直边缘的锯齿对人类的干扰最大
@@ -211,6 +219,149 @@ Effective sampling patterns are a key element in reducing aliasing。45度角，
 
   ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/14.PNG)
 
-  结合HRAA和RGSS，如下图：
+  ==FILPQUAD==：结合HRAA和RGSS，如下图。而且，也可以用在TXAA上，而且发现FLIPQUAD模式是多种测试中最好的。
 
   <img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/15.PNG" style="zoom: 80%;" />
+
+------
+
+
+
+*Morphological* Methods
+
+锯齿多产生于几何、硬阴影、亮光等边界处。2009年，Reshetov提出了一种以此为根据的新算法——MLAA（morphological antialiasing ）。Rsa的研究目标在于找到MS方法的替代品，着重寻找和重建边缘。==MLAA==：“Morphological means  relating to structure or shape.” ，这个技术作为==后处理==（正常渲染，然后对此结果进行处理）来进行。大概流程如下：找到似乎是边界的地方（对周围的像素进行分析，给出边界的可能性，下图中），然后处理他（根据覆盖值处理颜色，下图右）
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\16.PNG)
+
+近几年，利用深度、法线等额外的Buffer，发展了很多抗锯齿技术：SRAA（subpixel reconstruction antialiasing ，仅对几何边界进行抗锯齿），GBAA（geometry buffer antialiasing ），DEAA（distance-to-edge antialiasing ）
+
+- ==DLAA==（directionally localized antialiasing ）：基于这样的观察：接近垂直的边缘应该在水平方向上模糊，同样接近水平方向上模糊
+
+  应该在垂直方向上模糊。
+
+Iourcha提出根据MSAA的采样结果来寻找边界，以此得到更好的结果。例如，一种每个像素采样四次的技术只能为一个对象的边缘提供五个层次的混合。估计边缘位置可以有更多的位置，从而提供更好的结果。这些方法统称为 image-based 算法。
+
+==基于图像的算法面对几个挑战==：首先，颜色差异太小会导致边界识别失败；多个物体覆盖的像素进行插值是困难的；颜色剧烈变化的地方也可能导致寻边失败；文本应用会导致质量下降；物体的变角会变得圆润。单个像素的变化会导致边缘重建的方式发生较大的变化，从而在帧与帧之间产生明显的伪影。改善这一问题的一种方法是使用MSAA覆盖掩模来改进边缘确定
+
+其中，最流行的两种算法是：==FXAA（fast approximate antialiasing ）和SMAA（subpixel morphological antialiasing ）==，流行的部分原因其高度的可移植性。这两个算法都使用 color-only input，SMAA还有着acess（控制）MSAA采样的优点。自然，也能结合到TXAA中。
+
+
+
+##  5.Transparency, Alpha, andCompositing
+
+从算法的角度去看允许光通过自身的半透明物体，可以分为两种效果：Light-based ，使光衰减或转向（diverted），造成场景的其它物体被lit而渲染不一样的物体；View-based，指那些半透明物体自身被渲染的。本节主要简单介绍View-Based
+
+一个产生透明错觉的方法是==screen-door transparency==，The idea is to render the transparent triangle with a pixel-aligned checkerboard fill pattern.  也就是说，三角形的每一个其他像素都被渲染，从而使后面的对象部分可见。通常，屏幕上的像素非常接近，以至于棋盘图案本身是不可见的。*：*这种方法的主要缺点是，通常只能在屏幕的一个区域上渲染一个透明对象。
+
+大多数透明算法混合透明对象的颜色和它背后的对象的颜色。Alpha是一个值，用于描述给定像素的物体碎片的不透明度和覆盖度。
+
+
+
+###  5.1 Blending Order
+
+被对象覆盖的每个像素都会从pixel shader得到一个RGBA结果。通常使用==over==操作将这个片段的值与原始像素颜色混合，如下所示：
+$$
+c_o=\alpha c_s+(1-\alpha_s)c_d\quad[over \quad operator]
+$$
+在模拟其他透明效果时，over操作不太令人信服，最明显的是通过彩色玻璃或塑料观察。例如，正常世界中，通过红色透明物体观看蓝色物体，蓝色物体应该呈现黑色（几乎没有光会通过红色物体，特别是足够的蓝光），但over操作则是红蓝的部分相加。
+
+另一个使用的操作是添加混合（==additive blending== ），即简单地将像素值相加:
+$$
+c_o=\alpha_s c_s+c_d
+$$
+==这种混合模式可以很好地用于发光效果==，如闪电或火花，它们不会使后面的像素衰减，而只是使它们变亮。然而， this mode does not look correct for transparency，因为不透明表面没有被过滤。
+
+为了正确地渲染透明对象，我们需要在不透明对象之后绘制它们。而在绘制半透明物体时，也要按照从远到近的顺序，否则视觉上会不正确。一个简单的方法是根据它们到视点的距离进行排序。Objects that interpenetrate are impossible to resolve on a per-mesh basis for all view angles，short of breaking each mesh into separate pieces.  尽管如此，由于它的简单性和速度，以及不需要额外的内存或特殊的GPU的支持，仍是常用的。
+
+==其他技术也可以帮助改善外观，比如每一个透明网格绘制两次==，先渲染背面，然后渲染正面。The over equation can also be modified so that blending front to back gives thesame result. This blending mode is called the ==under operator==  ：
+$$
+\begin{align}
+c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
+a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
+\end{align}
+$$
+注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\17.PNG)
+
+
+
+### 5.2 Order-Independent Transparency
+
+under操作的另一个用途是==Order-Independent Transparency（OIT），known as depth peeling==  。这意味着程序不用多物体进行排序，背后的思想是使用两个Z-Buffers和multiple passes  。首先，正常渲染一次，所有物体的深度值被填入了Z-Buffer，然后第二次Render，所有透明物体被渲染，然后比较透明物体的深度和第一次的Z-buffer的深度，如果一致，说明这个透明物体离屏幕最近，然后将它的RGBA填入一个单独的Color_Buffer。（具体见书，我的理解是重复这个过程，可以依次知道第二近，第三近、、的透明物体，每次进行under计算）
+
+depth peeling的一个问题是知道有多少pass才足以捕获所有的透明层。一个硬件解决方案是提供一个像素绘制计数器，它记录了像素在渲染期间被写的次数。Under操作的一个优点是：离人眼最近的透明物体，最早被渲染。另外一个问题是它的运行速度相对比较慢，因为每个layer peeled都需要一个Render Pass。文中接着给出了一些优化方案。
+
+==A-Buffer 和 inked lists of fragments on the GPU==  ，详见书P155
+
+GPU通常有预先分配的内存资源，比如缓冲区和数组，链表方法也不例外。用户需要决定多少内存资源是足够的，由此提出了一个解决方案——==multi-layer alpha blending==  ，使用了GPU的像素同步（pixel synchronization ）的特点。这种功能提供了可编程的混合，开销比原子操作（atomics ）少。
+
+==Weighted sum  and  weighted average  transparency techniques==  are order-independent, are single-pass，and run on almost every GPU  。（问题：不考虑物体的顺序）虽然几乎不透明的物体给出的结果很差，但这类算法对于可视化很有用，对于高度透明的表面和粒子也很有效。In weighted sum transparency the formula is  ：
+$$
+c_o=\sum_{i=1}^n{\alpha_ic_i}+c_d(1-\sum_{i=1}^n\alpha_i)
+$$
+这个公式的问题很明显：两个SUM都可能超过合理范围。因此权重平均（average）的方法更加适用：（但这个公式依然没有考虑物体的顺序）
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\18.PNG)
+
+==colored transmission== ：在本节中讨论的所有透明算法都是混合不同的颜色而不是过滤，是模仿像素覆盖。为了提供一个颜色滤镜效果，不透明的场景被像素着色器读取，每个透明表面将它在这个场景中覆盖的像素乘以它的颜色，将结果保存到第三个缓冲区。这个方法的有效性来源于其顺序无关性。
+
+综上，对于渲染透明对象没有完美的解决方案。推荐阅读：Wyman[^1]，Maule[^2]
+
+
+
+###  5.3 Premultiplied Alphas and Compositing
+
+over操作也用于混合照片或物体的合成渲染。这个过程叫做合成。在这种情况下，每个像素的alpha值与对象的RGB颜色值一起存储。由alpha通道形成的图像有时称为==matte（哑光）==。它显示了物体的轮廓。这个RGB$\alpha$图像可以用来混合其他元素或背景（other such elements or against a background  ）
+
+使用synthetic RGBa数据的一种方法是使用==预乘的阿尔法（premultiplied alphas or associated alphas）==。也就是说，在使用之前，RGB值乘以alpha值。这使得合成over方程更有效:
+$$
+c_o=c_s^/+(1-\alpha_s)c_d
+$$
+感觉这节主要是讨论图片的颜色和透明度值的关系，关联的alpha会改变物体的原始颜色，而无关联的则不会（这个也最常见，png格式的图片就是这个无关联的存储方式）
+
+科普：与alpha通道相关的一个概念是==chroma-keying==。这是一个来自视频制作的术语，演员在绿色或蓝色屏幕上拍摄，并与背景混合。在电影行业中，这个过程被称为绿屏或蓝屏。这里的意思是，一个特定的色调或精确的值被指定为透明；只要检测到它，就会显示背景。这允许图像被给予一个轮廓形状，只使用RGB颜色;不需要存储alpha。这个方案的一个缺点是对象在任何像素上都是完全不透明或透明的，也就是说，alpha实际上只有1.0或0.0。
+
+
+
+## 6. Display Encoding
+
+大部分时候，我们的操作都是线性的，但有时候也需要非线性操作，比如说常见的==伽马校正（gamma correction）==——对于shader最后的颜色输出进行1/2.2的次方操作，而对输入的纹理或色彩进行2.2的次方操作。
+
+一切起源于CRT（cathode-ray tube 、阴极射线管），这些器件在输入电压和显示光亮度之间呈现出幂律关系。==这个幂函数几乎与人类视觉亮度敏感度的倒数相匹配==。
+
+显示器传递函数（display transfer function ）描述了显示器缓冲器中的数字值与显示器发出的辐射强度之间的关系。因此，它也被称为==电光传递函数(EOTF)==。显示传递功能是硬件的一部分，计算机、电视和电影有不同的标准。还有一个标准的传输函数用于处理的另一端，图像和视频捕获设备，称为==光电传输函数(OETF)==
+
+当**编码（encode）**线性颜色值时，我们的目标是抵消显示传递函数的影响，这样无论我们计算的值是什么，都会发射出相应的辐射强度。例如，如果我们的计算值加倍，我们希望输出亮度加倍。为了保持这种联系，我们应用显示传递函数的逆函数来抵消它的非线性效应。这种使显示器的响应曲线无效的过程也称为伽马校正。当**解码（decode）**纹理值时，我们需要应用显示传递函数来生成一个用于着色的线性值。
+
+标准的显示传递函数定义在sRGB颜色空间内。当从纹理中读或写color Buffer时，大多数控制GPU的API会自动进行适配sRGB的过程。
+
+> ==个人理解==：首先对于各大相机厂商（索尼、三星等），它们为了解决CRT的问题，所以在处理拍摄的图像时，使用了光电处理方程（1/2.2次幂），进入了sRGB空间（即标准RGB颜色空间），这样的话就可以直接在CRT上呈现正确的图像（否则会偏暗）。在编程中，GPU自带的tex采样函数会自动进行解码处理，将sRGB重新转换到线性空间，所以这点在实际编程中是隐藏的，我们不用管，但在最终颜色计算完成后，我们需要重新编码：从流程角度，一个正常的图片（sRGB空间下）本来好好的，你却要解码，那么后面肯定要收尾，再次编码；从数值角度，0.5的最终颜色值，不经过伽马校正，输出近似0.25，而$((0.5)^{1/2.2})^2.2=0.5$。
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\19.PNG)
+
+为了将线性值转换为sRGB非线性编码值，我们应用sRGB显示传递函数的逆：
+
+![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\20.PNG)
+
+考虑到偏移量和比例，这个函数近似于一个更简单的公式：
+$$
+y=f^{-1}_{display}(x)=x^{1/\gamma},with \quad \gamma=2,2
+$$
+下图是没有应用伽马校正的一个明显例子：
+
+<img src="C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\21.PNG" style="zoom:75%;" />
+
+
+
+此外，==忽略伽马校正也会影响抗锯齿的效果==。对线性值进行反走样，将编码函数应用于所有结果值。否则，像素所代表的亮度将会太暗，导致如图右侧所示的可见的边缘变形。这种错误被称为绳索（roping），因为它的边缘看起来有点像一根扭曲的绳子
+
+<img src="C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\22.PNG" style="zoom:75%;" />
+
+
+
+##  引用
+
+[^1]:Wyman, Chris, “Exploring and Expanding the Continuum of OIT Algorithms,” in Proceedings of High-Performance Graphics, Eurographics Association, pp. 1–11, June 2016. Cited on p. 156, 159, 165  
+[^2]:Maule, Marilena, Jo˜ao L. D. Comba, Rafael Torchelsen, and Rui Bastos, “A Survey of RasterBased Transparency Techniques,” Computer and Graphics, vol. 35, no. 6, pp. 1023–1034,2011. Cited on p. 159
+
