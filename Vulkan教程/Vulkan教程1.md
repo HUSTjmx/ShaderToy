@@ -1355,3 +1355,458 @@ for (auto imageView : swapChainImageViews) {
 
 #### 3.1 Shader modules
 
+与早期的api不同，Vulkan中的着色器代码必须以字节码格式指定，而不是像GLSL和HLSL这样可读的语法。这种==字节码格式称为==` [SPIR-V](https://www.khronos.org/spir)`，被设计用于Vulkan和OpenCL（都是Khronos api）。它是一种可用于编写图形和计算着色器的格式，但我们将在本教程中关注在Vulkan的图形管道中使用的着色器。
+
+但是，这并不意味着我们需要手工编写这个字节码。Khronos已经发布了他们自己的独立于供应商的编译器，==可以将GLSL编译为spirv==。还可以将这个编译器作为一个库包含进来，以便在运行时生成spirv，但在本教程中我们不会这样做。尽管我们可以通过`glslangValidator`直接使用这个编译器。我们将使用==glslc.exe==代替。glslc的优点是它使用了与众所周知的编译器(如GCC和Clang)相同的参数格式，并包含了一些额外的功能(如include)。它们都已经包含在Vulkan SDK中，所以你不需要额外下载任何东西。
+
+##### Vertex shader
+
+顶点着色器会处理每一个输入的顶点，把它的属性，如世界位置、颜色、法线和纹理坐标作为输入。输出是裁剪空间下的坐标，以及需要传递给片段着色器的属性，如颜色和纹理坐标。然后，这些值将在光栅化阶段进行插值，产生平滑的渐变。
+
+剪辑坐标是来自顶点着色器的一个四维向量，它随后通过将整个向量除以它的最后一个组件转化为一个标准化的设备坐标。这些规范化的设备坐标是齐次坐标，它将framebuffer映射到一个[- 1,1]by[- 1,1]的坐标系统，如下所示：
+
+<img src="C:\Users\Cooler\Desktop\JMX\ShaderToy\Vulkan教程\Vulkan教程1.assets\image-20201006094651564.png" alt="image-20201006094651564" style="zoom:80%;" />
+
+如果以前使用过OpenGL，那么会注意到Y坐标的符号现在翻转了。Z坐标现在使用与在Direct3D中相同的范围，从0到1。通常这些坐标会存储在一个顶点缓冲区中，但是在Vulkan中创建一个顶点缓冲区并填充数据并不是件容易的事。因此，我决定在我们满意地看到一个三角形在屏幕上弹出后再开始。同时，我们将做一些不太正统的事情:将坐标直接包含在顶点着色器中。代码如下所示
+
+```c
+#version 450
+
+vec2 positions[3] = vec2[](
+    vec2(0.0, -0.5),
+    vec2(0.5, 0.5),
+    vec2(-0.5, 0.5)
+);
+
+void main() {
+    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+}
+```
+
+
+
+##### Fragment shader
+
+```c
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) out vec4 outColor;
+
+void main() {
+    outColor = vec4(1.0, 0.0, 0.0, 1.0);
+}
+```
+
+与顶点着色器中的gl位置不同，它没有内置变量来为当前片段输出颜色。==您必须为每个framebuffer指定自己的输出变量==，其中layout(location = 0)修饰符指定framebuffer的索引。红色被写入这个outColor变量，该变量链接到索引0处的第一个(也是唯一的)framebuffer。
+
+
+
+##### Compiling the shaders
+
+在项目的根目录中创建一个名为shaders的目录，并将顶点着色器存储在名为shader.vert的文件中；片元着色器存储在在一个名为shader.frag的文件中。GLSL着色器没有正式的扩展，但是这两个通常用来区分它们。
+
+创建一个包含以下内容的compile.bat文件，将glslc.exe的路径替换为安装Vulkan SDK的路径。双击该文件以运行它。
+
+```
+C:/VulkanSDK/x.x.x.x/Bin32/glslc.exe shader.vert -o vert.spv
+C:/VulkanSDK/x.x.x.x/Bin32/glslc.exe shader.frag -o frag.spv
+pause
+```
+
+
+
+##### Loading a shader
+
+现在我们有了一种生成`SPIR-V`的方法，是时候将它们加载到我们的程序中，以便在某个时候将它们插入到图形管道中。我们将首先编写一个简单的helper函数来从文件加载二进制数据。
+
+```c
+#include <fstream>
+
+...
+
+static std::vector<char> readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+}
+```
+
+`readFile`函数将从指定的文件中读取所有字节，并以`std::vector`管理的字节数组返回它们。我们首先用两个标志打开文件：
+
+- `ate`：在文件末尾开始读取
+- `binary`：以二进制格式读取文件
+
+在文件末尾开始读取的好处是，我们可以使用读取位置来确定文件的大小并分配一个缓冲区：
+
+```c
+size_t fileSize = (size_t) file.tellg();
+std::vector<char> buffer(fileSize);
+```
+
+在此之后，我们可以回文件的开头，并一次性读取所有字节：
+
+```c
+file.seekg(0);
+file.read(buffer.data(), fileSize);
+file.close();
+return buffer;
+```
+
+现在我们将在`createGraphicsPipeline`调用这个函数来加载两个着色器的字节码：
+
+```c
+void createGraphicsPipeline() {
+    auto vertShaderCode = readFile("shaders/vert.spv");
+    auto fragShaderCode = readFile("shaders/frag.spv");
+}
+```
+
+
+
+##### Creating shader modules
+
+在将代码传递给管道之前，必须将其封装在VkShaderModule对象中。让我们创建一个助手函数`createShaderModule`来完成这个任务。
+
+```c
+VkShaderModule createShaderModule(const std::vector<char>& code) {
+
+}
+```
+
+该函数将接受一个带有字节码的缓冲区作为参数，并从中创建一个VkShaderModule。创建一个着色器模块很简单，我们只需要指定一个指针到缓冲区的字节码和它的长度。该信息在`VkShaderModuleCreateInfo`结构中指定。一个问题是字节码的大小是用字节指定的，但是字节码指针是uint32_t指针，而不是char指针。因此，我们将需要对指针进行强制转换，如下所示。在执行这样的强制转换时，还需要确保数据满足uint32_t的对齐要求。幸运的是，数据存储在一个std::vector中，其中默认分配器已经确保数据满足最坏情况的对齐要求。
+
+```c
+VkShaderModuleCreateInfo createInfo{};
+createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+createInfo.codeSize = code.size();
+createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+```
+
+然后可以通过调用`vkCreateShaderModule`来创建`VkShaderModule`：
+
+```
+VkShaderModule shaderModule;
+if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create shader module!");
+}
+```
+
+`SPIR-V `的编译和连接要由GPU执行，直到图形管道被创建后才会发生。这意味着我==们可以在管道创建完成后再次销毁着色器模块==，这就是为什么我们将它们作为createGraphicsPipeline函数中的局部变量而不是类成员。然后，通过向vkDestroyShaderModule添加两个调用，在函数的末尾进行清理。本章中所有剩余的代码都将插入到这些行之前。
+
+```c
+vkDestroyShaderModule(device, fragShaderModule, nullptr);
+vkDestroyShaderModule(device, vertShaderModule, nullptr);
+```
+
+
+
+##### Shader stage creation
+
+为了实际使用着色器，我们需要通过`VkPipelineShaderStageCreateInfo`结构将它们分配到一个特定的管道阶段，作为实际管道创建过程的一部分。我们首先在`createGraphicsPipeline`函数中填写顶点着色器的结构：
+
+```c
+VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+```
+
+第一步，除了必须的sType成员，是==告诉Vulkan将在哪个管道阶段使用着色器==。前一章所述的每一个可编程阶段都有一个枚举值。
+
+```c
+vertShaderStageInfo.module = vertShaderModule;
+vertShaderStageInfo.pName = "main";
+```
+
+接下来的两个成员指定包含代码的着色器模块和==要调用的函数，称为入口点==。这意味着有可能将多个片段着色器组合成一个单一着色器模块，并使用不同的入口点来区分它们的行为。然而，在本例中，我们将坚持使用标准main。
+
+还有一个(可选的)成员`pSpecializationInfo`，我们在这里不使用它，但值得讨论。==它允许你为着色器常量指定值==。你可以使用一个单一的着色器模块，它的行为可以在管道创建时配置，通过指定在它使用的常量的不同值。这比在渲染时使用变量配置着色器更有效，因为编译器可以进行优化，比如消除依赖于这些值的if语句。如果你没有任何这样的常量,那么你可以设置nullptr的成员。
+
+类似上面配置Frag
+
+```c
+VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+fragShaderStageInfo.module = fragShaderModule;
+fragShaderStageInfo.pName = "main";
+```
+
+最后定义一个包含这两个结构体的数组，稍后我们将在实际的管道创建步骤中来引用它们。
+
+```c
+VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+```
+
+
+
+#### 3.2 Fixed Functions
+
+旧的图形API为图形管道的大多数阶段提供了默认状态。==在Vulkan中，你必须对所有事情都很明确，从视口大小到颜色混合功能==。在本章中，我们将填充所有结构来配置这些固定功能的操作。
+
+#####  Vertex input
+
+`VkPipelineVertexInputStateCreateInfo`结构描述了将被传递到顶点着色器的顶点数据的格式。它大致从两方面描述了这一点：
+
+- Binding：数据间距，以及数据的形式（顶点还是索引instance）
+- Attribute descriptions：传递给顶点着色器的属性的类型，Binding从哪个位置加载它们以及在哪个偏移位置加载它们
+
+因为我们在顶点着色器中直接对顶点数据进行了硬编码，所以我们将表示目前没有要加载的顶点数据。我们会在vertex buffer那一章回到它。将下面这个结构添加到createGraphicsPipeline函数中，就在shaderStages数组的后面。
+
+```c
+VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+vertexInputInfo.vertexBindingDescriptionCount = 0;
+vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
+vertexInputInfo.vertexAttributeDescriptionCount = 0;
+vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+```
+
+
+
+##### Input assembly
+
+`VkPipelineInputAssemblyStateCreateInfo`结构描述了两件事： what kind of geometry will be drawn from the vertices and if primitive restart should be enabled.。前者在`topology`成员中指定，可以具有如下值：
+
+- `VK_PRIMITIVE_TOPOLOGY_POINT_LIST`: points from vertices
+- `VK_PRIMITIVE_TOPOLOGY_LINE_LIST`: line from every 2 vertices without reuse（重用）
+- `VK_PRIMITIVE_TOPOLOGY_LINE_STRIP`: the end vertex of every line is used as start vertex for the next line
+- `VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST`: triangle from every 3 vertices without reuse（重用）
+- `VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP`: the second and third vertex of every triangle are used as first two vertices of the next triangle
+
+通常，顶点是从顶点缓冲区按索引顺序加载的，但使用元素缓冲区，您可以指定自己使用的索引。这允许您执行诸如重用顶点之类的优化。如果您将`primitiveRestartEnable`成员设置为VK TRUE，那么就可以使用==0xFFFF或0xFFFFFFFF==的特殊索引来分割`_STRIP` topology模式中的线和三角形。
+
+我们打算在整个教程中绘制三角形，所以我们将坚持以下数据的结构：
+
+```c
+VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+inputAssembly.primitiveRestartEnable = VK_FALSE;
+```
+
+
+
+##### Viewports and scissors
+
+==视窗主要描述与输出相关的framebuffer区域==。这几乎总是(0,0)到(宽度，高度)，在本教程中也将是这种情况。
+
+```c
+VkViewport viewport{};
+viewport.x = 0.0f;
+viewport.y = 0.0f;
+viewport.width = (float) swapChainExtent.width;
+viewport.height = (float) swapChainExtent.height;
+viewport.minDepth = 0.0f;
+viewport.maxDepth = 1.0f;
+```
+
+请记住，交换链及其图像的大小可能与窗口的宽度和高度不同。交换链映像稍后将用作framebuffer，因此我们应该坚持它们的大小。
+
+当视图定义从Image到framebuffer的转换时，`scissor rectangles`定义像素将实际存储在哪个区域，之外的像素在光栅化过程中会被丢弃。它的功能像一个过滤器，而不是一个转换。区别如下所示。请注意，左侧剪切矩形只是生成该图像的多种可能性之一，只要它大于视口即可。
+
+![image-20201006143411121](C:\Users\Cooler\Desktop\JMX\ShaderToy\Vulkan教程\Vulkan教程1.assets\image-20201006143411121.png)
+
+```c
+VkRect2D scissor{};
+scissor.offset = {0, 0};
+scissor.extent = swapChainExtent;
+```
+
+现在需要使用`VkPipelineViewportStateCreateInfo`结构体将`Viewport`和`scissor rectangles`组合成一个视口状态。可以在一些图形卡上使用多个，因此它的成员引用它们的数组。==使用多个需要启用GPU功能(见逻辑设备创建)==。
+
+```c
+VkPipelineViewportStateCreateInfo viewportState{};
+viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+viewportState.viewportCount = 1;
+viewportState.pViewports = &viewport;
+viewportState.scissorCount = 1;
+viewportState.pScissors = &scissor;
+```
+
+
+
+##### Rasterizer
+
+==光栅化从顶点着色器获得由顶点组成的几何图形，并将其转换为片段，由片段着色器着色==。它还可以执行==深度测试、面剔除和剪刀测试==，还可以配置为输出填充整个多边形或仅填充边缘的片段(线框渲染)。所有这些都是使用`VkPipelineRasterizationStateCreateInfo`结构配置的。
+
+```c
+VkPipelineRasterizationStateCreateInfo rasterizer{};
+rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+rasterizer.depthClampEnable = VK_FALSE;
+```
+
+如果`depthClampEnable`被置为 `VK_TRUE`，超出远、近裁剪平面的fragment会被约束到它们而不是丢弃，这在某些场合是有用的，比如`shadow map`，使用这个需要启动某个GPU Feature
+
+```c
+rasterizer.rasterizerDiscardEnable = VK_FALSE;
+```
+
+如果`rasterizerDiscardEnable`设置为VK_TRUE，那么几何体永远不会通过光栅化阶段。这基本上禁用了对framebuffer的任何输出
+
+```c
+rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+```
+
+`polygonMode`决定了==如何为几何体生成fragment（片元）==。有以下模式可供选择：
+
+- `VK_POLYGON_MODE_FILL`: fill the area of the polygon with fragments
+- `VK_POLYGON_MODE_LINE`: polygon edges are drawn as lines
+- `VK_POLYGON_MODE_POINT`: polygon vertices are drawn as points
+
+使用`Fill`之外的==其它模式都需要额外的GPU Feature==
+
+```c
+rasterizer.lineWidth = 1.0f;
+rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+```
+
+`cullMode`变量确定要使用的面剔除的类型。您可以禁用剔除，剔除正面，剔除背面，或两者兼用。`frontFace`变量指定被认为是正面的面(顺时针或逆时针)的顶点顺序。
+
+```c
+rasterizer.depthBiasEnable = VK_FALSE;
+rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+rasterizer.depthBiasClamp = 0.0f; // Optional
+rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+```
+
+光栅化器可以通过添加一个恒定值或基于片段的斜率对其进行偏置来改变深度值。这是有时用于阴影映射，但我们不会使用它。只需将depthBiasEnable设置为VK FALSE。
+
+
+
+##### Multisampling
+
+`VkPipelineMultisampleStateCreateInfo`结构体配置了多重采样，这是执行反锯齿的一种方法。它的工作是通过合并多个多边形的碎片着色结果，光栅化到相同的像素。这主要发生在边缘，这也是最明显的混叠现象发生的地方。因为如果只有一个多边形映射到一个像素，它不需要运行片段着色器多次，这比简单地渲染到一个更高分辨率然后缩小比例要便宜得多。启用它需要启用GPU功能。
+
+```c
+VkPipelineMultisampleStateCreateInfo multisampling{};
+multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+multisampling.sampleShadingEnable = VK_FALSE;
+multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+multisampling.minSampleShading = 1.0f; // Optional
+multisampling.pSampleMask = nullptr; // Optional
+multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+multisampling.alphaToOneEnable = VK_FALSE; // Optional
+```
+
+我们将在后面的章节中重新讨论多重采样，现在让我们将其禁用。
+
+
+
+##### Depth and stencil testing
+
+之后章节讨论
+
+
+
+##### Color blending
+
+在片元着色器返回一个颜色后，它需要与framebuffer中已经存在的颜色相结合。这种转换被称为颜色混合，有两种方法来做：
+
+- Mix the old and new value to produce a final color
+- Combine the old and new value using a bitwise operation
+
+有两种类型的结构来配置颜色混合。第一个结构体`VkPipelineColorBlendAttachmentState`包含每个附加的framebuffer的配置，第二个结构体`VkPipelineColorBlendStateCreateInfo`包含全局颜色混合设置。在我们的例子中，我们只有一个framebuffer
+
+```c
+VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+colorBlendAttachment.blendEnable = VK_FALSE;
+colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+```
+
+这个逐帧缓冲区结构允许您配置第一种颜色混合方式。==下面的伪代码可以很好地演示将要执行的操作==：
+
+```c
+if (blendEnable) {
+    finalColor.rgb = (srcColorBlendFactor * newColor.rgb) <colorBlendOp> (dstColorBlendFactor * oldColor.rgb);
+    finalColor.a = (srcAlphaBlendFactor * newColor.a) <alphaBlendOp> (dstAlphaBlendFactor * oldColor.a);
+} else {
+    finalColor = newColor;
+}
+
+finalColor = finalColor & colorWriteMask;
+```
+
+如果blendEnable被设置为VK FALSE，那么来自fragment着色器的新颜色是通过未修改的。否则，这两个混合操作将被执行来计算一个新的颜色。产生的颜色是和与colorWriteMask确定哪些通道实际上通过。使用颜色混合最常见的方法是实现alpha混合，我们想要基于不透明度将新颜色与旧颜色混合。最后的颜色应该计算如下：
+
+```c
+finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
+finalColor.a = newAlpha.a;
+```
+
+第二个结构引用所有framebuffer的结构数组，并允许您设置混合常量，在上述计算中用作混合因子。
+
+```c
+VkPipelineColorBlendStateCreateInfo colorBlending{};
+colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+colorBlending.logicOpEnable = VK_FALSE;
+colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
+colorBlending.attachmentCount = 1;
+colorBlending.pAttachments = &colorBlendAttachment;
+colorBlending.blendConstants[0] = 0.0f; // Optional
+colorBlending.blendConstants[1] = 0.0f; // Optional
+colorBlending.blendConstants[2] = 0.0f; // Optional
+colorBlending.blendConstants[3] = 0.0f; // Optional
+```
+
+
+
+##### Dynamic state
+
+实际上，我们在前面的struct中指定的有限数量的状态可以在不重新创建管道的情况下更改。例如视口的大小、线宽和混合常量。如果您想这样做，那么您必须像这样填充一个`VkPipelineDynamicStateCreateInfo`结构
+
+```c
+VkDynamicState dynamicStates[] = {
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_LINE_WIDTH
+};
+
+VkPipelineDynamicStateCreateInfo dynamicState{};
+dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+dynamicState.dynamicStateCount = 2;
+dynamicState.pDynamicStates = dynamicStates;
+```
+
+
+
+##### Pipeline layout
+
+你可以在着色器中使用统一的值，它是全局的，类似于动态状态变量，可以在绘图时改变，改变你的着色器的行为，而不必重新创建它们。它们通常被用来传递转换矩阵到顶点着色器，或者在片段着色器中创建纹理采样器。这些统一的值需要指定在创建管道的过程中通过创建一个`VkPipelineLayout`对象。即使我们在以后的章节中才会使用它们，我们仍然需要创建一个空的管道布局。
+
+```c
+VkPipelineLayout pipelineLayout;
+...
+VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+pipelineLayoutInfo.setLayoutCount = 0; // Optional
+pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create pipeline layout!");
+}
+```
+
+该结构还指定了push常量，这是另一种将动态值传递给着色器的方式，我们可能会在以后的章节中讲到。管道布局将在程序的整个生命周期中被引用，因此应该在最后销毁它
+
+```c
+void cleanup() {
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    ...
+}
+```
+
+
+
+####  3.3 Render passes
+
