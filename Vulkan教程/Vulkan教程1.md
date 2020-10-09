@@ -1325,7 +1325,7 @@ for (auto imageView : swapChainImageViews) {
     }
 ```
 
-一个图像视图就足以开始使用一个图像纹理,但还没完全准备好作为渲染目标。这需要另外一个间接步骤，即所谓的framebuffer。但首先我们必须设置图形管道。
+==一个图像视图就足以开始使用一个图像纹理，但作为渲染目标还没完全准备好。这需要另外一个间接步骤，即所谓的framebuffer。但首先我们必须设置图形管道。==
 
 
 
@@ -1513,7 +1513,7 @@ vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 ```
 
-第一步，除了必须的sType成员，是==告诉Vulkan将在哪个管道阶段使用着色器==。前一章所述的每一个可编程阶段都有一个枚举值。
+第一步，除了必须的sType成员，是==告诉Vulkan将在哪个管道阶段使用着色器==。
 
 ```c
 vertShaderStageInfo.module = vertShaderModule;
@@ -1603,7 +1603,7 @@ viewport.minDepth = 0.0f;
 viewport.maxDepth = 1.0f;
 ```
 
-请记住，交换链及其图像的大小可能与窗口的宽度和高度不同。交换链映像稍后将用作framebuffer，因此我们应该坚持它们的大小。
+请记住，交换链及其图像的大小可能与窗口的宽度和高度不同。交换链Image稍后将用作framebuffer，因此我们应该坚持它们的大小。
 
 当视图定义从Image到framebuffer的转换时，`scissor rectangles`定义像素将实际存储在哪个区域，之外的像素在光栅化过程中会被丢弃。它的功能像一个过滤器，而不是一个转换。区别如下所示。请注意，左侧剪切矩形只是生成该图像的多种可能性之一，只要它大于视口即可。
 
@@ -1810,3 +1810,299 @@ void cleanup() {
 
 ####  3.3 Render passes
 
+==在完成创建管道之前，我们需要告诉Vulkan在渲染时将使用的framebuffer附件==。我们需要指定将有多少个颜色和深度缓冲区，每个缓冲区要使用多少个样本，以及在整个渲染操作中如何处理它们的内容。所有这些信息都被封装在一个渲染传递对象中，我们将为其创建一个新的createRenderPass函数。在创建GraphicsPipeline之前，从initVulkan调用这个函数。
+
+##### Attachment description
+
+In our case we'll have just a single color buffer attachment represented by one of the images from the swap chain.
+
+```c
+void createRenderPass() {
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapChainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+}
+```
+
+color attachment的格式应该与交换链图像的格式一致，我们还没有做过多次采样，所以我们采样一次。
+
+```c
+colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+```
+
+loadOp和storeOp决定在Render前后如何处理附件中的数据。对于loadOp，我们有以下选择：
+
+- `VK_ATTACHMENT_LOAD_OP_LOAD`: 保留附件现有内容
+- `VK_ATTACHMENT_LOAD_OP_CLEAR`：在开始时将值清除为常量
+- `VK_ATTACHMENT_LOAD_OP_DONT_CARE`：现有内容未定义;我们不关心他们
+
+在本例中，我们将在绘制新帧之前使用clear操作将framebuffer清除为黑色。StoreOp只有两种选择：
+
+- `VK_ATTACHMENT_STORE_OP_STORE`：渲染的内容将存储在内存中，以后可以读取
+- `VK_ATTACHMENT_STORE_OP_DONT_CARE`: 在render操作之后，framebuffer的内容将未定义
+
+我们感兴趣的是在屏幕上看到呈现的三角形，所以我们在这里进行store操作。
+
+```c
+colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+```
+
+ `loadOp` and `storeOp` 针对的是颜色和深度缓冲，而 `stencilLoadOp` / `stencilStoreOp` 设置的是stencil，这里我们没有用到，所以都设置为不关心
+
+```c
+colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+```
+
+在Vulkan中，纹理和帧缓冲由具有特定像素格式的VkImage对象表示，但是内存中像素的布局可以根据您试图对图像进行的操作而改变。Some of the most common layouts are：
+
+- `VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL`: Images used as color attachment
+- `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`: 要在交换链中显示的映像
+- `VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL`：用作内存复制操作目标的映像
+
+我们将在纹理章节中更深入地讨论这个话题，但是==现在最重要的是要知道图像需要转换到特定的布局==，这适合于它们接下来将要涉及到的操作。
+
+initialLayout指定在渲染过程开始之前图像将具有哪种布局。finalLayout指定渲染结束时自动转换到的布局。对initialLayout使用 `VK_IMAGE_LAYOUT_UNDEFINED`意味着我们不关心图像之前的布局。这种特殊值的缺点是图像的内容不能保证被保留下来。我们希望图像在呈现后可以使用交换链来表示，所以后者我们赋值为`VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`
+
+
+
+##### Subpasses and attachment references
+
+==一个渲染通道可以由多个次通道组成==。subpass是subsequent rendering operations ，它依赖于之前传递的framebuffer的内容，例如一个接一个应用的后处理效果序列。如果您将这些渲染操作分组到一个渲染通道中，那么Vulkan就能够重新排序这些操作并节省内存带宽以获得更好的性能。然而，对于我们的第一个三角形，我们将坚持使用一个subpass。
+
+每个子传递引用一个或多个附件：
+
+```c
+VkAttachmentReference colorAttachmentRef{};
+colorAttachmentRef.attachment = 0;
+colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+```
+
+`attachment `参数通过==附件描述数组==中的索引指定要引用的附件。我们的数组由单个` VkAttachmentDescription`组成，因此它的索引为0。`layout`指定在使用此引用的子传递期间，我们希望附件具有哪种布局。当subpass启动时，Vulkan将自动将附件转换到此布局。我们打算使用附件作为颜色缓冲区，而`VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL`将给我们最好的性能
+
+使用`VkSubpassDescription`结构描述`subpass`
+
+```c
+VkSubpassDescription subpass{};
+subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+```
+
+Vulkan将来也可能支持计算子通道，所以我们必须明确这是一个图形子通道。接下来，我们指定对颜色附件的引用
+
+```c
+subpass.colorAttachmentCount = 1;
+subpass.pColorAttachments = &colorAttachmentRef;
+```
+
+这个数组中附件的索引是直接从片段着色器中引用的——(location=0)out vec4 outColor。以下其他类型的附件可以由子传递引用：
+
+- `pInputAttachments`: Attachments that are read from a shader
+- `pResolveAttachments`: Attachments used for multisampling color attachments
+- `pDepthStencilAttachment`: Attachment for depth and stencil data
+- `pPreserveAttachments`: Attachments that are not used by this subpass, but for which the data must be preserved（保留）
+
+
+
+##### Render pass
+
+现在已经描述了附件和引用它的基本子通道，我们可以创建渲染通道本身了。创建一个新的类成员变量来保存`VkRenderPass`对象
+
+```c
+VkRenderPass renderPass;
+```
+
+然后，可以通过使用子通道和附近数组填充`VkRenderPassCreateInfo`结构来创建render pass对象。`VkAttachmentReference`对象使用这个数组的索引引用附件
+
+```c
+VkRenderPassCreateInfo renderPassInfo{};
+renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+renderPassInfo.attachmentCount = 1;
+renderPassInfo.pAttachments = &colorAttachment;
+renderPassInfo.subpassCount = 1;
+renderPassInfo.pSubpasses = &subpass;
+
+if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create render pass!");
+}
+
+```
+
+![](Vulkan教程1.assets/未命名文件.png)
+
+销毁管道和Pass:
+
+```c
+void cleanup() {
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, renderPass, nullptr);
+    ...
+}
+```
+
+
+
+
+
+#### 3.4 Conclusion
+
+我们现在可以结合前面章节中的所有结构和对象来创建图形管道！下面是我们现在拥有的对象类型，作为一个快速回顾：
+
+- `Shader stages`：定义图形管道可编程阶段功能的着色器模块
+- `Fixed-function state`: 定义管道固定功能阶段的所有结构，如input assembly, rasterizer, viewport and color blending
+- `Pipeline layout`: the uniform and push values referenced by the shader that can be updated at draw time
+- `Render pass`: 管道阶段引用的附件及其用法
+
+==所有这些组合在一起完全定义了图形管道的功能==，因此我们现在可以开始在createGraphicsPipeline函数的末尾填充`VkGraphicsPipelineCreateInfo`结构。但要在调用vkDestroyShaderModule之前，因为这些在创建过程中仍然要使用。
+
+```c
+VkGraphicsPipelineCreateInfo pipelineInfo{};
+pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+pipelineInfo.stageCount = 2;
+pipelineInfo.pStages = shaderStages;
+```
+
+```c
+pipelineInfo.pVertexInputState = &vertexInputInfo;
+pipelineInfo.pInputAssemblyState = &inputAssembly;
+pipelineInfo.pViewportState = &viewportState;
+pipelineInfo.pRasterizationState = &rasterizer;
+pipelineInfo.pMultisampleState = &multisampling;
+pipelineInfo.pDepthStencilState = nullptr; // Optional
+pipelineInfo.pColorBlendState = &colorBlending;
+pipelineInfo.pDynamicState = nullptr; // Optional
+```
+
+然后我们引用了所有固定功能阶段的结构。
+
+```c
+pipelineInfo.layout = pipelineLayout;
+pipelineInfo.renderPass = renderPass;
+pipelineInfo.subpass = 0;
+```
+
+最后我们引用了管道将会使用的Render Pass和SubPass的索引。 It is also possible to use other render passes with this pipeline instead of this specific instance, but they have to be *compatible* with `renderPass`. The requirements for compatibility are described [here](https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#renderpass-compatibility), but we won't be using that feature in this tutorial.
+
+```c
+pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+pipelineInfo.basePipelineIndex = -1; // Optional
+```
+
+实际上还有两个参数:basePipelineHandle和basePipelineIndex。==Vulkan允许您通过从现有管道派生创建一个新的图形管道==。想法来自：当管道与现有管道有许多相同的功能时，设置管道的成本更低，并且在同一父管道之间切换也更快。您可以使用`basePipelineHandle`指定现有管道的句柄，也可以使用`basePipelineIndex`引用另一个将要由索引创建的管道。现在只有一个管道，所以我们只指定一个空句柄和一个无效的索引。只有在`VkGraphicsPipelineCreateInfo`的flags字段中也指定了`VK_PIPELINE_CREATE_DERIVATIVE_BIT`时，才使用这些值。
+
+```
+VkPipeline graphicsPipeline;
+...
+if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create graphics pipeline!");
+}
+```
+
+vkCreateGraphicsPipelines函数实际上比Vulkan中通常的对象创建函数具有更多的参数。它被设计成接受多个VkGraphicsPipelineCreateInfo对象，并在单个调用中创建多个VkPipeline对象。
+
+第二个参数，我们已经为其传递了VK_NULL_HANDLE参数，引用一个可选的VkPipelineCache对象。管道缓存可用于在多次调用vkCreateGraphicsPipelines的过程中==存储和重用与管道创建相关的数据==，如果缓存存储到文件中，甚至可以在程序执行过程中使用。这样就可以在以后的时间里大大加快管道创建的速度。我们将在管道缓存一章中讨论这个问题。
+
+图形管道对于所有常见的绘图操作都是必需的，所以也应该只在程序结束时销毁它
+
+```
+void cleanup() {
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    ...
+}
+```
+
+在接下来的几章中，我们将从交换链图像中设置实际的framebuffer，并准备绘图命令。
+
+
+
+### 4. Drawing
+
+#### 4.1 FrameBuffers
+
+在过去的几章中，我们已经讨论了很多关于framebuffer的内容，并且我们已经设置了渲染通道来期望一个与交换链图像相同格式的单一framebuffer，但是我们实际上还没有创建任何东西。
+
+在创建渲染通道时，指定的附件通过将它们封装到一个`VkFramebuffer`对象中进行绑定。一个framebuffer对象会引用所有代表附件的VkImageView对象。在我们的例子中，这将是只有一个：颜色附件。然而，==我们必须为附件使用的图像==取决于当我们检索一个图像进行展示时，交换链返回的图像。这意味着我们必须为交换链中的所有图像创建一个帧缓冲区，并在绘制时使用与检索到的图像相对应的图像。
+
+为此，创建另一个`std::vector`类成员来保存framebuffer
+
+```c
+std::vector<VkFramebuffer> swapChainFramebuffers;
+```
+
+我们将在一个新函数createFramebuffers中为这个数组创建对象，这个函数在创建图形管道之后调用
+
+```c
+void initVulkan() {
+    createInstance();
+    setupDebugMessenger();
+    createSurface();
+    pickPhysicalDevice();
+    createLogicalDevice();
+    createSwapChain();
+    createImageViews();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFramebuffers();
+}
+
+...
+
+void createFramebuffers() {
+
+}
+```
+
+首先调整容器的大小以容纳所有的framebuffer
+
+```c
+void createFramebuffers() {
+    swapChainFramebuffers.resize(swapChainImageViews.size());
+}
+```
+
+然后我们将遍历图像视图并从中创建framebuffer：
+
+```c
+for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+    VkImageView attachments[] = {
+        swapChainImageViews[i]
+    };
+
+    VkFramebufferCreateInfo framebufferInfo{};
+    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass = renderPass;
+    framebufferInfo.attachmentCount = 1;
+    framebufferInfo.pAttachments = attachments;
+    framebufferInfo.width = swapChainExtent.width;
+    framebufferInfo.height = swapChainExtent.height;
+    framebufferInfo.layers = 1;
+
+    if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create framebuffer!");
+    }
+}
+```
+
+可以看到，framebuffer的创建非常简单。我们首先需要指定renderPass需要与framebuffer兼容。只能将framebuffer与它兼容的呈现通道一起使用，这大致意味着它们使用相同数量和类型的附件。
+
+The `attachmentCount` and `pAttachments` parameters specify the [`VkImageView`](https://www.khronos.org/registry/vulkan/specs/1.0/man/html/VkImageView.html) objects that should be bound to the respective attachment descriptions in the render pass `pAttachment` array.
+
+宽度和高度参数是不言而喻的，层数指的是图像阵列的层数。我们的交换链图像是单幅图像，所以层数是1。我们应该在图像视图和它们所基于的渲染传递之前删除framebuffer。
+
+```c
+void cleanup() {
+    for (auto framebuffer : swapChainFramebuffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+
+    ...
+}
+```
+
+==我们拥有了渲染所需的所有对象。在下一章中，我们将编写第一个实际的绘图命令。==
+
+
+
+#### 4.2 Command buffers
