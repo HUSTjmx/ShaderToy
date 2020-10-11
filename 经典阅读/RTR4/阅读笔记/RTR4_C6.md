@@ -279,3 +279,209 @@ $$
 
 
 ## 3. Procedural Texturing
+
+旧时代，程序纹理大多应用于离线渲染，而图片纹理则是实时渲染，这是由于现代gpu中图像纹理硬件的极高效率，可以在一秒钟内执行数十亿次纹理访问。然而，GPU架构正在朝着更便宜的计算和(相对)更昂贵的内存访问的方向发展。这些趋势使得程序纹理在实时应用程序中得到了更多的应用。
+
+考虑到体积==Volume textures==的高存储成本，体积纹理是程序化纹理的一个特别有吸引力的应用。这种纹理可以通过各种技术来合成。
+
+==一个最常见的方法就是使用一个或者多个噪声函数来生成数值。==，例子：噪声函数通常以连续的2次方频率进行采样，称为倍频程`octaves`。每个倍频程都有一个权重，通常随着频率的增加而下降，这些加权样本的总和称为湍流函数`turbulence function`。
+
+![](RTR4_C6.assets/PlayM.gif)
+
+由于噪声函数的花费，三维数组中的格点经常被预先计算并用于插值。有各种方法使用颜色缓冲混合，来快速生成这些数组。具体这些可见书本P199第一段
+
+==cellular texture==  ：是程序纹理的另外一种方法。通过测量每个位置与散布在空间中的一组 "特征点 "之间的距离来形成。以各种方式映射所产生的最接近距离，例如改变颜色或阴影法线，创造出看起来像细胞、石板、蜥蜴皮和其他自然纹理的图案。（具体实现详见IQ大神博客阅读7）
+
+![](RTR4_C6.assets/Vor.PNG)
+
+==物理模拟==或其他一些互动过程：另一种类型的程序性纹理，如水波纹或蔓延的裂缝。在这种情况下，程序性纹理可以对动态条件产生有效的无限变化反应。
+
+当生成二维程序纹理时，参数化是更加困难。一个解决方法是在生成图片后，并将其直接应用到表面（完全禁止参数化），当然，在复杂表面进行是困难的，也是研究的热点。See Wei et al. [1861] for an overview of this field.  
+
+相对图片纹理，==程序纹理的抗锯齿==既是困难的，又是简单的。一方面，预计算方法，如MipMapping，是不可用的；另外一方面，程序纹理的设计者有关于图像内容的”inside information“，能够tailor it，来抗锯齿。例如：噪声相关的程序纹理，因为组成它的噪声的频率都是已知的，那些可能造成锯齿的频率可以舍弃，所以会导致相关计算花费更少
+
+
+
+## 4. Texture Animation  
+
+除了将视频文件用作纹理，还可以在帧与帧之间改变纹理坐标。而通过在纹理坐标上应用矩阵，可以得到更加惊奇的效果：==In addition to translation, this allows for linear transformations such as zoom, rotation, and shearing , image warping and morphing transforms ,and generalized projections==   
+
+使用`texture blending`技术，可以得到其它类型的动画效果。例如：by starting with a marble texture and fading in a flesh texture, one can make a statue come to life  。
+
+
+
+## 5. Material mapping
+
+==纹理的常见用法是对影响渲染方程的物质属性进行调整==，而物体的物质属性随着表面的不同而不同。一个最常见的属性是`surface color`，而其纹理通常被人称为`albedo color map`或者`diffuse color map`。当然，任何属性都能用一张纹理来修饰：直接替代、相乘、或者其它改变它的方法。
+
+![](RTR4_C6.assets/20.PNG)
+
+除了修改属性值外，纹理还可以用来==控制pixel shader自身==。例如：一块纹理上有着两种以上的不同表皮，需要采取不同的渲染方程，这个时候可以直接使用另一个纹理，来制定区域的种类。
+
+对于那些和最终结果呈线性关系的属性，例如：Surface Color，来说，标准的==抗锯齿方法==就能带来很好的效果，但是对于那些非线性关系，例如粗糙度纹理和法线纹理来说，需要更加小心。将渲染方程考虑进过滤技术会提示抗锯齿的质量（具体见Section 9.13）
+
+
+
+## 6. Alpha Mapping
+
+alpha值可以用于许多使用alpha混合或alpha测试的场景，比如有效地渲染树叶、爆炸和远处的物体等等。
+
+`decaling`：贴花是纹理相关的一个应用。通常情况下，`clamp corresponder function`与透明边框一起使用，以将贴花的单个副本（与重复的纹理）应用到表面。下图是应用贴花的一个例子：
+
+<img src="RTR4_C6.assets\image-20201011104651133.png" style="zoom:67%;" />
+
+另外一种应用是==making cutout==。假设你制作了一个灌木的贴花图像，并将其应用到场景中的一个矩形上。原理和贴花是一样的，但不是与底层表面平齐，灌木将绘制在任何几何图形的顶部。通过这种方式，使用一个单一的矩形，你可以渲染一个具有复杂轮廓的对象。但是，如果视点移动，则很明显会发现灌木的"真相"，一个解决方案是：复制这个矩形，并将复制体旋转90度，产生一个廉价的三维灌木`cross tree`。
+
+<img src="RTR4_C6.assets/image-20201011113052213.png" style="zoom:67%;" />
+
+但依然存在问题，当视点离开地面，从上空俯视灌木的时候，就会发现"真相"。为了解决这个问题，更多的`cutouts`用不同的方式添加进来——slices, branches, layers。Section 13.6.5 iscusses one approach for generating such models; 
+
+<img src="RTR4_C6.assets/image-20201011113554342.png" alt="image-20201011113554342" style="zoom:50%;" />
+
+结合alpha map和纹理动画可以产生令人信服的特效，如闪烁的火把、植物生长、爆炸和大气效果。
+
+对于使用Alpha Map的渲染对象，==我们有几个不同的选择==。`Alpha Blending`==透明度混合==允许使用部分透明度值，可以对边缘进行抗锯齿处理，也可以对部分透明的对象进行抗锯齿处理。但是，它要求必须先渲染不透明物体，而且透明物体的面片必须按照从前往后的顺序进行渲染。而就上面的`cross tree`来说，两个面片都有部分在对方的后面，这样根本不能排序，就算可以排序，也是代价不菲的（想想草地）。
+
+在渲染时，这个问题可以通过几种不同的方式加以改善。一种是使用==alpha测试==`alpha testing`:
+
+```c
+if(texture.a<alphaThreshold) discard;
+```
+
+这个二进制可见性测试允许三角形面片以任何顺序呈现，因为透明片段会被丢弃。我们通常将阈值设为0，来去除完全透明的部分，这样作会有很多好处。而对于`Cutout`，我们通常将阈值设为0.5（或更高），然后忽略所有的alpha值，不使用混合。这样做可以避免` out-of-order artifacts`。然而，由于只有两层透明度(完全不透明和完全透明)，所以质量很低。
+
+> Another solution is to perform two passes for each model—one for solid cutouts, which are written to the z-buffffer, and the other for semitransparent samples, which are not.
+
+==透明度测试的另外两个问题==是`too much magnification  and too much minification`。下图是一个例子，其中树木的叶子比预期的更加透明。
+
+<img src="RTR4_C6.assets/image-20201011120027286.png" alt="image-20201011120027286" style="zoom:67%;" />
+
+举个例子来解释：假设我们有个一维纹理来表示Alpha值，（0.0，1.0，1.0，1.0）。平均之后，下一个MipMap变为（0.5，0.5）。我们假设测试阈值时0.75，原图可以通过一部分，但下一级的MipMap则全部没有通过。
+
+一个在MipMap生成期间生效的==简单解决方案==：对于mipmap级别k，将覆盖度ck定义为：
+$$
+c_k=\frac{1}{n_k}\sum_{i}{(\alpha(k,i)>\alpha_t)}
+$$
+其中，n~k~是Mipmap的Texel数量。对于每一个mipmap级别，我们找到一个新的mipmap阈值α~k~，使得c~k~等于c~0~（或尽可能的接近）——这可以使用二进制搜索来完成。最后，mipmap level k中所有texel的alpha值都用$\alpha_t/\alpha_k$来进行缩放。结果如下图：
+
+<img src="RTR4_C6.assets/image-20201011121446111.png" alt="image-20201011121446111" style="zoom:67%;" />
+
+另外一种==解决方案==将会替代一开始的测试方程：
+
+```c
+if(texture.a<random()) discard;
+```
+
+为什么可以这样呢？试想一下，一个面元的Alpha值是0.3，那么对于随机返回一个0到1的数的随机函数而言，有0.3的概率让它通过测试，多么巧妙啊。在实际中，用==哈希函数==替代随机函数，避免高频噪声。（ 需要进一步注意的是，获得z方向运动的稳定性，该方法最好与时间抗锯齿技术相结合）
+
+```c
+float hash2D(x,y)
+{
+	return fract(1.0e4*sin(17.0*x+0.1*y)*(0.1+abs(sin(13.0*y+x))));
+}
+```
+
+通过对上述函数的嵌套调用形成三维哈希函数：
+
+```c
+float hash3D(x,y,z)
+{
+	return hash2D(hash2D(x,y),z);
+}
+```
+
+> The input to the hash is object-space coordinates divided by the maximum screen-space derivatives (x and y) of the object-space coordinates, followed by clamping.
+>
+> Alpha testing displays ripple artifacts ==under magnifification==, which can be avoided by precomputing the alpha map as a distance fifield
+
+`Alpha to coverage`( the similar feature ==transparency adaptive antialiasing==)：获取片段的透明度值，并将其转换为一个像素内被覆盖的样本数量。这个想法就像`screen-door transparency`，但在亚像素级。假设每个像素有四个样本位置，并且一个片段覆盖了一个像素，但是由于剪切纹理的原因，它是25%透明(75%不透明)的。`Alpha to coverage`模式使得片段变得完全不透明，但是它只覆盖了四个样本中的三个。（This mode is useful for cutout textures for overlapping grassy fronds）
+
+对于`alpha map`的使用，重要的理解color value之间的双线性插值。在某些情况下，例如（255，0，0，255）和（0，255，0，2）之间直接进行插值，会得到（127，127，0，128）——红色和浅浅的绿色产生了黄色？，这不符合常识。所以我们需要在插值之前，根据Alpha对颜色进行调整，例如将（0，255，0，2）调整为（0，2，0，2），这样混合就会产生正确的结果（127，1，0，127）。==所以核心是——根据Alpha对color进行预计算==
+
+==如果忽视双线性插值的结果是预计算得到的，会导致decal和cutout对象出现黑边。==（不懂啥意思，具体以后可见P208）(个人理解是：读取纹理的过程中已经边缘使用Alpha进行预计算颜色，但Alpha Blend阶段不知道这个结果是预计算的，在边缘出依然进行混合，导致边缘处颜色太暗了，即使使用深度测试，依然会有种情况（预处理时已经变暗了），所以我们的一个常见的方法是在边缘处挨着的透明texel由（0，0，0，0）改成（R,G,B,0）,这样边缘处进行线性插值时，就不会导致颜色变黑了）
+
+
+
+## 7. Bump Mapping
+
+本节介绍了诸多小规模细节表示技术，我们统称为`bump mapping`。所有这些方法通常都是通过修改像素着色例程（`per-pixel shading routine`）来实现的。它们比单独的纹理映射提供了更三维的外观，但没有添加任何额外的几何图形。
+
+==一个物体的细节可以从三个角度来看==：覆盖许多像素的宏特性`macro-features`、跨几个像素的中观特性`meso-features`和实质上小于一个像素的微特性`micro-features`。（并不固定，毕竟存在观察距离）
+
+宏观就不用多说，就是顶点、三角形片元这些几何原语。微观被封装在Shader Model中，它通常在pixel着色器中实现，并使用纹理映射作为参数。渲染模型用来模拟一个表面微观几何的相互作用，例如，发光的物体在显微镜下是光滑的，而漫反射的表面在显微镜下是粗糙的。
+
+`meso-features`则描述这两者之间的所有东西，它包含的那些由于细节过于复杂，无法有效地使用单个三角形渲染，但又足够大，足以让观察者在几个像素上区分表面曲率的变化，如：人物脸上的皱纹，肌肉组织的细节，褶皱和衣服的接缝，都是中尺度的。而==凹凸贴图==（`Bump map`）则通常用于此类建模。基本思路是修改渲染参数，在基础模型上产生足以让人注意到的细微扰动。不同种类的凹凸贴图之间的主要区别在于它们如何表示细节特征。
+
+> 核心观点：就像给每个顶点一个法线会让表面在三角形之间变得光滑一样，修改每个像素的法线会改变三角形表面本身的感知，而不需要修改它的几何形状
+
+对于凹凸贴图，法线必须根据某些参考系改变方向。为此，在每个顶点上存储一个`tangent frame`，也称为`tangent-space basis`。主要功能是：转换光线到表面位置的空间(反之亦然)来计算法线扰动的效果。对于一个有法线贴图的多边形表面，除了顶点法线外，我们还存储切线`tangent`和`bitangent`（也叫`binormal`）——这两者代表了物体空间中法线贴图本身的轴。（==右手定理，手指指向t，弯向b，大拇指朝向就是n==）
+
+<img src="RTR4_C6.assets/image-20201011144601916.png" alt="image-20201011144601916" style="zoom:67%;" />
+
+三者组成如下的==TBN矩阵==，将指定向量从世界空间转换到切线空间（这些向量不必真正地相互垂直，因为法线贴图本身可能会被扭曲以适应表面。），接下来，就如何节省存储空间，进行了一些讨论（只存储TB），具体见书P209，而下一页则包含了很多关于==无额外存储计算TBN==的算法。
+
+![image-20201011145131636](RTR4_C6.assets/image-20201011145131636.png)
+
+`Offset vector bump map`or`offset map`：对于每个法线，存储了两个值$(b_u,b_v)$，这两个值分别是图像坐标(u,v)的数值，然后加在n上，改变n的值，大致公式如下：(n,u,v都是向量)
+$$
+n_{new}=n+b_u*u+b_v*v
+$$
+<img src="RTR4_C6.assets/image-20201011150635109.png" alt="image-20201011150635109" style="zoom:50%;" />
+
+`heightfield`：每个单色纹理值代表一个高度，所以在纹理中，白色是高区域，黑色是低区域(反之亦然)。heightfield用于推导u和v符号值，类似于在第一种方法中使用的值。
+
+<img src="RTR4_C6.assets/image-20201011151133847.png" alt="image-20201011151133847" style="zoom: 50%;" />
+
+`NormalMap`：算法和结果在数学上与Blinn方法（上面的两种方法）一致，只有存储格式和像素着色计算方式改变。这种我们也最熟悉，使用的最多嘛。
+
+<img src="RTR4_C6.assets/image-20201011151511112.png" alt="image-20201011151511112" style="zoom:67%;" />
+
+==过滤法线贴图==是一个困难的问题。一般来说，法线和最后渲染结果之间的关系不是线性的，所以标准的滤波方法可能会导致令人讨厌的锯齿。例如，高光会由于法线在某个角度范围陡升，而过滤不好导致average后的法线与整体表面差别太大的话，就会导致我们在奇怪的方向看到高光。`Lambertian surfaces`是一个特殊情况（就是咱们求经典局部光照模型中的漫反射），因为它近乎就是一个线性的点积，此时，法线过滤基本无影响（但不会完全正确，因为在点积外面套了一个Clamp）
+
+==在非朗伯曲面的情况下==，通过将阴影方程的输入作为一个组来过滤，而不是单独过滤法线贴图，可以产生更好的结果（ discussed in Section 9.13.）。最后，从高度图h(x, y)得到的法线图可能是有用的。
+
+<img src="RTR4_C6.assets/image-20201011153057193.png" alt="image-20201011153057193" style="zoom:67%;" />
+
+`Horizon Mapping`：通过让凸起能够在它们自己的表面上投射阴影来进一步增强法线贴图。这是通过预计算附加纹理来完成的，==每个纹理都与表面平面的方向相关==，并存储每个纹理在那个方向上的horizon（地平线）的角度。（不管怎么想，都应该存储的是物体平面和世界地平线的夹角）
+
+
+
+## 8. Parallax Mapping
+
+凹凸贴图和法线贴图的一个问题是，凹凸贴图不会随着视角的变化而改变位置，也不会相互遮挡。由此在2001年提出了`Parallax Mapping`，==视差==指的是物体的位置随着观察者的移动而相对移动。当观察者移动时，凸起应该看起来有高度。==视差映射的关键思想==是通过检查可见物体的高度，对一个像素中应该看到的东西进行有根据的猜测。(假定：像素的高度和其邻居是近似的)
+
+对于视差贴图，凹凸点被存储在一个高度纹理中。当以给定像素查看表面时，该位置的高度场值将被检索，并用于移动纹理坐标以检索表面的不同部分。移动量是基于获取的高度和眼睛到表面的角度。高度场值在用于移动坐标之前被缩放`scaled`和偏移`bias`。`scaled`决定了高度场在地表以上或以下的延伸程度，而`bias`则给出了不会发生移动的“海平面”高度。
+
+<img src="RTR4_C6.assets/image-20201011154741523.png" alt="image-20201011154741523" style="zoom:67%;" />
+
+给定纹理坐标位置p，调整高度场高度h，归一化视点向量v（高度值v~z~，水平分量v~xy~），新的视差调整纹理坐标p~adj~为：（需要注意的是，此时的视线向量v要转换到切线空间中参与计算）
+$$
+p_{adj}=p+\frac{h\cdot v_{xy}}{v_z}
+$$
+这样简单的模拟在高度变换缓慢的情况下表现良好，然而当我们从接近平面平行的方向观看时，一个小的高度变化会带来大的坐标偏移——由于重新获得的位置与原始的地面位置高度相关性很小或没有相关性，所以这种近似方法失败了。
+
+为了解决这个问题，提出了==限制偏移的观点==。主要是限制偏移不能大于表面原始高度。公式如下：(从几何学上讲，这个是定义了一个半径（r~max~=1），超过这个半径位置就不能移动。)
+$$
+p_{adj}=p+h\cdot v_{xy}
+$$
+<img src="RTR4_C6.assets/image-20201011161014998.png" alt="image-20201011161014998" style="zoom:67%;" />
+
+当视图改变时，纹理的变化也存在问题，或者对于立体渲染来说，观察者同时感知到两个视点，而这两个视点必须提供一致的深度线索。但无论怎样，加上限制的视差贴图在表现上依然由于单独的法线贴图。
+
+
+
+### 9.1 Parallax Occlusion Mapping
+
+到目前为止讨论的方法都不会导致遮挡、阴影。我们想要的是在像素处可见的东西，也就是说，在视图向量第一次与高度场相交的地方。目前，主要的研究方向是使用==RayMarching==（将高度数据存在纹理里，这个方法可以在pixel shader中实现）。这些算法统称为`Parallax occlusion mapping`（==POM==）or `relief mapping`。关键思想是：
+
++ 首先，沿着投影向量，测试固定数量的高度纹理Samples。为了避免错过最近的交点，掠射角（grazing）下的视点射线通常会生成更多的样本。
++ RayMarching：沿着光线的每个三维位置被检索，转换到纹理空间，并进行处理以确定它是在高场之上还是之下。
++ 一旦找到了低于该高度场的样本，则使用下一个和上一个的高度值来计算交叉位置。
++ 然后根据得到的位置，使用附加的法线贴图、颜色贴图和其他纹理，给表面着色。
+
+<img src="RTR4_C6.assets/image-20201011162829853.png" alt="image-20201011162829853" style="zoom:67%;" />
+
+> Multiple layered heightfifields can be used to produce overhangs, independent overlapping surfaces, and two-sided relief mapped impostors; see Section 13.7.
+
+高度场追踪方法也可以用来使凹凸不平的表面，投射阴影到自身上。关于这个话题有大量的文献，虽然所有这些方法都沿着一条射线行进，但有几个不同之处（关于Ray Marching，在ShaderToy上可有太多应用了）。确定两个常规样本之间的实际交点是一个寻根问题（具体可见书P218）
+

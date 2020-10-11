@@ -1335,7 +1335,7 @@ for (auto imageView : swapChainImageViews) {
 
 ==The graphics pipeline is the sequence of operations that take the vertices and textures of your meshes all the way to the pixels in the render targets.==。
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\Vulkan教程\Vulkan教程1.assets\1.PNG)
+![](Vulkan教程1.assets\1.PNG)
 
 - *input assembler* ：从指定的缓冲区收集原始顶点数据，也可以使用索引缓冲区来重复某些元素，而不必复制顶点数据本身。
 - *vertex shader*：运行每个顶点，通常应用转换将顶点位置从模型空间转换到屏幕空间。它还通过管道传递每个顶点的数据。

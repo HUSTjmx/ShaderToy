@@ -280,7 +280,7 @@ c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
 a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
 \end{align}
 $$
-注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
+注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖的面积与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
 
 ![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\17.PNG)
 
