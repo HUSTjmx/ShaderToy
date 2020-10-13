@@ -470,7 +470,7 @@ $$
 
 
 
-### 9.1 Parallax Occlusion Mapping
+### 8.1 Parallax Occlusion Mapping
 
 到目前为止讨论的方法都不会导致遮挡、阴影。我们想要的是在像素处可见的东西，也就是说，在视图向量第一次与高度场相交的地方。目前，主要的研究方向是使用==RayMarching==（将高度数据存在纹理里，这个方法可以在pixel shader中实现）。这些算法统称为`Parallax occlusion mapping`（==POM==）or `relief mapping`。关键思想是：
 
@@ -483,5 +483,34 @@ $$
 
 > Multiple layered heightfifields can be used to produce overhangs, independent overlapping surfaces, and two-sided relief mapped impostors; see Section 13.7.
 
-高度场追踪方法也可以用来使凹凸不平的表面，投射阴影到自身上。关于这个话题有大量的文献，虽然所有这些方法都沿着一条射线行进，但有几个不同之处（关于Ray Marching，在ShaderToy上可有太多应用了）。确定两个常规样本之间的实际交点是一个寻根问题（具体可见书P218）
+高度场追踪方法也可以用来使凹凸不平的表面，投射阴影到自身上。关于这个话题有大量的文献，虽然所有这些方法都沿着一条射线行进，但有几个不同之处（关于Ray Marching，在ShaderToy上可有太多应用了）。确定两个常规样本之间的实际交点是一个寻根问题（具体可见书P218）。==对高度场进行足够频繁的采样是至关重要的==（如更高分辨率的高度纹理，或者直接放弃凹凸贴图——而是在实际运行时通过高度纹理进行叉乘计算得到），关于这些探讨也可见书P218。然后有关这方面的拓展技术（主要是为了提升性能和精度，核心思想都是：不要定期的对高度纹理`heightfield`进行采样，跳过那些空白部分），如`cone step mapping`和`quadtree relief mapping`也在之后进行了简单的介绍。
 
+上述所有方法的一个问题是——==沿着物体轮廓边缘的渲染效果无法令人信服，因为它显示的是原始表面的光滑轮廓==。核心原因是渲染时我们所决定的是哪个像素使用算法被渲染，而不是实际在那个地方。此外，对于曲面，这个问题更加明显。==解决方法首先由Hirche提出==，其基本思想是将网格中的每个三角形向外挤压，形成一个棱镜`prism`，渲染这个棱镜来评估所有像素高度场可能出现的概率（Rendering this prism forces evaluation of all pixels in which the heightfifield could possibly appear）。当扩展网格在原始模型上形成一个独立的外壳时，这种技术被称为==Shell Map==，当棱镜与光线相交时，通过保持棱镜`prism`的非线性特性，可以实现`heightfield`的无`artifact`渲染，尽管计算起来很昂贵。(图上：单纯的浮雕贴图，图下：shell map)
+
+<img src="RTR4_C6.assets/image-20201012095450586.png" alt="image-20201012095450586" style="zoom:50%;" />
+
+<img src="RTR4_C6.assets/image-20201012100428595.png" alt="image-20201012100428595" style="zoom:50%;" />
+
+
+
+## 9. Textured lights
+
+在任意类型的光源上应用`projective mapping  `，来达到如下的效果，称为`Cookie`或者`gobo`light。
+
+<img src="RTR4_C6.assets/image-20201012101652895.png" alt="image-20201012101652895" style="zoom: 50%;" />
+
+
+
+## 扩展阅读
+
+Heckbert has written a good survey of the theory of ==texture mapping== [690] and a more
+in-depth report on the topic [691]. 
+
+Szirmay-Kalos and Umenhoffer [1731] have an excellent, thorough survey of ==parallax occlusion mapping and displacement methods.==
+
+The book Advanced Graphics Programming Using OpenGL [1192] has extensive
+coverage of ==various visualization techniques== using texturing algorithms. 
+
+For extensive coverage of ==three-dimensional procedural textures==, see Texturing and Modeling: A Procedural Approach [407]. 
+
+The book Advanced Game Development with Programmable Graphics Hardware [1850] has many details about ==implementing parallax occlusion mapping== techniques, as do Tatarchuk’s presentations [1742, 1743] and Szirmay-Kalos and Umenhoffer’s survey [1731]  
