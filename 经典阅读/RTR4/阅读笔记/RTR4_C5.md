@@ -280,7 +280,7 @@ c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
 a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
 \end{align}
 $$
-注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
+注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖的面积与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
 
 ![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\17.PNG)
 
@@ -290,7 +290,7 @@ $$
 
 under操作的另一个用途是==Order-Independent Transparency（OIT），known as depth peeling==  。这意味着程序不用多物体进行排序，背后的思想是使用两个Z-Buffers和multiple passes  。首先，正常渲染一次，所有物体的深度值被填入了Z-Buffer，然后第二次Render，所有透明物体被渲染，然后比较透明物体的深度和第一次的Z-buffer的深度，如果一致，说明这个透明物体离屏幕最近，然后将它的RGBA填入一个单独的Color_Buffer。（具体见书，我的理解是重复这个过程，可以依次知道第二近，第三近、、的透明物体，每次进行under计算）
 
-depth peeling的一个问题是知道有多少pass才足以捕获所有的透明层。一个硬件解决方案是提供一个像素绘制计数器，它记录了像素在渲染期间被写的次数。Under操作的一个优点是：离人眼最近的透明物体，最早被渲染。另外一个问题是它的运行速度相对比较慢，因为每个layer peeled都需要一个Render Pass。文中接着给出了一些优化方案。
+**depth peeling**的一个问题是知道有多少pass才足以捕获所有的透明层。一个硬件解决方案是提供一个像素绘制计数器，它记录了像素在渲染期间被写的次数。Under操作的一个优点是：离人眼最近的透明物体，最早被渲染。另外一个问题是它的运行速度相对比较慢，因为每个layer peeled都需要一个Render Pass。文中接着给出了一些优化方案。
 
 ==A-Buffer 和 inked lists of fragments on the GPU==  ，详见书P155
 
