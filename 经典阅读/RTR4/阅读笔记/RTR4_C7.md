@@ -96,7 +96,7 @@ $$
 
 `Normal offset bias`：沿表面法线方向移动接收器的空间位置，移动距离与$sin(n\cdot l)$成正比。这种方法可以想象为：移动到接收器上方的“虚拟表面”进行采样。这个偏移量是一个世界空间距离。（==形象化可见上图右==）
 
-过多的偏置会导致所谓的==光泄漏==或`light leaks or Peter Panning  `的问题，即物体似乎漂浮在底层表面之上（上上图：右）。这种伪影的出现是因为物体接触点下方的区域，例如脚下的地面，向前移动太远（地面深度反而小于脚的深度），所以没有阴影。
+过多的偏置会导致所谓的==光泄漏==或light leaks or Peter Panning的问题，即物体似乎漂浮在底层表面之上（上上图：右）。这种伪影的出现是因为物体接触点下方的区域，例如脚下的地面，向前移动太远（地面深度反而小于脚的深度），所以没有阴影。
 
 `second-depth shadow mapping`：==核心观点==是只渲染物体的背面`backfaces`深度到`ZBuffer`中。当物体是双面的、薄的或相互接触的时候，就会出现问题——因为此时，背面和正面的深度一致或接近。选择哪种方案取决于具体情况——例如，Sousa等人[1679]发现，使用正面作为太阳阴影，使用背面作为室内灯光，效果最好。
 
@@ -108,6 +108,59 @@ $$
 
 ### 4.1 Resolution Enhancement
 
-光的方向一旦改变，像素的比例就会改变（即一个阴影贴图像素包含多少个视点像素），这就会造成`artifacts`。如下图组左：阴影是块状的，定义很差，因为前景中的大量像素都与阴影贴图的每个texel相关联。==这种叫做==`perspective aliasing  `。如果一个表面与光线接近平行，但面向观察者，也会导致这种现象，但这个被称为==射影混叠==`projective aliasing  `。可以通过增加阴影贴图的分辨率来减少块度，但是要以额外的内存和处理为代价。
+光的方向一旦改变，像素的比例就会改变（即一个阴影贴图像素包含多少个视点像素），这就会造成`artifacts`。如下图组左：阴影是块状的，定义很差，因为前景中的大量像素都与阴影贴图的一个texel相关联（a large number of pixels in the foreground are associated with each texel of the shadow map  ）。==这种叫做==`perspective aliasing  `。如果一个表面与光线接近平行，但面向观察者，也会导致这种现象，但这个被称为==射影混叠==`projective aliasing  `。可以通过==增加阴影贴图的分辨率==来减少块度，但是要以额外的内存和处理为代价。
 
 <img src="RTR4_C7.assets/image-20201013164122761.png" alt="image-20201013164122761" style="zoom:67%;" />
+
+
+
+##### Matrix-Warping
+
+还有==另一种方法==来创建光线采样模式，使其更接近相机模式——改变场景向光线投射的方式。通常我们认为视图是对称的，视图向量在截锥体`frustum  `的中心。然而，视图方向仅仅定义了一个视图平面，而不是哪个像素被采样。定义圆锥台`frustum  `的窗口可以在这个平面上移动、倾斜或旋转，从而创建一个四边形，==为视图空间提供一个不同的映射(world to view space)==。The quadrilateral is still sampled at regular intervals, as this is the nature of a linear transform matrix and its use by the GPU。采样率可以通过改变光的视图方向和视图窗口的边界来修改，如下图：
+
+<img src="RTR4_C7.assets/Inkedimage-20201018162112875_LI.jpg" style="zoom: 67%;" />
+
+There are ==22 degrees of freedom== in mapping the light’s view to the eye’s 。因此为了更好地让光地采样频率（阴影贴图）匹配人眼，发展了许多技术，如：`perspective shadow maps ` ==(PSM)== ，`trapezoidal shadow maps  `==(TSM)==，`light space perspective shadow maps  `==（LiSPSM ）==。这类技术被统称为`perspective warping  `方法。
+
+这些`matrix-warping  `算法的一个优点是：除了这个矩阵，不需要额外的工作。通过分析这些技术，就采样和锯齿问题来说，==最好的解决方案是让View和Light垂直==。（因为透视变换可以进行偏移，使更多的样本更靠近眼睛）
+
+当光源在摄像机的正前方时， 上诉`matrix-warping  `方法是无效的，这种场景被称作`dueling frusta`或者说`deer in the headlights  `。
+
+> More shadow-map samples are needed nearer the eye, but linear warping can only make the situation worse  
+
+==在视点所在的位置添加更多的样本==是一个不错的想法，这会导致算法为给定的视图生成多个`shadow maps  `，这个想法是很简单的：生成一系列`shadow maps  `（可能会有不同的分辨率），这些图覆盖了场景的不同区域。在==Blow的系统==中，四个`shadow maps  `被嵌套在视点周围。高分辨率的`shadow maps  `对应附近的物体，较低分辨率的`shadow maps  `则服务于远处的物体（没有解决的是：处于两个`shadow maps  `之间的物体）。==Flag Studio发展了一个新的系统==：一个`shadow maps  `处理近处的动态物体；another is for a grid section of the static objects near the viewer  ；a third is for the static objects in the scene as a whole.。z总结来说：第一个`shadow maps`需要每帧更新，第二，三个则只需要生成一次。虽然这些系统都过时了，==但这种为不同的物体和场景建立多个图的思想，成为了目前算法开发的主流==。
+
+
+
+##### Cascaded Shadow Maps
+
+<img src="RTR4_C7.assets/image-20201018203515512.png" alt="image-20201018203515512" style="zoom:67%;" />
+
+==另外一个想法是==：将视点的`frustum volume `按照`view direction  `分解成几部分（如上图）。随着深度增加，每个块的深度范围都是上一个的2到3倍。对于每一个`frustum volume`，光源都会生成一个`frustum`来绑定它，然后生成`shadow map`，这些贴图可以通过C6提到的几个纹理压缩技术，最小化缓存访问延迟。==这个算法也被称作==`cascaded shadow maps`==（CSM）==或者说`parallel-split shadow maps  `。（优化效果如下）这个算法没有什么明显的缺点，又具有很高的鲁棒性，因此广泛应用。
+
+<img src="RTR4_C7.assets/image-20201018204352178.png" alt="image-20201018204352178" style="zoom:67%;" />
+
+对于这个算法，关键是：确定如何在场景内划分`z-depths  `的范围——这项任务称为==z分区==`z-partitioning  `。一种实现方法是对数分布`logarithmic partitionin`。n和f是整个场景的近平面和远平面，c是阴影贴图的数量，r是比值（resulting ratio  ）。在实践中，这样的分割给近平面附件的区域提供了相当大的分辨率，如果这个区域没有物体，那么这个分辨率就被浪费了。一种解决方法是：对数分布和等距分布的加权混合。
+$$
+r=\sqrt[c]{\frac{f}{n}}
+$$
+<img src="RTR4_C7.assets/image-20201018204753327.png" alt="image-20201018204753327" style="zoom:67%;" />
+
+==这个算法的难点==在于怎么设置`near plane  `——设置的太远会导致物体被Clipped。一个好的解决方法是`sample distribution shadow maps  `（==SDSM==）——,which use the z-depth values from the previous frame to determine a
+better partitioning by one of ==two methods==  ：
+
+- 第一种方法：通过z-depth查找最小值和最大值，并使用它们来设置近平面和远平面。这是用GPU上的`reduce`操作来实现的，在这个操作中，一系列越来越小的缓冲区被Compute着色器（或者其它着色器）分析，直到剩下一个1×1的缓冲区。通常情况下，==这些值会被推出一点，以调整场景中物体的移动速度（the values are pushed out a bit to adjust for the speed of movement of objects in the scene.==）。除非采取纠正措施，否则从屏幕边缘进入的近物体可能会造成问题，不过会在下一帧中得到纠正。
+- 第二种方法依然对`Depth Buffer`的值进行分析，产生一个叫做`histogram  `的图，来记录the distribution of the z-depths along the range  。（具体见书）
+
+在实际应用中，第一种方法通用性强，速度快（一般在1毫秒/帧范围内），效果好，已得到广泛应用。
+
+<img src="RTR4_C7.assets/image-20201018212614499.png" alt="image-20201018212614499" style="zoom:67%;" />
+
+==这个算法的另外一个问题是：保存采样的稳定性==（帧间，以及移动物体）。当物体穿越两个阴影贴图是，阴影会发生突变，一个解决思路是：让两张阴影贴图有轻微的重叠，在重叠处进行混合采样。
+
+对于该算法，==效率和质量方面的优化==。1. 使用一个低层次的细节模型作为代理来实际投射阴影；2. 将微小的阴影投射体从考虑中移除（谨慎使用，因为大型移动物体可能会导致`artifacts  `）；3. Day [329] presents the idea of “scrolling” distant maps from frame to frame。其想法是`static shadow map`的大部分可以帧之间重复使用，只有边缘可能会改变，需要渲染；4. 像《毁灭战士》(2016)这样的游戏保留了大量的`shadow map`，只在物体移动过的地方重新生成——远处则可以直接忽略动态物体的影响；5. 也可以用一张高分辨率的`static shadow map`直接替代远处的`cascades  `。更多的细节可以看书P 246。
+
+Creating several separate shadow maps means a run through some set of geometry for each。在single pass中，对于渲染`occluders`到一组阴影图上，已经建立了许多提高效率的方法。几何着色器`geometry shader`可用于复制对象数据并将其发送到多个视图。实例几何着色器` Instanced geometry shaders `允许将一个对象输出到（最多32个）深度纹理中。
+
+==多光源场景的优化==：如果一个区域在视野内，但不可见，则不需要考虑其它物体对它的遮挡。Bittner等人使用`occlusion culling`(19.7节），从视点处找到所有可见的`shadow receivers`，然后从光的角度，将所有潜在的`shadow receivers`渲染到一个`stencil buffer mask`中。为了==生成阴影贴图==，他们从光源处使用`occlusion culling`来渲染物体，并使用`Mask`剔除没有接收器的物体。==l另一种常见的技术==：在一定的阈值距离后，对光源进行剔除。例如，19.5节中的`portal culling`技术可以找到which lights affect which cells。==这是一个活跃的研究领域，因为可以极大解放性能==。
+
