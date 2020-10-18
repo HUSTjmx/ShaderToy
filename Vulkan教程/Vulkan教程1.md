@@ -2793,3 +2793,198 @@ To learn more about synchronization through examples, have a look at [this exten
 
 ### 5 Swap chain recreation
 
+现在已经成功地绘制了一个三角形，但是有些情况还没有正确地处理。窗口表面可能发生更改，使得交换链不再与之兼容。导致这种情况发生的原因之一是：窗口的大小发生了变化。我们必须捕获这些事件并重新创建交换链。
+
+##### Recreating the swap chain
+
+创建一个新的`createswapchain`函数，该函数调用createSwapChain，以及依赖交换链或窗口大小的创建函数。
+
+```c
+void recreateSwapChain() {
+    vkDeviceWaitIdle(device);
+
+    createSwapChain();
+    createImageViews();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFramebuffers();
+    createCommandBuffers();
+}
+```
+
+我们首先调用`vkDeviceWaitIdle`，因为就像上一章一样，我们不应该去使用那些可能还在使用的资源。很明显，我们要做的第一件事就是重新创建交换链本身。`ImageView`需要重新创建，因为它们是直接基于交换链图像的；`RenderPass`需要重新创建，因为它取决于交换链图像的格式；在窗口调整这样的操作过程中，==交换链图像格式==很少会发生变化，但还是应该进行处理。`Viewport`和`scissor rectangle size`是在创建图形管道时指定的，所以管道也需要重建。可以通过对`Viewport`和`scissor rectangle size`使用动态状态来避免这种情况。最后， the framebuffers and command buffers也直接依赖于交换链图像。
+
+为了确保这些对象的旧版本在重新创建它们之前被清理掉，我们应该将一些清理代码移到一个单独的函数中，我们可以从`recreateSwapChain`函数中调用。让我们把它叫做`cleanupSwapChain`。
+
+```c
+void cleanupSwapChain() {
+	for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
+        vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+    }
+
+    vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyRenderPass(device, renderPass, nullptr);
+
+    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+        vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+    }
+
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
+}
+
+void recreateSwapChain() {
+    vkDeviceWaitIdle(device);
+
+    cleanupSwapChain();
+
+    createSwapChain();
+    createImageViews();
+    createRenderPass();
+    createGraphicsPipeline();
+    createFramebuffers();
+    createCommandBuffers();
+}
+```
+
+我们可以从头重新创建`command pool`，但这相当浪费。相反，我选择使用`vkFreeCommandBuffers`函数，来清理现有的` command buffers`。这样，我们就可以重用现有池，来分配新的命令缓冲区。
+
+为了正确地处理窗口的大小调整，我们还需要查询`framebuffer`的当前大小，以确保交换链图像具有(新的)正确的大小。为此，更改`chooseSwapExtent`函数以将实际大小考虑在内
+
+```c
+VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+    if (capabilities.currentExtent.width != UINT32_MAX) {
+        return capabilities.currentExtent;
+    } else {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+
+        VkExtent2D actualExtent = {
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height)
+        };
+
+        ...
+    }
+}
+```
+
+==这种方法的缺点是，在创建新的交换链之前，我们需要停止所有渲染==。在旧的交换链上，`Image`的绘制命令仍在运行时，可以创建一个新的交换链。你需要将之前的交换链传递给`VkSwapchainCreateInfoKHR`中的`oldSwapChain`字段，并在使用完旧交换链后，立即销毁它。
+
+
+
+##### Suboptimal or out-of-date swap chain
+
+现在我们==只需要弄清楚什么时候需要重新创建交换链==，然后调用我们新的`recreateSwapChain`函数。幸运的是，Vulkan通常会在` presentation`过程中告诉我们：交换链已经不够用了，`vkAcquireNextImageKHR`和`vkQueuePresentKHR`函数可以通过返回特殊值来指示：
+
+- `VK_ERROR_OUT_OF_DATE_KHR`： 交换链与表面不兼容，不能再用于渲染。通常发生在窗口大小调整之后。
+- `VK_SUBOPTIMAL_KHR`：交换链仍可用于成功地`present to the surface`，但表面属性` surface properties`不再精确匹配。
+
+```c
+VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    recreateSwapChain();
+    return;
+} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    throw std::runtime_error("failed to acquire swap chain image!");
+}
+```
+
+如果交换链在尝试获取`Image`时，被发现已经过时，那么就无法再 present to it。因此，我们应该重新创建交换链，并在下一次drawFrame中再次尝试。如果交换链是次优的，也可以选择重新创建交换链。但在这种情况下，我还是选择了继续，因为我们已经获取了一个图像。
+
+```c
+result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+    recreateSwapChain();
+} else if (result != VK_SUCCESS) {
+    throw std::runtime_error("failed to present swap chain image!");
+}
+
+currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+```
+
+`vkQueuePresentKHR`函数会返回相同意义的值。在这种情况下，如果交换链是次优的，我们也会重新创建交换链，因为我们希望得到最好的结果。
+
+
+
+##### Handling resizes explicitly
+
+虽然许多驱动程序和平台，在窗口调整大小后会自动触发`VK_ERROR_OUT_OF_DATE_KHR`，但这并不能保证会发生。所以要添加一些额外的代码，来显式处理。首先添加一个新的成员变量，标志着：发生了调整大小的情况。
+
+```c
+bool framebufferResized = false;
+```
+
+然后应该修改drawFrame函数来检查这个标志：
+
+```c
+if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+    framebufferResized = false;
+    recreateSwapChain();
+} else if (result != VK_SUCCESS) {
+    ...
+}
+```
+
+在`vkQueuePresentKHR`之后做这件事是很重要的——以确保semaphores处于一致的状态，否则一个信号的semaphore可能永远不会被正确地等待。现在为了实际检测大小调整，可以使用GLFW框架中的`glfwSetFramebufferSizeCallback`函数来设置一个回调：
+
+```c
+void initWindow() {
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+}
+
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+
+}
+```
+
+> The reason that we're creating a static function as a callback is because GLFW does not know how to properly call a member function with the right this pointer to our HelloTriangleApplication instance.
+
+我们确实在回调中得到了一个对`GLFWwindow`的引用，并且有另一个GLFW函数：允许你在它里面存储一个任意指针
+
+```c
+window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+glfwSetWindowUserPointer(window, this);
+glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+```
+
+现在可以使用`glfwGetWindowUserPointer`从回调中检索该值，以正确设置标志：
+
+```c
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+    app->framebufferResized = true;
+}
+```
+
+
+
+##### Handling minimization
+
+还有一种情况是：交换链可能会出现数据缺失的情况，那就是一种特殊的窗口大小调整：==窗口最小化==。这种情况很特殊，因为它会导致帧缓冲区大小为0，在本教程中，我们将通过扩展`recreateSwapChain`函数来处理这种情况——暂停，直到窗口再次进入前景：
+
+```c
+void recreateSwapChain() {
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(device);
+
+    ...
+}
+```
+
+The initial call to glfwGetFramebufferSize handles the case where the size is already correct and glfwWaitEvents would have nothing to wait on.
