@@ -1351,6 +1351,8 @@ for (auto imageView : swapChainImageViews) {
 
 创建一个createGraphicsPipeline函数，该函数在initVulkan中的createImageViews之后调用。我们将在接下来的章节中讨论这个功能。
 
+![](Vulkan教程1.assets/Pipeline-1603107867396.png)
+
 
 
 #### 3.1 Shader modules
@@ -1365,7 +1367,7 @@ for (auto imageView : swapChainImageViews) {
 
 剪辑坐标是来自顶点着色器的一个四维向量，它随后通过将整个向量除以它的最后一个组件转化为一个标准化的设备坐标。这些规范化的设备坐标是齐次坐标，它将framebuffer映射到一个[- 1,1]by[- 1,1]的坐标系统，如下所示：
 
-<img src="C:\Users\Cooler\Desktop\JMX\ShaderToy\Vulkan教程\Vulkan教程1.assets\image-20201006094651564.png" alt="image-20201006094651564" style="zoom:80%;" />
+<img src="Vulkan教程1.assets\image-20201006094651564.png" alt="image-20201006094651564" style="zoom:80%;" />
 
 如果以前使用过OpenGL，那么会注意到Y坐标的符号现在翻转了。Z坐标现在使用与在Direct3D中相同的范围，从0到1。通常这些坐标会存储在一个顶点缓冲区中，但是在Vulkan中创建一个顶点缓冲区并填充数据并不是件容易的事。因此，我决定在我们满意地看到一个三角形在屏幕上弹出后再开始。同时，我们将做一些不太正统的事情:将坐标直接包含在顶点着色器中。代码如下所示
 
@@ -1862,7 +1864,7 @@ colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 - `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`: 要在交换链中显示的映像
 - `VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL`：用作内存复制操作目标的映像
 
-我们将在纹理章节中更深入地讨论这个话题，但是==现在最重要的是要知道图像需要转换到特定的布局==，这适合于它们接下来将要涉及到的操作。
+我们将在纹理章节中更深入地讨论这个话题，但是==现在最重要的是：知道图像需要转换到特定的布局==，这适合于它们接下来将要涉及到的操作。
 
 initialLayout指定在渲染过程开始之前图像将具有哪种布局。finalLayout指定渲染结束时自动转换到的布局。对initialLayout使用 `VK_IMAGE_LAYOUT_UNDEFINED`意味着我们不关心图像之前的布局。这种特殊值的缺点是图像的内容不能保证被保留下来。我们希望图像在呈现后可以使用交换链来表示，所以后者我们赋值为`VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`
 
