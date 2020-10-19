@@ -54,7 +54,7 @@ $$
 
 ## 2. Shadows on Curved Surfaces
 
-将平面投影扩展到曲面投影的一个简单方法是，是属于一张生成的阴影图来作为投影纹理`projective texture`。以光的位置为视点，能看到的区域就要被渲染，否则就是阴影区。这里，首先将`Occluder`渲染进一张白色图，他所在的像素渲染成黑色，这个纹理被投射到`Receiver`上
+将平面投影扩展到曲面投影的一个简单方法：使用一张生成的`shadow map`来作为投影纹理`projective texture`。以光的位置为视点，能看到的区域就要被渲染，否则就是阴影区。这里，首先将`Occluder`渲染进一张白色图，他所在的像素渲染成黑色，这个纹理被投射到`Receiver`上
 
 纹理投影方法存在着一些严重的缺陷。首先，应用程序必须识别哪些对象是`Occluders`，哪些对象是`Receivers`。接收者与光的高度距离要大于和遮挡者的，否则阴影就会“向后投射”。同时，遮挡对象不能遮挡自己。
 
@@ -64,7 +64,7 @@ $$
 
 ## 3. Shadow Volumes
 
-`Crow shadow volumes`通过使用`stencil buffer`可以在任意物体上投射阴影。它不是基于图像的(不像下面描述的阴影映射算法)，这样就避免了采样问题，从而在任何地方产生正确的锐利阴影。于其不可预测的成本，阴影体积现在很少被使用。本文对算法进行了简要的描述，说明了算法的一些重要原理，并在此基础上进行了进一步的研究。
+`Crow shadow volumes`通过使用`stencil buffer`可以在任意物体上投射阴影。它不是基于图像的(不像下面描述的`shadow maps`算法)，这样就避免了采样问题，从而在任何地方产生正确的锐利阴影。由于其不可预测的成本，阴影体积现在很少被使用。本文对算法进行了简要的描述，说明了算法的一些重要原理，并在此基础上进行了进一步的研究。
 
 <img src="RTR4_C7.assets/image-20201013123042362.png" alt="image-20201013123042362" style="zoom:50%;" />
 
@@ -80,13 +80,13 @@ $$
 
 ## 4. Shadow Maps
 
-==阴影映射==，有一个更可预测的成本，非常适合GPU，因此在许多应用中形成阴影生成的基础。这个想法是使用z-buffer，从投射阴影的光源位置来渲染场景。光“看到”的是被照亮的，其余的都在阴影中。在生成此Image时，只需要z缓冲。此时，Z-Buffer中每个像素存储了离光源最近的物体的深度值，它也被称为`shadow map`或者`shadow depth map`、`shadow buffer`。然后正常视角进行第二次渲染，每个像素的深度值转到光源视点空间后，和之前的`shadow map`对应的深度值进行比较（通过转化后的（x,y）坐标进行索引），大于它，则说明其位于阴影处。
+==阴影映射==有着可预测的成本，且非常适合GPU，因此在许多应用中得到使用。基本思想：使用z-buffer，从投射阴影的光源位置来渲染场景。光“看到”的是被照亮的，其余的都在阴影中。在生成此Image时，只需要Z Buffer。此时，Z-Buffer中每个像素存储了离光源最近的物体的深度值，它也被称为`shadow map`或者`shadow depth map`、`shadow buffer`。然后正常视角进行第二次渲染，每个像素的深度值转到光源视点空间后，和之前的`shadow map`对应的深度值进行比较（通过转化后的（x,y）坐标进行索引），大于它，则说明其位于阴影处。
 
 <img src="RTR4_C7.assets/image-20201013144155245.png" alt="image-20201013144155245" style="zoom:67%;" />
 
 但目前的使用域比较狭窄，考虑光源周围是物体的情况？这个时候传统的解决方法是建立一个`six-view cube`，类似于之前的`cubic environment mapping`，因此称为`omnidirectional shadow maps`。这项技术的主要问题在两个图片连接处。一些拓展文献详见书P 234。根据视点的`volumes`，调整light-view的视锥体，使其==自动剔除一些不在视点视锥体内的Occluders==，提高算法的性能，降低消耗，详见书P 235。
 
-阴影贴图技术的==主要缺点==是：实现效果依赖于阴影图的分辨率和`Z-buffer`的数值精度。离物体间接触的地方越近，锯齿问题越容易出现，一个常见的问题就是`self-shadow aliasing`——a triangle is incorrectly considered to shadow itself 。出现这个问题有两个主要原因：1.存储精度，2.几何原因，阴影贴图的采样位置和该点的位置并不完全对应，一般偏小。
+阴影贴图技术的==主要缺点==是：实现效果依赖于阴影图的分辨率和`Z-buffer`的数值精度。离物体交接的地方越近，锯齿问题越容易出现，一个常见的问题就是`self-shadow aliasing`——a triangle is incorrectly considered to shadow itself 。出现这个问题有两个主要原因：1.存储精度，2.几何原因，阴影贴图的采样位置和该点的位置并不完全对应，一般偏小。
 
 <img src="RTR4_C7.assets/image-20201013150940136.png" alt="image-20201013150940136" style="zoom:50%;" />
 
@@ -98,7 +98,7 @@ $$
 
 过多的偏置会导致所谓的==光泄漏==或light leaks or Peter Panning的问题，即物体似乎漂浮在底层表面之上（上上图：右）。这种伪影的出现是因为物体接触点下方的区域，例如脚下的地面，向前移动太远（地面深度反而小于脚的深度），所以没有阴影。
 
-`second-depth shadow mapping`：==核心观点==是只渲染物体的背面`backfaces`深度到`ZBuffer`中。当物体是双面的、薄的或相互接触的时候，就会出现问题——因为此时，背面和正面的深度一致或接近。选择哪种方案取决于具体情况——例如，Sousa等人[1679]发现，使用正面作为太阳阴影，使用背面作为室内灯光，效果最好。
+`second-depth shadow mapping`：==核心观点==是渲染物体的背面`backfaces`深度到`ZBuffer`中。当物体是双面的、薄的或相互接触的时候，就会出现问题——因为此时，背面和正面的深度一致或接近。选择哪种方案取决于具体情况——例如，Sousa等人[1679]发现，使用正面作为太阳阴影，使用背面作为室内灯光，效果最好。
 
 请注意，对于阴影贴图，对象必须是`water tight`(多面体和封闭的)，或者正面和背面必须都呈现在贴图上，否则对象可能无法完全投射阴影。吴志明[1900]提出了一种通用方法，即试图在只使用正面或背面进行阴影处理之间找到折衷的方法。他的想法是将solid物体渲染到阴影贴图上，并跟踪两个离光最近的表面。这个过程可以通过`depth peeling`（OIT）或其他与透明相关的技术来完成。两个物体表面之间的平均深度形成一个中间层，其深度被用作阴影图，==有时称为==`dual shadow map`
 
@@ -128,7 +128,7 @@ There are ==22 degrees of freedom== in mapping the light’s view to the eye’s
 
 > More shadow-map samples are needed nearer the eye, but linear warping can only make the situation worse  
 
-==在视点所在的位置添加更多的样本==是一个不错的想法，这会导致算法为给定的视图生成多个`shadow maps  `，这个想法是很简单的：生成一系列`shadow maps  `（可能会有不同的分辨率），这些图覆盖了场景的不同区域。在==Blow的系统==中，四个`shadow maps  `被嵌套在视点周围。高分辨率的`shadow maps  `对应附近的物体，较低分辨率的`shadow maps  `则服务于远处的物体（没有解决的是：处于两个`shadow maps  `之间的物体）。==Flag Studio发展了一个新的系统==：一个`shadow maps  `处理近处的动态物体；another is for a grid section of the static objects near the viewer  ；a third is for the static objects in the scene as a whole.。z总结来说：第一个`shadow maps`需要每帧更新，第二，三个则只需要生成一次。虽然这些系统都过时了，==但这种为不同的物体和场景建立多个图的思想，成为了目前算法开发的主流==。
+==在视点所在的位置添加更多的采样==是一个不错的想法，这会导致算法为给定的视图生成多个`shadow maps  `，这个想法是很简单的：生成一系列`shadow maps  `（可能会有不同的分辨率），这些图覆盖了场景的不同区域。在==Blow的系统==中，四个`shadow maps  `被嵌套在视点周围。高分辨率的`shadow maps  `对应附近的物体，较低分辨率的`shadow maps  `则服务于远处的物体（没有解决的是：处于两个`shadow maps  `之间的物体）。==Flag Studio发展了一个新的系统==：一个`shadow maps  `处理近处的动态物体；another is for a grid section of the static objects near the viewer  ；a third is for the static objects in the scene as a whole.。z总结来说：第一个`shadow maps`需要每帧更新，第二，三个则只需要生成一次。虽然这些系统都过时了，==但这种为不同的物体和场景建立多个图的思想，成为了目前算法开发的主流==。
 
 
 
@@ -140,14 +140,13 @@ There are ==22 degrees of freedom== in mapping the light’s view to the eye’s
 
 <img src="RTR4_C7.assets/image-20201018204352178.png" alt="image-20201018204352178" style="zoom:67%;" />
 
-对于这个算法，关键是：确定如何在场景内划分`z-depths  `的范围——这项任务称为==z分区==`z-partitioning  `。一种实现方法是对数分布`logarithmic partitionin`。n和f是整个场景的近平面和远平面，c是阴影贴图的数量，r是比值（resulting ratio  ）。在实践中，这样的分割给近平面附件的区域提供了相当大的分辨率，如果这个区域没有物体，那么这个分辨率就被浪费了。一种解决方法是：对数分布和等距分布的加权混合。
+对于这个算法，关键是：如何在场景内划分`z-depths  `的范围——这项任务称为==z分区==`z-partitioning  `。一种实现方法是对数分布`logarithmic partitionin`。n和f是整个场景的近平面和远平面，c是阴影贴图的数量，r是比值（resulting ratio  ）。在实践中，这样的分割给近平面附件的区域提供了相当大的分辨率，如果这个区域没有物体，那么这个分辨率就被浪费了。一种解决方法是：对数分布和等距分布的加权混合。
 $$
 r=\sqrt[c]{\frac{f}{n}}
 $$
 <img src="RTR4_C7.assets/image-20201018204753327.png" alt="image-20201018204753327" style="zoom:67%;" />
 
-==这个算法的难点==在于怎么设置`near plane  `——设置的太远会导致物体被Clipped。一个好的解决方法是`sample distribution shadow maps  `（==SDSM==）——,which use the z-depth values from the previous frame to determine a
-better partitioning by one of ==two methods==  ：
+==这个算法的难点==在于怎么设置`near plane  `——设置的太远会导致物体被Clipped。一个好的解决方法是`sample distribution shadow maps  `（==SDSM==）——,which use the z-depth values from the previous frame to determine a better partitioning by one of ==two methods==  ：
 
 - 第一种方法：通过z-depth查找最小值和最大值，并使用它们来设置近平面和远平面。这是用GPU上的`reduce`操作来实现的，在这个操作中，一系列越来越小的缓冲区被Compute着色器（或者其它着色器）分析，直到剩下一个1×1的缓冲区。通常情况下，==这些值会被推出一点，以调整场景中物体的移动速度（the values are pushed out a bit to adjust for the speed of movement of objects in the scene.==）。除非采取纠正措施，否则从屏幕边缘进入的近物体可能会造成问题，不过会在下一帧中得到纠正。
 - 第二种方法依然对`Depth Buffer`的值进行分析，产生一个叫做`histogram  `的图，来记录the distribution of the z-depths along the range  。（具体见书）
@@ -158,7 +157,7 @@ better partitioning by one of ==two methods==  ：
 
 ==这个算法的另外一个问题是：保存采样的稳定性==（帧间，以及移动物体）。当物体穿越两个阴影贴图是，阴影会发生突变，一个解决思路是：让两张阴影贴图有轻微的重叠，在重叠处进行混合采样。
 
-对于该算法，==效率和质量方面的优化==。1. 使用一个低层次的细节模型作为代理来实际投射阴影；2. 将微小的阴影投射体从考虑中移除（谨慎使用，因为大型移动物体可能会导致`artifacts  `）；3. Day [329] presents the idea of “scrolling” distant maps from frame to frame。其想法是`static shadow map`的大部分可以帧之间重复使用，只有边缘可能会改变，需要渲染；4. 像《毁灭战士》(2016)这样的游戏保留了大量的`shadow map`，只在物体移动过的地方重新生成——远处则可以直接忽略动态物体的影响；5. 也可以用一张高分辨率的`static shadow map`直接替代远处的`cascades  `。更多的细节可以看书P 246。
+对于该算法，==效率和质量方面的优化==。1. 使用一个低模作为代理，来实际投射阴影；2. 忽略微小的阴影投射体（谨慎使用，因为大型移动物体可能会导致`artifacts  `）；3. Day [329] presents the idea of “scrolling” distant maps from frame to frame。其想法是`static shadow map`的大部分可以在帧之间重复使用，只有边缘可能会改变（需要渲染）；4. 像《毁灭战士》(2016)这样的游戏保留了大量的`shadow map`，只在物体移动过的地方重新生成——远处则可以直接忽略动态物体的影响；5. 也可以用一张高分辨率的`static shadow map`直接替代远处的`cascades  `。更多的细节可以看书P 246。
 
 Creating several separate shadow maps means a run through some set of geometry for each。在single pass中，对于渲染`occluders`到一组阴影图上，已经建立了许多提高效率的方法。几何着色器`geometry shader`可用于复制对象数据并将其发送到多个视图。实例几何着色器` Instanced geometry shaders `允许将一个对象输出到（最多32个）深度纹理中。
 
