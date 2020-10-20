@@ -163,3 +163,100 @@ Creating several separate shadow maps means a run through some set of geometry f
 
 ==多光源场景的优化==：如果一个区域在视野内，但不可见，则不需要考虑其它物体对它的遮挡。Bittner等人使用`occlusion culling`(19.7节），从视点处找到所有可见的`shadow receivers`，然后从光的角度，将所有潜在的`shadow receivers`渲染到一个`stencil buffer mask`中。为了==生成阴影贴图==，他们从光源处使用`occlusion culling`来渲染物体，并使用`Mask`剔除没有接收器的物体。==l另一种常见的技术==：在一定的阈值距离后，对光源进行剔除。例如，19.5节中的`portal culling`技术可以找到which lights affect which cells。==这是一个活跃的研究领域，因为可以极大解放性能==。
 
+
+
+## 5. Percentage-Closer Filtering
+
+对`Shadow Maps`进行简单拓展，不仅可以产生软阴影，还可以改善7.4.1的分辨率问题。这个扩展和6.2.1的`texture magnification`相似。但这里并不是直接对深度值进行插值，而是对深度比较的结果进行插值（周围四个最近的`Samples`），这会导致an artificially soft shadow。这种*多采样混合*的方法被称为`percentage-closer fifiltering`（==PCF==）。换句话说，这种方法相当于在`punctal light`的情况下，来模拟区域光的效应（如下图）
+
+<img src="RTR4_C7.assets/image-20201020103342776.png" alt="image-20201020103342776" style="zoom:67%;" />
+
+> In PCF, locations are generated nearby to a surface location, at about the same depth, but at different texel locations on the shadow map。 Note that this process is non-physical: Instead of sampling the light source directly, this process relies on the idea of sampling over the surface itself. The distance to the occluder does not affect the result, so shadows have similar-sized penumbrae.
+
+当采样区域的范围被确定之后，接下来需要考虑的重点就是：==采取更好的采样方法和过滤方法==，来避免锯齿问题。这些方法多种多样，主要在采样区域、采样的使用方法、采样方式、采样权重上有差别。==DirectX 10使用了一种单指令双线性插值技术==，来支持`PCF`，这提高了视觉质量，但仍没有解决常规采样的`artifacts`。一种解决方案是：使用预计算的泊松分布对区域进行采样（如下图），但仅仅这样，依然不够，最好是再给分布加上一个随机旋转（围绕中心）。另外： Gaussian-weighted sampling scheme based on bilinear sampling.
+
+<img src="RTR4_C7.assets/image-20201020112342260.png" alt="image-20201020112342260" style="zoom:80%;" />
+
+在PCF的情况下，Self-shadowing等问题更加明显，而`Slope scale bias`等技术效果变差，由此提出了新的技术`bias cone`）——每个样本向光移动，其移动距离与***离原始样本的距离***成正比。（Burley推荐2.0的斜率，加上一个小的恒定偏差，如下图左）
+
+<img src="RTR4_C7.assets/image-20201020113702211.png" alt="image-20201020113702211" style="zoom:67%;" />
+
+又有三个大佬认为：应该使用阴影接收者自己的斜率，来调整采样点（非原始）的深度值。Dual进一步细化和扩展了这个概念， ==accounting for how the z-depth varies in a nonlinear fashion==。这些方法假设采样点（非原始）在三角形构成的同一平面上，被称为`receiver plane depth bias`（如上图中）
+
+> Combinations of constant, slope scale, receiver plane, view bias, and normal offset biasing have been used to combat the problem of self-shadowing, though hand-tweaking for each environment can still be necessary
+
+==PCF算法最明显的局限是==：采样区域是固定的——软阴影的范围是固定的（the same penumbra width）。特别是在物体间接触的情况下，这种处理是不对的。
+
+<img src="RTR4_C7.assets/image-20201020120114211.png" alt="image-20201020120114211" style="zoom:80%;" />
+
+
+
+## 6. Percentage-Closer Soft Shadows
+
+2005年。F神提出了==PCSS技术==`Percentage-Closer Soft Shadows`。具体思路：在`shadow map`上搜索附近区域（原始采样点对应的texel为中心），来寻找所以可能的`occluders`，然后根据这些`occluders`到光源的平均距离，来更新采样区域`Sample area`：(d~r~是接受者到光的距离，d~o~是投影者的平均距离)
+$$
+w_{sample}=w_{light}\frac{d_r-d_o}{d_r}
+$$
+需要采样较大区域来寻找`occulders`是本算法一个明显的缺点。使用随机旋转的泊松分布可以隐藏`undersampling artifacts`（采样不足引发的错误？）。（==运动的情况下，泊松分布的结果是不稳定的==）
+
+> Poisson sampling can be unstable under motion and finds that a spiral pattern formed by using a function halfway between dithering and random gives a better result frame to frame.
+
+通过使用AMD SM 5.0的特点，可以得的一个PCSS的快速实现`contact hardening shadows`（==CHS==），同时也解决了原有技术的一个问题：软阴影区域的大小受`shadow map`的分辨率影响。（F 7.25 右 ）通过生成阴影映射的mip maps，然后选择最接近` user-defifined world-space kernel size`的mip级别，可以最小化这个问题。具体来说：一旦确定了软阴影区域的估计值，在硬阴影区使用更高一级分辨率的mip map，而软阴影区则使用更低一级的。扩展技术：``separable soft shadow mapping` (==SSSM==)
+
+一个已经被证实具有==加速效果的算法==是 分层的`min/max shadow map`。生成两个mip maps ，分别记录（每个mip map）每个区域的最大值和最小值。这样可以快速判断每个区域是否在无或硬阴影区，避免无作用的软阴影计算。
+
+> A major assumption behind PCSS is that the average blocker is a reasonable estimate of the penumbra size.
+
+PCSS的一些问题和优化（如：`backprojection`，单像素成本高，而不常见于实时）
+
+> The idea is to treat each receiver’s location as a viewpoint and the area light source as part of a view plane, and to project occluders onto this plane. 
+
+
+
+## 7. Filtered Shadow Maps
+
+One algorithm that allows filtering of the shadow maps generated is `variance shadow map` (==VSM==) 。原理：存储深度值及其平方在两个图中（生成这些图时，MSAA等抗锯齿算法可以使用），These maps can be blurred, mip mapped, put in summed area tables , or any other method。==将这些Maps视为可过滤纹理是一个巨大的优点==：从它们那里检索数据时，可以使用整个采样和过滤阵列（the entire array of sampling and filtering）。
+
+> 关于VSM的具体细节，可以看Eisemann的书 `Real-Time Shadows`
+
+具体流程：
+
+- 首先，计算离接收者最近的`light occluder`的平均距离M~1~（通过接收者的位置对`shadow map`进行采样得到，被称为`first moment`），如果M~1~大于接收者t的深度，则该接收者处于完全光照区；否则，进行如下公式：
+    $$
+    p_{max}(t)=\frac{\sigma^2 }{\sigma^2+(t-M_1)^2}
+    $$
+    p~max~是光照下采样的最大百分比，t是接收者的深度，M1 is the average expected depth in the shadow map，$\sigma^2$是方差，其计算如下（使用之前提到的，存储深度值平方（二阶中心矩）的map的采样M~2~，称为`second moment`）
+    $$
+    \sigma^2=M_2-M_1^2
+    $$
+
+- p~max~是==接受者对于光源可见性的最大百分比==，实际情况下，不能大于这个值。==这个上界来自切比雪夫不等式的单边变式（one-sided variant）==。这个方程试图用概率论来估计：在表面位置的遮挡物有多少分布超出了表面与光线的距离（how much of the distribution of occluders at the surface location is beyond the surface’s distance from the light）。有研究表明，对于固定深度的`planar occluder`和`planar receiver`，p = p~max~，因此上诉方程可以用作*许多真实阴影情况的*一个良好近似。
+
+- 理解公式：一个区域的方差在阴影边界处变大，深度值差别越大，方差越大。$(t-M_1)^2$项在可见性百分比上举足轻重，如果它的值略高于于0，则说明`occulders`的平均深度比接收器更接近光源，而p~max~则趋近于1（完全照亮）。不断深入软阴影区，`occulder`的平均深度更加接近光源，此项变大，p~max~则减小，同时，方差也随之变化，从0开始变大，直到 where the occluders differ in depth and equally share the area。这些项相互平衡，产生线性变化的软阴影。（下图依次：标准SM、矩阵变化（透视）SM、PCSM、VSM）
+
+<img src="RTR4_C7.assets/image-20201020181154931.png" alt="image-20201020181154931" style="zoom:80%;" />
+
+方差阴影映射的一个显著特点：优雅地处理由几何形状引起的表面偏置问题（ surface bias problems）。Lauritzen给出了如何利用表面的斜率来修改二阶矩值的推导。（话说，没搞懂这段的核心思想是啥，感觉东一榔头，西一棒槌）
+
+总的来说，由于==GPU的优化纹理功能==得到了有效的利用，VSM在处理时间上显著提高了。相对PCF技术对采样的高要求，VSM只需要一次高质量的采样，就可以产生平滑的软阴影。
+
+<img src="RTR4_C7.assets/image-20201020183031689.png" alt="image-20201020183031689" style="zoom:67%;" />
+
+VSM失败的情况：沿着半阴影区，两个以上`occluder`遮挡一个物体，且一个`Occulder`离物体很近——概率论中的切比雪夫不等式将产生一个与正确的*光百分比*无关的最大光值。最近的遮挡器只部分地遮挡了光线，从而脱离了方程的近似。这导致了`light bleeding`(又名` light leaks`)，即==完全被遮挡的区域仍然接收到光==。解决方案：==在更小的区域上采集更多的样本，将VSM转化为PCF的形式==。另一个大佬提出了由艺术家控制的方法：较低光百分比的区域直接当作硬阴影区，重定义软阴影的范围，使光泄露的区域变暗。
+
+<img src="RTR4_C7.assets/image-20201020184132335.png" alt="image-20201020184132335" style="zoom:67%;" />
+
+虽然`light bleeding`是一个严重的限制，==VSM很适合为地形（terrian）产生阴影==，因为这种情况下的阴影很少涉及多个遮挡物。
+
+总的来说，这种过滤产生软阴影的技术逐渐流行，主要挑战依旧是上诉所言的`light bleeding`。`convolution shadow map`==卷积阴影贴图==：在傅里叶展开中编码阴影深度。与VSM一样，这样的映射可以被过滤。该方法收敛于正确的解，从而减少了bleeding问题。==这项技术的缺点是==：有几个额外的操作需要计算和处理，提高了运算和存储成本。由此，提出了仅使用一个基于指数的项的技术，`exponential shadow map`(==ESM==) 或者说`exponential variance shadow map (EVSM)`：这种方法将深度的指数值及其二阶矩（`second moment`）保存到两个缓冲区中。这项技术解决了CSM的一个问题`Ringing`。（书 p 256）
+
+> An exponential function more closely approximates the step function that a shadow map performs (in light or not), so this works to significantly reduce bleeding artifacts
+
+==存储指数值的一个问题==是精度问题，特别是`Second moment`。一个解决方法：z-depths can be generated so that they are linear。在VSM、CSM、ESM中，ESM拔得头筹。
+
+最近的一个技术是`moment shadow mapping`（扩展还包括光散射和透明度效果）；也可以将ESM和之前的`Cascaded shadow-map`结合起来。
+
+
+
+## 8. Volumetric Shadow Techniques
+
