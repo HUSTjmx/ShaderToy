@@ -1,6 +1,6 @@
 # Chapter 8 ——Light and Color
 
-
+![](RTR4_C8.assets/Light and Color.png)
 
 ## 1. Light  Quantities（光的量化）
 
@@ -48,7 +48,7 @@ Radiance is what sensors, such as eyes or cameras, measure, so it is of prime im
 
 ###  1.3 Colorimetry
 
-之前已经提到了，人对光的颜色感知与光的SPD（光谱功率分布）联系密切。我们还看到，这不是简单的一对一关系——图8.3中，底部和中间的SPDs是完全不同的，但是被感知为完全相同的颜色。`Colorimetry`==研究的是光谱功率分布SPD和颜色感知之间的关系==。
+之前已经提到了，人对光的颜色感知与光的SPD（光谱功率分布）联系密切。我们还看到，这不是简单的一对一关系——图8.3中，底部和中间的SPDs是完全不同的，但是被感知为完全相同的颜色（白色）。`Colorimetry`==研究的是光谱功率分布SPD和颜色感知之间的关系==。
 
 人类大概可以分辨1000万种颜色，对于颜色感知，==视网膜上有三种不同类型的锥体感受器==`cone receptors`，每一种感受器对不同的波长有不同的反应。==所以，对于一个给定的SPD，我们的大脑只通过这些感受器接收三种不同的信号==。这就是为什么只用三个数字就可以精确地表示任何颜色 。
 
@@ -88,13 +88,13 @@ The plot of the chromaticity coordinates x and y values is known as the CIE 1931
 
 <img src="RTR4_C8.assets/image-20201023224554617.png" alt="image-20201023224554617" style="zoom:80%;" />
 
-==sRGB==毫无疑问是实时渲染领域使用最广泛的颜色空间。然而，越来越多的显示器使用更宽的色域。一些用于照片编辑的显示器使用Adobe 1998色彩空间(未显示)。==DCI-P3色彩空间最初是为故事片制作而开发的，现在已经有了更广泛的用途——从iphone到mac==，苹果公司的产品线都采用了这种颜色空间，其他制造商也纷纷效仿。尽管==超高清(UHD)显示器==被指定使用极宽的色域==Rec. 2020颜色空间==，然而在许多情况下，DCI-P3也被用作超高清色彩空间。==ACEScg彩色空间==是由美国电影艺术与科学学院(AMPAS)开发的，用于故事片的计算机图形渲染。它不打算用作显示色彩空间，而是用作渲染的工作色彩空间，在渲染后将颜色转换为适当的显示色彩空间。
+==sRGB==毫无疑问是实时渲染领域使用最广泛的颜色空间。然而，越来越多的显示器使用更宽的色域。一些用于照片编辑的显示器使用Adobe 1998色彩空间(未显示)。==DCI-P3色彩空间最初是为故事片制作而开发的，现在已经有了更广泛的用途——从iphone到mac==，苹果公司的产品线都采用了这种颜色空间，其他制造商也纷纷效仿。尽管==超高清(UHD)显示器==被指定使用极宽的色域==Rec. 2020颜色空间==，然而在许多情况下，DCI-P3也被用作超高清色彩空间。==ACEScg彩色空间==是由美国电影艺术与科学学院(AMPAS)开发的，用于故事片的计算机图形渲染。它不打算用作显示色彩，而是用作渲染的工作色彩，在渲染后将颜色转换为适当的显示色彩。
 
 有很多方法可以从RGB色彩空间转化到XYZ色彩空间（或其他色彩空间），其中一个常用的就是：转化一个RGB颜色到一个灰度亮度值。因为亮度值等于XYZ中的Y（前面说过），所以实际上这个操作就是$RGB\rightarrow XYZ$的Y部分。这个转化如下：
 $$
 Y=0.2126R+0.7152G+0.0722B
 $$
-比色法`Colorimetry`能告诉我们两种颜色刺激是否匹配，但不能预测它们的`appearance`。一个给定的XYZ颜色刺激很大程度上取决于诸如光线、周围的颜色和先前的条件等因素。==颜色外观模型(CAM)==`Color appearance models`，如CIECAM02试图处理这些问题，并预测最终的颜色外观。（具体见 书 P 278）
+比色法`Colorimetry`能告诉我们两种颜色刺激是否匹配，但不能预测它们的`appearance`。一个XYZ下的颜色刺激很大程度上取决于光线、周围的颜色等因素。==颜色外观模型(CAM)==`Color appearance models`，如CIECAM02试图处理这些问题，并预测最终的颜色外观。（具体见 书 P 278）
 
 
 
@@ -126,7 +126,7 @@ $$
 
 At the time of writing，很少有消费级的HDR显示器有亮度超过1500$cd/m^2$的，在实际应用中，其显示色域更接近于DCI-P3，而不是Rec. 2020。因此，==HDR显示器执行内部的色调和色域映射==` tone and gamut mapping`，从标准规格到实际显示能力。This mapping can be affected by metadata（元数据） passed by the application to indicate the actual dynamic range and gamut of the content。
 
-在应用程序方面，==有三种路径可以将Image传输到HDR显示器==，尽管根据显示器和操作系统的不同，并不是所有三种路径都可用：
+在应用程序方面，==有三种路径可以将Image传输到HDR显示器==，但根据显示器和操作系统的不同，并不是所有三种路径都可用：
 
 - HDR10：广泛支持HDR显示器以及PC和控制台操作系统。framebuffer格式是：32位/像素，每个RGB通道有10位无符号整数位，alpha通道有2位。使用PQ非线性编码和Rec. 2020颜色空间。每个HDR10 显示器执行自己的色调映射（tone mapping），而不是标准化的或文档化的。
 -  scRGB（线性变体）：仅仅支持Windows操作系统，名义上，使用sRGB原色和white level，不过支持值小于0和大于1。framebuffer格式为每个通道16位，并存储线性RGB值。它可以与任何HDR10显示器一起工作，因为有转换为HDR10的驱动程序。它的作用主要是为了便利性和向后兼容sRGB。
@@ -182,7 +182,7 @@ At the time of writing，很少有消费级的HDR显示器有亮度超过1500$cd
 
 ==Reinhard tone reproduction operator==是早期用于实时渲染的色调变换之一。它留下大部分较暗的值不变，而较亮的值渐近到白色。Drago等人提出了一种有点类似的色调映射算子，它可以调节输出显示的亮度，这使其更适合HDR显示。后续更多相关技术，详见 书 P287。
 
-==ACES==`Academy Color Encoding System`是一项建议标准，用于管理电影和电视行业的color。ACES将转换分为两个部分。第一个是参考渲染转换`reference rendering transform`(==RRT==)——在设备中立输出空间``output color encoding specification`（OCES）中，将场景引用的值转换为显示引用的值。第二部分是输出设备转换`output device transform`==ODT==，它将从OCES中的颜色值转换为最终的显示编码。有许多不同的ODT，每一个都为特定的显示设备和查看条件而设计。H神建议：为同时支持SDR和HDR显示的应用程序使用ACES`tone mapping transforms`。
+==ACES==`Academy Color Encoding System`是一项建议标准，用于管理电影和电视行业的color。ACES将转换分为两个部分。第一个是参考渲染转换`reference rendering transform`(==RRT==)——在设备中立输出空间``output color encoding specification`（OCES）中，将场景引用的值转换为显示引用的值。第二部分是输出设备转换`output device transform`==ODT==，它将OCES中的颜色值转换为最终的显示编码。有许多不同的ODT，每一个都为特定的显示设备和查看条件而设计。H神建议：为同时支持SDR和HDR显示的应用程序使用ACES`tone mapping transforms`。
 
 尽管ACES是为电影和电视设计的，但在实时应用中的使用越来越多。ACE色调映射在Unreal引擎中是默认启用的，Unity引擎也支持它。==HDR显示器使用色调映射需要小心，因为它可能有内置的色调映射==。有关寒霜引擎的色调映射，详见书 P 287。
 
