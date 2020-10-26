@@ -4,7 +4,7 @@
 
 标签：procedural，volumetric，lod
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\ShaderToy优秀代码阅读解析\云雾\IQ_Clouds优秀代码解析.assets\IQ-Clouds.gif)
+![](IQ_Clouds优秀代码解析.assets\IQ-Clouds.gif)
 
 ### Render
 
