@@ -100,5 +100,102 @@ $$
 
 <img src="RTR4_C9.assets/image-20201027170521755.png" alt="image-20201027170521755" style="zoom:67%;" />
 
-距离（出点和入点间的）和阴影尺度（像素的大小，或采样之间的距离）之间的关系很重要。==如果这个entry-exit距离小于后者==，表面下的散射与表面反射结合成一个局部着色模型，在一个点上发出的光只依赖于同一点上的入射光。 The `specular term` models surface reflection, and the `diffuse term` models local subsurface scattering；否则，就需要考虑，其它点散射对某点的影响了。
+距离（出点和入点间的）和阴影尺度（像素的大小，或采样之间的距离）之间的关系很重要。==如果这个entry-exit距离小于后者==，表面下的散射与表面反射结合成一个局部着色模型，在一个点上发出的光只依赖于同一点上的入射光。 The `specular term` models surface reflection, and the `diffuse term` models local subsurface scattering；否则，就需要考虑，其它点的散射对某点的影响了——也就是所谓的`global subsurface scattering `。（至于次表面散射是使用局部，还是全局，则取决于物体的材质和观察尺度，更多技术见书 C 14）。
+
+<img src="RTR4_C9.assets/image-20201028152542676.png" alt="image-20201028152542676" style="zoom:67%;" />
+
+
+
+## 2. The Camera
+
+渲染的图像系统包含一个由许多离散的小传感器组成的传感器表面。辐照度传感器本身不能产生图像，因为它们平均来自所有入射方向的光线。因此，一个完整的成像系统包括：带有==光圈==`aperture`的防光==外壳==`enclosure`，用来限制光线进入和撞击传感器的方向。放置在光圈处的==透镜==`lens`可使光线聚焦，从而使每个传感器只接收一小部分方向的光线。外壳、光圈和透镜的共同作用，使传感器具有`directionally specific`（特定的方向性）。因此，==相机只对一小部分区域的一部分入射光进行平均处理==。
+
+渲染中模拟的简单图像传感器，叫做==针孔相机==`pinhole camera`。这种相机有着理想化的光圈，近似一个没有尺寸概念的点，而且没有透镜。当然，渲染实际使用还要对其进行修改——设定一个`camera position`来代表针孔相机的位置，如下图中:arrow_down:
+
+<img src="RTR4_C9.assets/image-20201028154755192.png" alt="image-20201028154755192" style="zoom: 50%;" />
+
+尽管针孔相机的建模较为成功，但效果相对人眼，是不够好的，上图右:arrow_up:，加了一个透镜，这样采样了更多的光，且允许大光圈，但这会对相机的深度造成限制——过近、过远的物体都会被模糊，当然，大部分情况，我们就是需要这种效果，也就是常说的==景深==。
+
+
+
+## 3. The BRDF
+
+==根本上，基于物理的渲染是为了计算沿着一组ray到达相机的辐射率==`radiance`，对于每一个Ray，我们需要计算$L_i(c,-v)$，其中，c是相机的位置，v是相机指向渲染点的向量。我们在渲染中，对于物体所处环境的介质 ，常见的考虑是对光无影响的纯净空气；当然也可以考虑那种会散射或吸收光的介质`participating media`，这种情况的考虑，见书 P C 14。因此在本章的考虑下，有如下关系：(p是视线和最近物体的交点)
+$$
+L_i(c,-v)=L_o(p,v)
+$$
+ 首先，我们不考虑透明物体和全局次表面散射，而专注于局部反射现象，包括：==表面反射和局部次表面散射==，且只依赖于入射光方向l，出射视线方向v。这些可以通过`bidirectional reflectance distribution function`（BRDF）进行量化，公式中写为$f(l,v)$。
+
+早期的实现中，由于物体的表面通常被设定成参数一致的，所以BRDF是常数，但是真实世界中，则很少有这种物体。技术上，基于空间位置的BRDF变体，称为`spatially varying BRDF` (==SVBRDF==) or spatial BRDF (SBRDF)，However, this case is so prevalent in practice that the shorter term BRDF is often used and implicitly assumed to depend on surface location。
+
+出射和入射方向通常都是双自由度的：相对表面方线的仰角`elevation `，方位角` azimuth`。==一般情况下，BRDF包含四个标量变量==。各向同性BRDFs`Isotropic BRDFs`是其中一个重要的特例，其特点是：入射方向和射出方向绕表面法线旋转时，这种BRDFs保持不变，保持它们之间的相对角度相同。因此，这种BRDF只有三个变量，因为光线和相机之间只有一个角度$\phi$需要。（不需要$\phi_i或\phi_o$）
+
+> What this means is that if a uniform isotropic material is placed on a turntable and rotated, it will appear the same for all rotation angles, given a fixed light and camera.
+
+<img src="RTR4_C9.assets/image-20201028162306666.png" alt="image-20201028162306666" style="zoom:67%;" />
+
+因为我们忽略荧光和磷光，可以假设出射光和入射光的波长是一致的。反射光量可以根据波长的不同而变化，这==可以用两种方式来建模==：波长被当作BRDF的一个额外输入变量，或者BRDF返回一个频谱分布的值。第一种方法常见于离线渲染，而第二种则是实时渲染。此时，可以有反射方程：
+$$
+L_o(p,v)=\int_{I\in \Omega}{f(l,v)L_i(p,l)(n\cdot l)dl}
+$$
+我们可以将进行采样的半L_o(\theta_o)球参数化，用球坐标表示上诉公式：
+$$
+L_o(\theta_o,\phi_o)=\int_{\phi_i=0}^{2\pi}{\int_{\theta_i=0}^{\pi/2}{f(\theta_i,\phi_i,\theta_o,\phi_o)L(\theta_i,\phi_i)cos\theta_isin\theta_id\theta_id\phi_i}}
+$$
+也可以使用更加不同的参数化，使用$\mu_i=cos\theta_i,\mu_o=cos\theta_o$
+
+<img src="RTR4_C9.assets/image-20201028164141296.png" alt="image-20201028164141296" style="zoom:80%;" />
+
+跟Phong模型一样，我们需要考虑，视点在表面以下的情况，即$n\cdot v<0$（主要由法线引起）。简单的clamp会导致`artifacts`，寒霜引擎的解决思路是加上一个小值（0.00001），来避免除零错误。另一个解决思路是`soft clamp`。==物理定律对任何BRDF都有两个限制==：
+
+- `Helmholtz reciprocity`：即使输入和输出角度切换，函数值也是相同的——$f(l,v)=f(v,l)$。在实践中，用于渲染的BRDFs通常会违反这个限制，但不会出现明显的`artifacts`，除了特别需要互易性`reciprocity`的离线渲染算法，如双向路径跟踪`bidirectional path tracing`。
+- `energy`：第二个限制是能量守恒，出射光的能量不能大于入射光，无需像离线渲染（如：路径追踪）那么精确，==对于实时渲染，精确的能量守恒是不必要的，但是近似的能量守恒是重要的==。用BRDF渲染的表面明显违反了能源节约，会太亮，导致看起来不现实。
+
+`directional-hemispherical reflectance`==R(l)是一个和BRDF有关的函数，用来测量BRDF的节能程度==。本质上，它测量的是，从指定方向来的入射光，在表面法线的半圆上朝各个方向反射的光量。定义如下：
+$$
+R(l)=\int_{v\in \Omega}f(l,n)(n\cdot v)dv
+$$
+`hemispherical-directional reflflectance`，类似但在某种意义上相反的功能，其定义R(v)如下：
+$$
+R(v)=\int_{l\in \Omega}f(l,n)(n\cdot l)dl
+$$
+If the BRDF is reciprocal，这两者是相等的。在这两种反射率可互换使用的情况下，==方向反照率==`Directional albedo `可作为这两种反射率的总称。==BRDF节能的要求是，对于l的所有可能值，R(l)不大于1==。
+
+朗伯模型`Lambertian shading model`是最简单的BRDF（常数），常用来计算` local subsurface scattering`，这时，可以计算得到：
+$$
+R(l)=\pi f(l,v)
+$$
+郎伯BRDF的恒定反射率值通常称为`diffuse color`$c_{diff}$或者`albedo`$\rho$。本节为了体现和次表面散射的相关性，将其称为`subsurface albedo`$\rho_{ss}$。所以：
+$$
+f(l,v)=\frac{\rho_{ss}}{\pi}
+$$
+==在半球上对cos求积分得到$\pi$，这解释了分母==。这些因素经常出现在BRDFs中。理解BRDF的一种方法是：在保持输入方向不变的情况下可视化它，如下图（几个模型的可视化结果，==经典==）。
+
+<img src="RTR4_C9.assets/image-20201028185215407.png" alt="image-20201028185215407" style="zoom:67%;" />
+
+
+
+## 4. Illumination
+
+全局关照算法`Global illumination`（==GI==）通过模拟光在整个场景的传播和反射来计算$L_i(l)$。这些算法使用渲染方程，其中反射方程是一种特例。GI将在后面介绍，这里主要讨论`local illumination`。在局部光照中，$L_i(l)$直接给出，而不需要计算。同时，这里只考虑` punctual lights`，不考虑区域光
+
+考虑光源` directional light`(区域光的面积无限小)，其光线为l~c~，颜色为正对着光源的白色郎伯平面的反射辐射率。那么可以得到如下公式：
+$$
+L_o(v)=\pi f(l_c,v)c_{light}(n\cdot l_c)^+
+$$
+对于`Punctual lights`，唯一的区别是：不能考虑无限远的情况，c~light~随着距离平方的倒数下降。
+$$
+L_o(v)=\pi\sum_{i=1}^n{f(l_{c_i},v)c_{light_i}(n\cdot l_{c_i})^+}
+$$
+结合之前的公式，$\pi$可以消掉，这样就从渲染方程中删去了除法操作。然而，必须注意的是，在论文向实际商业使用的过渡中，一般情况下，BRDF在使用前需要与$\pi$相乘。
+
+
+
+## 5. Fresnel Reflectance
+
+==光与平面（两种物质之间的）的相互作用遵循菲涅尔方程==`Fresnel equations`。根据几何光学的假设，菲涅耳方程需要一个平面界面，且不考虑会影响光的` irregularities`。
+
+<img src="RTR4_C9.assets/image-20201028192857577.png" alt="image-20201028192857577" style="zoom:67%;" />
+
+:arrow_up:反射光的量（作为入射光的一部分）由==菲涅耳反射率==`Fresnel reflflectance`F描述，它取决于入射角$\theta_i$。==菲涅耳方程描述了F对$\theta_i$、n~1~和n~2~的依赖关系==。我们将描述它们的重要特征，而不是给出复杂的方程。
 
