@@ -48,7 +48,7 @@ In computer graphics，texturing is a process that takes a surface and modifies 
 
 对应函数（Corresponder Function ）将纹理坐标（texture coordinates  ）转化为纹理空间位置（texture-space locations  ），对应函数的一个示例是：使用API选择用于显示的现有纹理的一部分，在后续操作中只使用此子映像。
 
-另外一种类型的对应函数是==矩阵变换==，包括：移动，旋转，缩放，交错等。奇特的是，==纹理的变换顺序必须和我们实际期待的相反==。
+一种类型的对应函数是==矩阵变换==，包括：移动，旋转，缩放，交错等。奇特的是，==纹理的变换顺序必须和我们实际期待的相反==。
 
 ==另一类对应函数，控制图像的应用方式==。我们知道，当(u, v)在[0,1]范围内时，图像将出现在曲面上。但是在这个范围之外会发生什么呢？对应函数决定了这种行为。在OpenGL中，这种类型的对应函数称为“Wrapping mode”；在DirectX，它被称为“纹理寻址模式”。这类常见的函数有:
 
