@@ -199,3 +199,19 @@ $$
 
 :arrow_up:反射光的量（作为入射光的一部分）由==菲涅耳反射率==`Fresnel reflflectance`F描述，它取决于入射角$\theta_i$。==菲涅耳方程描述了F对$\theta_i$、n~1~和n~2~的依赖关系==。我们将描述它们的重要特征，而不是给出复杂的方程。
 
+
+
+### 5. External Reflection
+
+`External reflflection`，从折射率较低的物质，传播到折射率ROI较大的物质中。`internal reflflection`则相反。对于给定的物质，菲涅耳方程可以解释为：一个只与入射光角度有关的反射函数F。原则上，==F的值在可见光谱上是连续变化的==。出于渲染目的，它的值被视为RGB向量。函数F具有以下特征：
+
+- 当$\theta_i=0^o$时，F~0~被认为是该物质的特殊高光颜色，这种情况被称为`normal incidence`。
+- 随着$\theta_i$变大， the light strikes the surface at increasingly glancing angles，$F(\theta_i)$也变大。当$\theta_i=90^o$时， reaching a value of 1 for all frequencies。
+
+如下图:arrow_down:。这是几个物质（玻璃、铜和铝）的菲涅尔可视化。可以看出是高度非线性化的——前期几乎没有变化，直到75^o^左右，突增到1。
+
+<img src="RTR4_C9.assets/image-20201029134225862.png" alt="image-20201029134225862" style="zoom:67%;" />
+
+==容易想到，反射最强烈的部分在物体边缘，而从摄像机的角度来说，这个部分则占据了相对较少的像素==。此外，我们可以看到，上诉曲线图使用的是Sin值作为横坐标（讲真，没看出来），而不是直接的角度。而下图:arrow_down:解释了为什么：
+
+<img src="RTR4_C9.assets/image-20201029135717331.png" alt="image-20201029135717331" style="zoom:67%;" />

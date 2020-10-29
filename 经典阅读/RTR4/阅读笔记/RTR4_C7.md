@@ -203,7 +203,7 @@ $$
 
 通过使用AMD SM 5.0的特点，可以得的一个PCSS的快速实现`contact hardening shadows`（==CHS==），同时也解决了原有技术的一个问题：软阴影区域的大小受`shadow map`的分辨率影响。（F 7.25 右 ）通过生成阴影映射的mip maps，然后选择最接近` user-defifined world-space kernel size`的mip级别，可以最小化这个问题。具体来说：一旦确定了软阴影区域的估计值，在硬阴影区使用更高一级分辨率的mip map，而软阴影区则使用更低一级的。扩展技术：`separable soft shadow mapping` (==SSSM==)
 
-一个已经被证实具有==加速效果的算法==是 分层的`min/max shadow map`。生成两个mip maps ，分别记录（每个mip map）每个区域的最大值和最小值。这样可以快速判断每个区域是否在无或硬阴影区，避免无作用的软阴影计算。
+一个已经被证实具有==加速效果的算法==是 分层的`min/max shadow map`。生成两个mip maps ，分别记录（每个mip map）每个区域的最大值和最小值深度。这样可以快速判断每个区域是否在无或硬阴影区，避免无作用的软阴影计算。
 
 > A major assumption behind PCSS is that the average blocker is a reasonable estimate of the penumbra size.
 
