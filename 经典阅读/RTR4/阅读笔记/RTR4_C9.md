@@ -283,7 +283,7 @@ $$
 
 以上讨论的都是渲染中常用的`External Reflection`，但`Internal Reflection`有时也很重要。这种情况，具体来说是：当光线在透明物体内部传播时，就会“从内部”接触到物体表面，从而发生内部反射。
 
-![image-20201029174902360](RTR4_C9.assets/image-20201029174902360.png)
+<img src="RTR4_C9.assets/image-20201029174902360.png" alt="image-20201029174902360" style="zoom:67%;" />
 
 由于折射角始终大于反射角，所有就会产生一个临界值$\theta_c$——大于它之后，所有光都被反射，折射为0。（$\theta _i=\theta_c\rightarrow sin\theta_t=1\rightarrow\theta_i>\theta_c,sin\theta_t>1,error $）此时的现象被称为==全反射==`total internal reflection`。
 
@@ -303,6 +303,113 @@ $$
 
 > 两个微观尺度：
 >
-> + 基于光波的大小。物体表面的不规则变化相对光波的尺寸，主要考虑的是光的干扰和衍射，区分的是物理光学和几何光学
-> + 基于像素的大小。散射入口和出口的距离，主要考虑的是全局次表面散射。
-> + 微平面理论。基于像素，考虑小于一个像素的物体表面的不规则性——法线和自遮挡。
+> + 基于光波的大小。物体表面的不规则变化相对光波的尺寸，主要考虑的是光的干扰和衍射，区分的是物理光学和几何光学。（表面不规则性的尺寸大于一个`wave lenghth`，小于100倍的`wave length`）
+> + 基于像素的大小。散射入口和出口的距离大于一个像素，主要考虑的是全局次表面散射。
+> + 微平面理论。基于像素，考虑小于一个像素的不规则性——法线和自遮挡。
+
+每个可见表面点包含许多==微表面法线==，这些微表面法线将光反射到不同的方向。对于大多数表面，微观几何的表面法线分布是连续的，在宏观表面法线处有一个峰值。这种分布的“紧密性”由表面粗糙度` roughness`决定。==表面越粗糙，微观几何法线就会越“铺开”==
+
+<img src="RTR4_C9.assets/image-20201030141105921.png" alt="image-20201030141105921" style="zoom:67%;" />
+
+==对于大多数表面，微表面法线的分布是各向同性的==`isotropic`，这意味着它是旋转对称的，缺乏任何内在的方向性。也有些表面是各向异性`anisotropic`，如下图:arrow_down:
+
+<img src="RTR4_C9.assets/image-20201030142058918.png" alt="image-20201030142058918" style="zoom:67%;" />
+
+==高度结构化的微表面法线分布会导致一些奇特的渲染效果，例如：织物效果==`Fabrics`（具体见本节 10）。虽然多重表面法线`multiple surface normals `是微几何对反射率的主要影响，但其他作用也可能是重要的。（例如：下图左、右的`shadow`、`masking`）
+
+<img src="RTR4_C9.assets/image-20201030143041846.png" alt="image-20201030143041846" style="zoom:80%;" />
+
+==如果微观几何高度与表面法线有一定的相关性，那么阴影shadow和掩蔽Masking可以有效地改变表面的正态分布==。例如:arrow_down:，想象一个表面，凸起的部分由于风化而变得光滑，而较低的部分仍然是粗糙的。在掠视角度，表面较低的部分将趋向于被阴影或遮蔽，从而产生一个有效的光滑表面。
+
+<img src="RTR4_C9.assets/image-20201030143455034.png" alt="image-20201030143455034" style="zoom:67%;" />
+
+==对于所有的表面类型，表面不规则的可见尺寸随着入射角度的增加而减小==。目前为止，我们已经讨论了微观几何对镜面反射率的影响。在某些情况下，微表面细节也会影响`subsurface reflectance`。如果微观几何不规则性大于`subsurface reflectance distance`，==那么阴影和掩蔽会导致逆光反射效果==`retroreflection`，光线会优先反射回入射方向。
+
+<img src="RTR4_C9.assets/image-20201030145043182.png" alt="image-20201030145043182" style="zoom:67%;" />
+
+
+
+## 7. Microfacet Theory（微平面理论）
+
+大多数BRDF模型都是基于微表面对反射的影响的数学分析，进行建模的。这种数学分析就是微平面理论`Microfacet Theory`。 The theory is based on the modeling of microgeometry as a collection of microfacets。
+
+==主要原理：表面由很多微面元组成，每一个微面元都是平面，都有一个单独的微法线==；微表面根据micro-BRDF f~u~(l, v, m)反射光线，所有微面元的反射系数加在一起，就构成了整个表面的BRDF。通常的选择是：每个微面都是一个完美的菲涅尔镜面`Fresnel mirror`，从而产生一个==specular微面BRDF==，来对反射进行建模。
+
+> However, other choices are possible. ==Diffuse micro-BRDFs== have been used to create several local subsurface scattering models . A ==diffraction micro-BRDF== was used to create a shading model combining geometrical and wave optics effects。
+
+##### NDF
+
+微平面理论的一个重要性质就是：==微观法线的统计分布== [over the microgeometry surface area ]。这种分布可以通过==normal distribution function==（NDF，D(m) ）进行描述。仅对D(m)求球面积分，可以得到微表面区域的面积；对D(m)(n*m)求球面积分，可以得到投影面积，一般默认等于1:arrow_down:。需要注意的是，这里求积分都是在整个球域上，而不是之前的半球。
+
+<img src="RTR4_C9.assets/image-20201030152211254.png" alt="image-20201030152211254" style="zoom: 67%;" />
+
+![image-20201030152229481](RTR4_C9.assets/image-20201030152229481.png)
+
+更一般地说，在垂直于视线方向v的平面上，微观表面和宏观表面的投影是相等的:arrow_down:。
+
+<img src="RTR4_C9.assets/image-20201030153133212.png" alt="image-20201030153133212" style="zoom:67%;" />
+
+直观地说，==NDF就像是微面法线的直方图==。==它在微面法线更可能指向的方向上具有高值。大部分表面都有NDFs==。
+
+
+
+##### Masking Function
+
+可见微面的投影面积之和等于宏观表面的投影面积。我们可以通过定义masking函数G~1~(m, v)来数学地表达这一点。結合上面的NDF，求球面积分，可得到：可见微表面在视线垂直平面上的投影面积。$G_1(m,v)\cdot D(m)$就是所谓的`distribution of visible normals `。
+
+<img src="RTR4_C9.assets/image-20201030153956455.png" alt="image-20201030153956455" style="zoom:67%;" />
+
+<img src="RTR4_C9.assets/捕获.PNG" style="zoom:67%;" />
+
+Masking函数是NDF的一个约束。对于NDF而言，这种约束有很多。本质上，它告诉我们有多少法线指向方向m的微平面，但不会告诉我们：它们是如何排列的。
+
+H神提出了==Smith Masking==函数，该函数最初是为高斯正态分布推导的，后来推广到任意NDFs。他指出，只有==Smith Function和Torrance-Sparrow “V-cavity” function==满足上诉球积分公式，而史密斯公式更接近于随机微表面的行为，且具备`normal-masking independence`——G1(m, v)的值不依赖于m的方向。下面是 Smith G1 function：（不同NDF的$\Lambda(v)$是不同的，具体求法见Walter 、Heitz 的相关文章）
+
+<img src="RTR4_C9.assets/image-20201030155758031.png" alt="image-20201030155758031" style="zoom:67%;" />
+
+<img src="RTR4_C9.assets/image-20201030155829752.png" alt="image-20201030155829752" style="zoom:67%;" />
+
+Smith的缺点：从理论角度来看，其要求与实际表面的结构不一致，甚至在物理上是不可能实现的。从实际的角度来看，虽然它对于随机表面来说，是相当精确的，但是对于法线方向和Masking之间有较强依赖性的表面（特别是表面有一些重复的结构的情况），其精度会降低。
+
+给定一个微观几何描述，包括：micro_BRDF f~u~(l,v,m)，NDF D(m)，Masking Function G~1~(m,v)，==宏观表面的BRDF可以推导如下==：
+
+<img src="RTR4_C9.assets/image-20201030160828933.png" alt="image-20201030160828933" style="zoom:67%;" />
+
+此时，就不能对表面以下的半球进行采样，所以我们只对上半球进行积分。当然，最引人注目的是替代了G~1~(m,v)的`joint masking-shadowing function`G~2~(l,v,m)。这个函数由G~1~导出，给出了两个`fraction of microfacets`：从视线向量v和光向量l两个角度。通过包含G~2~函数，上诉公式使BRDF能够考虑`Masking`和`Shadow`，但==不能考虑微观面之间的相互反射==（这是所有BRDFs的限制）。
+
+Heitz讨论了G~2~函数的几个版本。==最简单的是可分离的形式==，即：使用G~1~分别评估遮挡和阴影——G~1~(v,m)和G~2~(l,m)，然后乘在一起。
+
+<img src="RTR4_C9.assets/image-20201030161941147.png" alt="image-20201030161941147" style="zoom:80%;" />
+
+==这种形式相当于：假设掩蔽和阴影是不相关的==。实际上，它们不是这样的，而且这种假设会导致BRDFs过度暗化`over-darkening`。作为一个极端的例子，考虑v=l，合理的情况应该是G~2~=G~1~，而这个公式会导致G~2~=G~1~^2^。
+
+考虑l和v的相对方位角$\phi$，当$\phi=0$时，G~2~=min(G~1~(l,m),  G(v,m))。==这一关系提供了一种通用的方式来解释掩蔽和阴影之间的关系：==
+
+![image-20201030163707609](RTR4_C9.assets/image-20201030163707609.png)
+
+随着$\phi$不断增大，$\lambda(\phi)$从0逼近到1。Ashikhmin等人提出了一个标准差为15^o^的高斯分布(约为0.26弧度)：
+
+<img src="RTR4_C9.assets/image-20201030163934959.png" alt="image-20201030163934959" style="zoom:67%;" />
+
+范·辛内肯提出了一种不同的拟合函数：
+
+<img src="RTR4_C9.assets/image-20201030164023588.png" alt="image-20201030164023588" style="zoom:67%;" />
+
+阴影和遮蔽的相关性，可以体现在另外一方面：低处的点，阴影和遮蔽的概率都增大。这种关系用`Smith height-correlated masking-shadowing function`进行描述：
+
+<img src="RTR4_C9.assets/image-20201030164320315.png" alt="image-20201030164320315" style="zoom:67%;" />
+
+==Heitz还提出了一种结合了方向和高度相关性的Smith G~2~:==
+
+<img src="RTR4_C9.assets/image-20201030164529763.png" alt="image-20201030164529763" style="zoom:67%;" />
+
+在这些选择中，Heitz推荐了`Smith height-correlated masking-shadowing function`，因为它与不相关形式的成本相似，而且精度更高。==这种形式在实践中使用最广泛==。
+
+一般的micro BRDF并不直接用于渲染。在给定的micro-BRDF参数后，给出一个closed-form解。下一节将展示此类派生的第一个示例。
+
+
+
+
+
+## 8. BRDF Models for Surface Reflection
+
