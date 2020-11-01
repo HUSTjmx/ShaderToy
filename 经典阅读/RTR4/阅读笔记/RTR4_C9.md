@@ -343,7 +343,7 @@ $$
 
 <img src="RTR4_C9.assets/image-20201030152211254.png" alt="image-20201030152211254" style="zoom: 67%;" />
 
-![image-20201030152229481](RTR4_C9.assets/image-20201030152229481.png)
+<img src="RTR4_C9.assets/image-20201030152229481.png" alt="image-20201030152229481" style="zoom:67%;" />
 
 更一般地说，在垂直于视线方向v的平面上，微观表面和宏观表面的投影是相等的:arrow_down:。
 
@@ -369,7 +369,7 @@ H神提出了==Smith Masking==函数，该函数最初是为高斯正态分布�
 
 <img src="RTR4_C9.assets/image-20201030155829752.png" alt="image-20201030155829752" style="zoom:67%;" />
 
-Smith的缺点：从理论角度来看，其要求与实际表面的结构不一致，甚至在物理上是不可能实现的。从实际的角度来看，虽然它对于随机表面来说，是相当精确的，但是对于法线方向和Masking之间有较强依赖性的表面（特别是表面有一些重复的结构的情况），其精度会降低。
+Smith的缺点：从理论角度来看，其要求与实际表面的结构不一致，甚至在物理上是不可能实现的。从实际的角度来看，虽然它对于随机表面来说，是相当精确的，但是对于法线方向和Masking之间有较强依赖性的表面（特别是表面有一些重复的结构的情况，如毛皮），其精度会降低。
 
 给定一个微观几何描述，包括：micro_BRDF f~u~(l,v,m)，NDF D(m)，Masking Function G~1~(m,v)，==宏观表面的BRDF可以推导如下==：
 
@@ -385,7 +385,7 @@ Heitz讨论了G~2~函数的几个版本。==最简单的是可分离的形式==�
 
 考虑l和v的相对方位角$\phi$，当$\phi=0$时，G~2~=min(G~1~(l,m),  G(v,m))。==这一关系提供了一种通用的方式来解释掩蔽和阴影之间的关系：==
 
-![image-20201030163707609](RTR4_C9.assets/image-20201030163707609.png)
+<img src="RTR4_C9.assets/image-20201030163707609.png" alt="image-20201030163707609" style="zoom: 80%;" />
 
 随着$\phi$不断增大，$\lambda(\phi)$从0逼近到1。Ashikhmin等人提出了一个标准差为15^o^的高斯分布(约为0.26弧度)：
 
@@ -413,3 +413,156 @@ Heitz讨论了G~2~函数的几个版本。==最简单的是可分离的形式==�
 
 ## 8. BRDF Models for Surface Reflection
 
+当微表面是理想的菲涅尔平面时（一个入射线，只产生一个反射线），容易想到，只有反射方向与视线方向一致时，此入射光线才有贡献（可以理解为`h=m`），如下图，只有红色区域才能被人眼感知到：
+
+<img src="RTR4_C9.assets/image-20201101144116236.png" alt="image-20201101144116236" style="zoom:67%;" />
+
+此时，对于之前的积分项，可以解的如下结果：（m变成了h，这是因为m=h时，才有贡献）
+
+<img src="RTR4_C9.assets/image-20201101145341234.png" alt="image-20201101145341234" style="zoom:80%;" />
+
+
+
+### 8.1 Normal Distribution Functions
+
+法线分布函数是很重要的。在微平面的法线球面上，==NDF决定了反射光线锥的宽度和形状==`the specular lobe`。NDF影响表面粗糙度的整体感知，以及更细微的方面，如高光是否有明显的边缘或 are surrounded by haze。
+
+然而，高光波瓣`the specular lobe`==并不是NDF形状的简单复制==，通常需要需要依据表面曲度、视点角度等进行一定程度的扭曲。掠射角角下，这个特点很明显:arrow_down:。
+
+<img src="RTR4_C9.assets/image-20201101150722164.png" alt="image-20201101150722164" style="zoom:67%;" />
+
+
+
+##### Isotropic Normal Distribution Functions
+
+<span style="font-size:1.3rem; background:red; color:black">Beckmann NDF</span>是第一批微表面模型中使用的法线分布。它至今仍广泛使用，也是Cook-Torrance BRDF选择的NDF。标准化的形式如下：
+
+<img src="RTR4_C9.assets/image-20201101151237981.png" alt="image-20201101151237981" style="zoom:67%;" />
+
+:arrow_up:这个NDF，和将要讨论的NDF一样，都描述了一个高度场微表面` heightfield microsurface`。$\alpha_b$控制表面粗糙度，正比于微表面的方差RMS。Beckmann NDF 是形状不变的，并简化了Λ的推导。根据Heitz的定义，==如果其粗糙度参数的影响等同于缩放(拉伸)微表面，则各向同性NDF是形状不变的==。Shape-invariant NDFs可以写成以下形式：
+
+<img src="RTR4_C9.assets/image-20201101151940113.png" alt="image-20201101151940113" style="zoom:67%;" />
+
+:arrow_up:其中，g是任意单变量函数。对于一个任意的各向同性的NDF==，$\Lambda$函数的推导依赖两个变量：一个是粗糙度$\alpha$==，一个是 incidence angle of the vector (v or l）。而对于形状不变的NDF，如Beckmann NDF来说，只依赖于参数a，起计算如下：
+
+<img src="RTR4_C9.assets/image-20201101152500939.png" alt="image-20201101152500939" style="zoom:80%;" />
+
+其中，s是l或v，更进一步，Beckmann NDF的$\Lambda$函数的计算如下：
+
+<img src="RTR4_C9.assets/image-20201101152818087.png" alt="image-20201101152818087" style="zoom:67%;" />
+
+由于计算高昂（包含erf计算），所以，可以使用以下近似值：
+
+<img src="RTR4_C9.assets/image-20201101153045269.png" alt="image-20201101153045269" style="zoom: 67%;" />
+
+<span style="font-size:1.2rem; background:red; color:black">Blinn-Phong NDF</span>在移动设备上依然广泛使用（计算成本低），是对Phong模型的修改：
+
+<img src="RTR4_C9.assets/image-20201101155442667.png" alt="image-20201101155442667" style="zoom:67%;" />
+
+$\alpha_p$就是粗糙度，高值代表光滑的平面，低值代表粗糙的平面。==但由于它的视觉表现不均匀（非线性），所以对它进行直接操作是不方便的==。因此，通过对一个用户设定的参数进行非线性映射，来推导，例如：$a_p=m^s$，s是一个[0,1]之间的数，而m是$a_p$的上界。
+
+> Such “==interface mappings==” are generally useful when the behavior of a BRDF parameter is not perceptually uniform. These mappings are used to interpret parameters set via sliders or painted in textures
+
+以上两个方法的粗糙度可以通过公式$\alpha_p=2\alpha_b^{-2}-2$进行匹配，此时两者的曲线是很接近的（尤其是光滑平面:arrow_down:）
+
+<img src="RTR4_C9.assets/image-20201101161847028.png" alt="image-20201101161847028" style="zoom:67%;" />
+
+此外，Phong方法的NDF不是形状不变的，所以不存在$\Lambda$函数的解析方法。==W神建议使用Beckmann $\Lambda$方程，其中$\alpha_p$使用上诉匹配公式计算==。
+
+<span style="font-size:1.2rem; background:red; color:black">GGX distribution</span>及其变体，是如今电影和游戏种，使用==最为广泛的方法==（也叫`Trowbridge-Reitz distribution`）:
+
+<img src="RTR4_C9.assets/image-20201101163944994.png" alt="image-20201101163944994" style="zoom:67%;" />
+
+==在Disney BRDF中，建议对$\alpha_g$进行如下非线性映射：$\alpha_g=r^2$，==其中r就是用户直接操作的粗糙度（[0,1]）——大多数GGX都使用了这种映射。而GGX是形状不变的` shape-invariant`，所以$\Lambda$函数的解析形式如下：（a的值在Beckmann中讲过计算方法）
+
+<img src="RTR4_C9.assets/image-20201101164355367.png" alt="image-20201101164355367" style="zoom:67%;" />
+
+==the height-correlated Smith G~2~ for GGX==  has terms that cancel out when combined with the denominator of the specular microfacet BRDF (Equation 9.34). The combined term can be simplified thusly：
+
+<img src="RTR4_C9.assets/image-20201101165257863.png" alt="image-20201101165257863" style="zoom: 67%;" />
+
+其中：$\mu_i=(n\cdot l)^+,\mu_o=(n\cdot v)^+$，K神为GGX提出了对Smith G~1~的近似:arrow_down:：
+
+<img src="RTR4_C9.assets/image-20201101165535010.png" alt="image-20201101165535010" style="zoom:67%;" />
+
+其中s可以被l或v替代，这种拟合进一步产生了一种对`the height-correlated Smith G2 function`G~2~和BRDF的有效拟合方法:arrow_down:：(其中：$lerp(x,y,s)=x(1-s)+ys$)
+
+<img src="RTR4_C9.assets/image-20201101165808251.png" alt="image-20201101165808251" style="zoom:67%;" />
+
+GGX和Beckmann方法在形状上的差别如下:arrow_down:。实际渲染差别，也可见图:arrow_down:，由于GGX的尾部信息更多，更广，所以在高光的周围产生了一种模糊的辉光`glow`效果。
+
+<img src="RTR4_C9.assets/image-20201101170042232.png" alt="image-20201101170042232" style="zoom:67%;" />
+
+<img src="RTR4_C9.assets/image-20201101170249582.png" alt="image-20201101170249582" style="zoom: 50%;" />
+
+<span style="font-size:1.2rem; background:red; color:black">GTR</span>：许多真实世界的材料显示出类似的模糊亮点，且尾部通常比GGX分布更长，这是GGX日益流行的一个重要因素。Burley提出了``generalized Trowbridge-Reitz `(==GTR==) NDF，其目标是：==对NDF的形状进行更多的控制，特别是尾部==。
+
+<img src="RTR4_C9.assets/image-20201101170759117.png" alt="image-20201101170759117" style="zoom:67%;" />
+
+其中，$\gamma$控制尾部形状（值为2时，就是GGX）。$\gamma$减小，尾部变长；$\gamma$变大，尾部变短。$k(\alpha,\gamma)$项是归一化项：
+
+<img src="RTR4_C9.assets/image-20201101181322872.png" alt="image-20201101181322872" style="zoom:67%;" />
+
+由于GTR是形状变化的，这导致寻找它的Smith G~2~变得困难，==GTR的另一个问题==是：参数$\alpha$和参数$\gamma$以一种非直观的方式影响感知粗糙度和“辉光”。
+
+> 一直看到这里，我似乎知道了$\Lambda$函数前后参数的差别，为什么前面是$\Lambda(l)、\Lambda(v)$，而后面是$\Lambda(a)$？其实，我们可以看到，a的求解就是使用l,v得到的，所以我们具体的流程是：使用l或v，求得a，然后计算$\Lambda$。
+
+最新的一些形状不变技术：`Student’s t-distribution`（STD），`exponential power distribution`（EPD）NDFs。除了使用更加复杂的NDF，==一个替代方案是使用复合高光波瓣，来更好的拟合材质==。N神发现对于大多数材质，添加第二个高光波瓣会极大提升匹配质量（例如：皮克斯的`PxrSurface`）；还有一种方法是：两个GGX进行混合。![image-20201101170508050](RTR4_C9.assets/image-20201101170508050.png)
+
+
+
+##### Anisotropic Normal Distribution Functions
+
+各向异性的NDF，除了参数$\theta_m$（n和m之间的夹角——注意的是，之前说过，我们这里考虑的是理想平面，所以这里实际上就是$\theta_m=0\rightarrow m=h$的情况），我们需要朝向信息。通常，微平面法线需要转化到切线空间`tangent space `，通过TBN矩阵。
+
+把` normal mapping`与各向异性BRDFs结合起来后，重要的是：要确保`normal map`==对切向量T和位切向量B以及法线N进行扰动==。这个过程通常是：通过对扰动后的法线n，和插值后的顶点正切和位切向量t~0~和b~0~，应用`modified Gram-Schmidt`过程来完成（假设n已经被归一化了）:arrow_down:：（关于这个施密特，可以见谷歌收藏的博客）
+
+<img src="RTR4_C9.assets/image-20201101185125270.png" alt="image-20201101185125270" style="zoom: 80%;" />
+
+或者，在第一行之后，通过对n和t做叉乘，可以得到正交向量b。
+
+==对于像金属拉丝或卷发这样的效果，对每个像素的切线方向进行修改是必需的==，这个修改通常由切线贴图提供。切线贴图通常存储切向量在垂直于法线的平面上的二维投影。
+
+==生成各向异性NDF的一个常见方法：是在一个已经存在的各向同性NDF上进行扩展==。这种方法通常基于形状不变的NDF，这也是它流行的另外一个原因。回顾之前，形状不变的各向同性的一般形式如下：
+
+<img src="RTR4_C9.assets/image-20201101151940113.png" alt="image-20201101151940113" style="zoom:67%;" />
+
+g是一维函数，来表示NDF的形状。各向异性的版本是：
+
+<img src="RTR4_C9.assets/image-20201101192653606.png" alt="image-20201101192653606" style="zoom:80%;" />
+
+其中，参数$\alpha_x,\alpha_y$是T，B方向的粗糙度。G~2~并没有发生变化，但是$\Lambda$的参数a发生了变化：
+
+![image-20201101193125076](RTR4_C9.assets/image-20201101193125076.png)
+
+用这种方法，==已推导出Beckmann NDF的各向异性版本==：
+
+<img src="RTR4_C9.assets/image-20201101193240683.png" alt="image-20201101193240683" style="zoom: 80%;" />
+
+以及GGX NDF的：
+
+<img src="RTR4_C9.assets/image-20201101193318480.png" alt="image-20201101193318480" style="zoom:80%;" />
+
+各个技术的渲染效果如下：
+
+<img src="RTR4_C9.assets/image-20201101193353902.png" alt="image-20201101193353902" style="zoom:67%;" />
+
+对于各向异性技术而言，进行参数化最直接的方式是：使用各向同性的粗糙度两次。而在==迪士尼模型中==，结合粗糙度$\gamma$，加入了新的标量参数$k_{aniso}$（[0,1]）。这个时候，可以计算两个粗糙度：
+
+<img src="RTR4_C9.assets/image-20201101193702355.png" alt="image-20201101193702355" style="zoom:80%;" />
+
+==Imageworks使用了不同的参数化，允许任意程度的各向异性==：
+
+![image-20201101193819401](RTR4_C9.assets/image-20201101193819401.png)
+
+
+
+###  8.2 Multiple-Bounce Surface Reflection
+
+==正如前面提到的，微平面BRDF框架不考虑：微表面反射("bounced")多次的光==。这种简化会造成能量损失和过度暗化，特别是对于粗糙的金属。==Imageworks使用了一项技术==，结合了之前工作，创建了一个可以添加到BRDF中的术语，以模拟多次微表面反射。
+
+![image-20201101194241786](RTR4_C9.assets/image-20201101194241786.png)
+
+关于这个技术，具体见书P 346。应用效果:arrow_down:，主要差别见右上角。
+
+<img src="RTR4_C9.assets/image-20201101194656105.png" alt="image-20201101194656105" style="zoom:80%;" />
