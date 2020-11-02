@@ -197,7 +197,7 @@ $$
 
 <img src="RTR4_C9.assets/image-20201028192857577.png" alt="image-20201028192857577" style="zoom:67%;" />
 
-:arrow_up:反射光的量（作为入射光的一部分）由==菲涅耳反射率==`Fresnel reflflectance`F描述，它取决于入射角$\theta_i$。==菲涅耳方程描述了F对$\theta_i$、n~1~和n~2~的依赖关系==。我们将描述它们的重要特征，而不是给出复杂的方程。
+:arrow_up:反射光的量（作为入射光的一部分）由==菲涅耳反射率==`Fresnel reflectance`F描述，它取决于入射角$\theta_i$。==菲涅耳方程描述了F对$\theta_i$、n~1~和n~2~的依赖关系==。我们将描述它们的重要特征，而不是给出复杂的方程。
 
 
 
@@ -566,3 +566,136 @@ g是一维函数，来表示NDF的形状。各向异性的版本是：
 关于这个技术，具体见书P 346。应用效果:arrow_down:，主要差别见右上角。
 
 <img src="RTR4_C9.assets/image-20201101194656105.png" alt="image-20201101194656105" style="zoom:80%;" />
+
+
+
+
+
+## 9. BRDF Models for Subsurface Scattering
+
+本章主要讨论电解质中的局部次表面散射，也就是我们常说的`diffuse`项。
+
+
+
+### 9.1 Subsurface Albedo
+
+==不透明电解质的次表面反射率$\rho_{ss}$是离开表面和进入表面的光能的比例==。其值依赖于波长，可以建模为RGB向量，对于我们创造者而言，==$\rho_{ss}$通常被我们认为是表面surface的diffuse color，就像F~0~通常被认为是表面的specular color==。
+
+`subsurface albedo`可以被认为是吸收和散射之间 "竞赛 "的结果——光在散射出来之前，会不会被吸收干净。这就是为什么液体上的泡沫比液体本身更亮。初雪的albedo可以达到0.8以上，而生活中大部分物质都在0.15到0.4之间，煤是一个特例，接近于0。而生活中物体打湿会变黑，就是因为吸收变多，散射减少（具体分析见书 P 349）。
+
+==一个常见的误区==：在创建真实材料时，$\rho_{ss}$的值不该低于大概[0.015, 0.03]的下界。然而这个下界是基于高光和漫反射一起计算的，所以太高了，现实材料的下界其实更低。
+
+关于使用RGB值来表达albedo $\rho_{ss}$，主要是：很多RGB值无法代表合理的albedo。具体见书 P  349。否则会降低真实性，以及导致GI中过亮的二次反射。
+
+
+
+### 9.2  Scale of Subsurface Scattering and Roughness
+
+一些用于局部次表面散射的BRDF模型考虑了表面粗糙度，具有代表性的是：使用微平面理论，结合diffuse micro-BRDF  $f_\mu$（或不使用）。==具体使用哪种模型的决定因素是==：表面不规则性`irregularities`的尺寸大小、次表面散射距离`the subsurface scattering distances`。
+
+<img src="RTR4_C9.assets/image-20201102134138084.png" alt="image-20201102134138084" style="zoom:67%;" />
+
++ 如果微观几何不规则性大于次表面散射距离（图的左上方:arrow_up:），那么==次表面散射将会表现出微观几何相关的效应==，如逆光反射`retroreflection `。对于这样的表面，应该使用==粗糙表面扩散模型==——` rough-surface diffuse model`。如上所述，此类模型通常基于微面理论，将` subsurface scattering`视为每个微面的局部。
+
++ 如果次表面散射距离大于所有的微观几何不规则性（图右上方:arrow_up:），然后，为了模拟次表面散射，表面应该被认为是平坦的，这样就不会出现`retroreflection`这样的效果。不能通过微观面理论来建模，在这种情况下，应该使用==光滑表面扩散模型==——` smooth-surface diffuse model`。
+
++ 在中间情况下，表面不规则性在尺度上比散射距离大或小，那么粗糙表面扩散模型应该被使用，但有效表面只包括那些不规则性比散射距离大的。漫反射和镜面反射都可以用微面理论建模，但每个都有不同的粗糙度值。镜面项将使用一个基于实际表面粗糙度的值，而漫反射项将使用一个较低的值（基于有效表面的粗糙度）。
+
+观察的尺度也是一个主要因素，例如：月亮，我们能观察到明显的逆光效应。
+
+
+
+### 9.3  Smooth-Surface Subsurface Models
+
+漫反射渲染不直接受到粗糙度的影响，如果漫反射项和镜面项是耦合的`coupled`，那么表面粗糙度可能会间接影响漫反射渲染。正如之前所说的，实时渲染程序经常使用如下==Lambertian漫反射项==：
+$$
+f_{diff}(l.v)=\frac{\rho_{ss}}{\pi}
+$$
+这个模型不考虑微表面理论，提升的思路是：高光和漫反射项之间的`trade-off`。如果镜面项是平面镜情况下的，则产生的漫射项为：
+$$
+f_{diff}(l.v)=(1-F(n,l))\frac{\rho_{ss}}{\pi}
+$$
+如果镜面项是微面BRDF情况下的，则产生的漫反射项为：
+$$
+f_{diff}(l.v)=(1-F(h,l))\frac{\rho_{ss}}{\pi}
+$$
+由于BRDF值不依赖于出射方向v，所以出射光的分布是均匀的，然而，==有两个原因质疑了均匀的合理性==：
+
++  First, since the diffuse BRDF term in Equation 9.62 varies by incoming direction, Helmholtz reciprocity implies that it  must change by outgoing direction as well.
++ The light must undergo refraction on the way out, which will impose some directional preference on the outgoing light.
+
+Shirley等人提出了平坦表面` flat surfaces`的==耦合漫射项==，解决了菲涅尔效应和`surface-subsurface`反射的权衡问题，同时支持能量守恒和赫尔姆霍兹互易性` Helmholtz reciprocity`：
+$$
+f_{diff}(l,v)=\frac{21}{20\pi}(1-F_0)\rho_{ss}(1-(1-(n\cdot l)^+)^5)(1-(1-(n\cdot v)^+)^5)
+$$
+这个公式只适用于镜面反射率为完美菲涅尔镜的表面。而一个可以计算导数的通用版本是：
+$$
+f_{diff}(l,v)=\rho_{ss}\frac{(1-R_{spec}(l))(1-R_{spec}(v))}{\pi(1-\overline{R_{spec}})}
+$$
+其中，$R_{spec}$是高光项`specular`的方向化反照率` directional albedo`（Sec 3的R(l)），$\overline{R_{spec}}$项是在半球上的余弦加权平均值。前者可以通过之前Sec 3的公式预计算，然后存储在LUT中；后者可以通过之前在Sec 8.2中的计算$\overline{R_{sF1}}$的方法来计算。Imageworks的多次反射镜面项是由Kelemen-Szirmay-Kalos耦合扩散项导出的。==R~spec~查找表的维数是三维的，因为它不仅依赖于粗糙度和仰角，而且还依赖于菲涅尔反射率==。
+
+关于其他大神的拓展和研究，具体见书 P 352。
+
+无论是完全基于物理，还是这里漫反射和高光的权衡，这些模型中的许多都依赖于Subrahmanyan Chandrasekhar的研究，但他并没有考虑折射——这限制了场景，表面两边的折射率应该一致。
+
+<img src="RTR4_C9.assets/image-20201102145644094.png" alt="image-20201102145644094" style="zoom:67%;" />
+
+
+
+### 9.4 Rough-Surface Subsurface Models
+
+As part of the Disney principled shading model, Burley  included a diffuse BRDF term designed to include roughness effects and match measured materials：（这个方程通常被称为==迪斯尼漫反射模型==）
+
+<img src="RTR4_C9.assets/image-20201102150004230.png" alt="image-20201102150004230" style="zoom:80%;" />
+
+![image-20201102150102585](RTR4_C9.assets/image-20201102150102585.png)
+
+其中，次表面项$f_{ss}$用来作为远处物体上的全局次表面散射的替代项；通过k~ss~项进行混合。完整的迪士尼漫反射BRDF模型还包括一个光泽`sheen`术语，主要用于建模织物`fabrics`，也有助于减弱由于缺乏`multiple-bounce specular`而造成的能量损失。
+
+而大多数其他的漫反射模型，使用的是之前说过的微平面理论（NDF D，micro-BRDF f~u~，G~2~），最著名的就是 ==Oren-Nayar BRDF==。
+
+> The Oren-Nayar BRDF uses a Lambertian micro-BRDF, a spherical Gaussian NDF, and the Torrance-Sparrow “V-cavity” masking-shadowing function
+
+此模型假设的微表面具有与当前高光模型中完全不同的NDF和G~2~函数。接下来介绍两种漫反射微平面模型：第一个是==Gotanta模型==，具体见书 P 355；第二个==Hammon模型==在第一个的基础上，考虑了平面互反射。他指出，互反射对于微表面结构很重要，特别是对于粗糙的表面，其反射率高达总反射率的一半。（==这里还是要看书==）
+
+<img src="RTR4_C9.assets/image-20201102152329900.png" alt="image-20201102152329900" style="zoom:67%;" />
+
+其中，$\alpha_g$是GGX高光项的粗糙度。
+
+==简单的Lambertian项仍然被许多实时渲染应用程序使用==。除了Lambertian的低计算成本之外，它比其他漫射模型更容易用于间接照明和烘烤照明`baked lighting`，而且它与更复杂的模型之间的差异是很小的。然而，对现实主义的持续追求，正在推动研究更精确的模型。
+
+
+
+## 10. BRDF Models for Cloth
+
+衣物`cloth`有着和其他材质不同的微表面结构，它可能有高度重复的编织`woven`微结构，垂直表面的突起圆柱体，或者两者都有。因此，这种材质要求特定的渲染模型，例如：各向异性的高光、粗糙散射`asperity scattering`[919](光通过突出的半透明纤维散射引起的亮边效应)，甚至颜色会随着视线方向的变化而变化（由穿过织物的不同颜色的线引起）。除了BRDF，==大多数面料都具有高频的空间变化==`high-frequency spatial variation `，这也是创造出真实的布料外观的关键:arrow_down:：
+
+<img src="RTR4_C9.assets/image-20201102155106650.png" alt="image-20201102155106650" style="zoom: 50%;" />
+
+==布料BRDF模型主要分为三类==：基于观察建立的经验模型、基于微面理论的模型和微柱面模型` micro-cylinder models`。
+
+
+
+###  10.1 Empirical Cloth Models（经验模型）
+
+在游戏`Uncharted 2`中，衣物表面主要使用如下的漫反射BRDF项：
+
+<img src="RTR4_C9.assets/image-20201102155521692.png" alt="70" style="zoom:67%;" />
+
+其中，$k_{rim},k_{inner},k_{diff}$三者是用户控制的缩放因子——分别是a rim lighting term、a term to brighten forward-facing (inner) surfaces, and a Lambertian term。
+
+Uncharted 4中的布料也使用了微面或微圆柱体模型，这取决于布料类型。 ==a “wrap lighting” empirical subsurface scattering approximation== for the diffuse term：
+
+<img src="RTR4_C9.assets/image-20201102160206496.png" alt="image-20201102160206496" style="zoom:67%;" />
+
+其中，用户指定的参数`cscatter`是散射颜色，w(范围为[0,1])控制缠绕照明宽度`wrap lighting width`。
+
+==迪士尼模型==，正如之前所言，使用了`sheen`项来模型粗糙面散射：
+
+<img src="RTR4_C9.assets/image-20201102160536079.png" alt="image-20201102160536079" style="zoom:67%;" />
+
+其中：$k_{sheen}$来调节光泽项`sheen`的强度；光泽颜色项c~sheen~用来混合白色和$\rho_{ss}$的` luminance-normalized value`。
+
+
+
+###  10.2 Microfacet Cloth Models
