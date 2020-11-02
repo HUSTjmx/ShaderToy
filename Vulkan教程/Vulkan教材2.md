@@ -584,3 +584,113 @@ vkFreeMemory(device, stagingBufferMemory, nullptr);
 
 
 ### 4. Index buffer
+
+画一个矩形需要两个三角形，这意味着我们的顶点缓冲区需要有6个顶点。问题是两个顶点的数据是重复的，从而导致50%的冗余。在更复杂的网格中，它只会变得更糟，==顶点在平均3个三角形中被重用。此问题的解决方案是使用索引缓冲区==。
+
+==索引缓冲区本质上是一个指向顶点缓冲区的指针数组==。它允许您重新排序顶点数据，并重用多个顶点的现有数据。
+
+
+
+#### Index buffer creation
+
+在本章中，我们将修改顶点数据，并添加索引数据来绘制一个像图中那样的矩形。修改顶点数据以表示四个角：
+
+```c
+const std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+```
+
+我们将添加一个新的数组索引，来表示索引缓冲区的内容。它应该匹配插图中的索引，以绘制右上三角形和左下三角形。
+
+```c
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
+};
+```
+
+根据顶点数量，可以对索引缓冲区使用`uint16_t`或`uint32_t`。我们可以坚持使用`uint16_t`，因为我们使用的顶点少于65535个。
+
+就像顶点数据，索引需要被上传到一个`VkBuffer`，让GPU能够访问它们。定义两个新的类成员来保存索引缓冲区的资源
+
+```c
+VkBuffer vertexBuffer;
+VkDeviceMemory vertexBufferMemory;
+VkBuffer indexBuffer;
+VkDeviceMemory indexBufferMemory;
+```
+
+我们现在要添加的`createIndexBuffer`函数几乎与`createVertexBuffer`相同
+
+```c
+void initVulkan() {
+    ...
+    createVertexBuffer();
+    createIndexBuffer();
+    ...
+}
+
+void createIndexBuffer() {
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), (size_t) bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+
+    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+```
+
+:arrow_up:==只有两个明显的区别==。缓冲区的大小`bufferSize`现在等于索引的数量乘以索引类型的大小；`indexBuffer`的参数`usage`应该是`VK_BUFFER_USAGE_INDEX_BUFFER_BIT`，而不是`VK_BUFFER_USAGE_VERTEX_BUFFER_BIT`。除此之外，过程是完全一样的。我们创建一个staging buffer 来复制索引的内容，然后将其复制到` final device local index buffer`。
+
+索引缓冲区应该在程序结束时清理，就像顶点缓冲区一样:arrow_down:：
+
+```c
+void cleanup() {
+    cleanupSwapChain();
+
+    vkDestroyBuffer(device, indexBuffer, nullptr);
+    vkFreeMemory(device, indexBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, vertexBuffer, nullptr);
+    vkFreeMemory(device, vertexBufferMemory, nullptr);
+
+    ...
+}
+```
+
+
+
+#### Using an index buffer
+
+使用索引缓冲区进行绘图，涉及到对`createCommandBuffers`的两个更改。我们首先需要绑定索引缓冲区，就像我们绑定顶点缓冲区一样。不同之处在于只能有一个索引缓冲区。不幸的是，不可能对每个顶点属性使用不同的索引，所以即使只有一个属性不同，我们仍然需要完全复制顶点数据。
+
+```c
+vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+```
+
+索引缓冲区通过`vkCmdBindIndexBuffer`绑定，vkCmdBindIndexBuffer有索引缓冲区、字节偏移量和作为参数的索引数据类型。如前所述，可能的类型是`VK_INDEX_TYPE_UINT16`和`VK_INDEX_TYPE_UINT32`:arrow_up:
+
+==仅仅绑定索引缓冲区还不能改变任何东西，我们还需要改变绘图命令来告诉Vulkan使用索引缓冲区==。删除`vkCmdDraw`并将其替换为`vkCmdDrawIndexed`:arrow_down:
+
+```c
+vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+```
+
+对这个函数的调用非常类似于`vkCmdDraw`。从第二个参数开始，==前两个参数==指定索引的数量和实例的数量。我们没有使用实例化，所以只指定一个实例。索引的数量表示将被传递到顶点缓冲区的顶点的数量；==下一个参数==指定：到索引缓冲区的偏移量，使用值1将导致图形卡从第二个索引处开始读取；==倒数第二个参数==指定：要添加到索引缓冲区中的索引的偏移量；==最后一个参数==指定了实例化的偏移量
+
+前一章已经提到，应该从一个内存分配中分配多个资源(如缓冲区)，但实际上应该更进一步。驱动程序开发人员建议将多个缓冲区（比如顶点缓冲区和索引缓冲区）存储到一个`VkBuffer`中，并在`vkCmdBindVertexBuffers`命令中使用偏移量。这样做的好处是，在这种情况下，您的数据对缓存更友好，因为它们之间的距离更近。如果在相同的渲染操作中没有使用相同的内存块，甚至可以为多个资源，重用相同的内存块
