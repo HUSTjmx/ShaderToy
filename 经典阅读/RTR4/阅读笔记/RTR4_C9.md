@@ -1,5 +1,7 @@
 # Chapter 9——Physically Based Shading
 
+[toc]
+
 ## 1.  Physics of Light
 
 ==光和物质的相互作用形成了PBS的基础==。为了理解这些相互作用，对光的本质有一个基本的理解是有帮助的。在==物理光学==中，光被建模为电磁横波`transverse wave`——一种使电场和磁场垂直于其传播方向的波。这两个场的振荡是耦合的（ coupled）。磁场和电场矢量相互垂直，它们的长度之比是固定的（这个比值等于相速度` phase velocity`，==通常称其为光速c==）
@@ -668,7 +670,7 @@ As part of the Disney principled shading model, Burley  included a diffuse BRDF 
 
 ## 10. BRDF Models for Cloth
 
-衣物`cloth`有着和其他材质不同的微表面结构，它可能有高度重复的编织`woven`微结构，垂直表面的突起圆柱体，或者两者都有。因此，这种材质要求特定的渲染模型，例如：各向异性的高光、粗糙散射`asperity scattering`[919](光通过突出的半透明纤维散射引起的亮边效应)，甚至颜色会随着视线方向的变化而变化（由穿过织物的不同颜色的线引起）。除了BRDF，==大多数面料都具有高频的空间变化==`high-frequency spatial variation `，这也是创造出真实的布料外观的关键:arrow_down:：
+衣物`cloth`有着和其他材质不同的微表面结构，它可能有高度重复的编织`woven`微结构，垂直表面的突起圆柱体（线），或者两者都有。因此，这种材质要求特定的渲染模型，例如：各向异性的高光、粗糙散射`asperity scattering`[919](光通过突出的半透明纤维散射引起的亮边效应)，甚至颜色会随着视线方向的变化而变化（由穿过织物的不同颜色的线引起）。除了BRDF，==大多数面料都具有高频的空间变化==`high-frequency spatial variation `，这也是创造出真实的布料外观的关键:arrow_down:：
 
 <img src="RTR4_C9.assets/image-20201102155106650.png" alt="image-20201102155106650" style="zoom: 50%;" />
 
@@ -690,7 +692,7 @@ Uncharted 4中的布料也使用了微面或微圆柱体模型，这取决于布
 
 其中，用户指定的参数`cscatter`是散射颜色，w(范围为[0,1])控制缠绕照明宽度`wrap lighting width`。
 
-==迪士尼模型==，正如之前所言，使用了`sheen`项来模型粗糙面散射：
+==迪士尼模型==，正如之前所言，使用了`sheen`项来模拟粗糙面散射：
 
 <img src="RTR4_C9.assets/image-20201102160536079.png" alt="image-20201102160536079" style="zoom:67%;" />
 
@@ -698,4 +700,175 @@ Uncharted 4中的布料也使用了微面或微圆柱体模型，这取决于布
 
 
 
-###  10.2 Microfacet Cloth Models
+###  10.2 Microfacet Cloth Models（微面模型）
+
+A神提出使用倒高斯NDF`inverted Gaussian NDF`来模拟天鹅绒。在随后的工作中对这个NDF进行了轻微的修改，提出了用于一般材料建模的微面BRDF的变体形式，没有masking-shadow，分母也进行了修改。
+
+游戏`The Order：1886`中使用的布料BRDF，结合了A神调整后的BRDF和布料NDF的广义形式。其中，布料BRDF的广义形式如下：
+
+<img src="RTR4_C9.assets/image-20201104152612817.png" alt="image-20201104152612817" style="zoom:80%;" />
+
+其中，$\alpha$控制反向高斯的宽度，k~amp~控制它的幅度，因此，==完整的布料BRDF==如下：
+
+<img src="RTR4_C9.assets/image-20201104152814906.png" alt="image-20201104152814906" style="zoom: 80%;" />
+
+Imageworks使用不同的`inverted NDF`来表示光泽`sheen`，可以添加到任何BRDF中：
+
+<img src="RTR4_C9.assets/image-20201104153034781.png" alt="image-20201104153034781"  />
+
+<img src="RTR4_C9.assets/image-20201104153610780.png" alt="image-20201104153610780" style="zoom:67%;" />
+
+当然，对于这种NDF，是没有一个得到史密斯Masking-shadowing的`close-form`方案，而ImageWorks使用解析函数得到了一个近似解，具体一些细节可以看*[442]*。目前我们所看到的每种布料模型都仅限于特定类型的布料。下一节讨论的模型试图以更一般的方式建模布料。
+
+
+
+### 10.3 Micro-Cylinder Cloth Models
+
+布料的渲染和毛发的渲染是相似的，因此14章的一些讨论可以为我们提供额外的思路。本节模型隐含的想法就是：这些表面都被一维的线覆盖着。
+
+- `Kajiya-Kay BRDF`，其核心思想是：由一维线组成的曲面，在任何给定的位置上都有无限多的法线，这些法线由垂直于该位置的切向量t的法线面定义。
+- 梦工厂的模型。
+- Sadeghi模型（采样织物，内部线的遮挡，线间的阴影）。
+- 毛发渲染模型的使用。
+
+
+
+## 11. Wave Optics BRDF Models
+
+我们之前讨论的都是[几何光学](表面的不规则性小于波长，或者大于波长的100倍)中的模型，但现实中，我们也会遇到物理光学的情况，这时我们将不规则性的大小，称为`nanogeometry`，用波动光学的波动性质来为它们建模。
+
+> 厚度接近于光波长的表面或薄膜也会产生与光的波动性质有关的光学现象。
+
+### 11.1 Diffraction Models
+
+`nanogeometry`会导致衍射现象（之前也说过）。为了解释这种现象，我们使用惠更斯-菲涅耳原理`Huygens-Fresnel principle`，该原理表明：波前的每一个点（具有相同相位的点集）都可以作为新的球面波的来源。
+
+<img src="RTR4_C9.assets/image-20201104160053890.png" alt="image-20201104160053890" style="zoom: 67%;" />
+
+见上图:arrow_up:：当波碰到障碍物时（图中），HF原理表明它们在角落的位置轻微的混合`blend`，这就是衍射的情况之一。而考虑图右的情况，几何光学给出了正确的结果，但HF定理赋予了更深的理解——它表明，表面上的球面波正好排成一条线，形成反射波面，其他方向的波通过破坏性干扰` destructive interference`被消除。当我们观察一个具有`nanometer irregularities`的表面时，这种见解就变得很重要。由于表面点的高度不同，表面上的球面波不再那么整齐地排列在一起
+
+<img src="RTR4_C9.assets/image-20201104162355702.png" alt="image-20201104162355702" style="zoom:67%;" />
+
+> 需要注意。衍射光一般分布在反射光的周围
+
+在这种情况下，只有一部分光波超反射方向传播，剩下的光以一种定向模式衍射出来。==反射光和衍射光的区分，取决于纳米几何凸起的高度，或者更精确地说，取决于高度分布的方差==。The angular spread of diffracted light around the specular reflection direction depends on the width of the nanogeometry bumps relative to the light wavelength（不规则性与光波的相对大小，决定了反射光周围的衍射光的扩散范围，成反比关系）。
+
+周期性的 `nanogeometry`（纳米级不规则性）表面，产生的衍射最为明显，因为重复行为通过构造干涉`constructive interference`增强了衍射光，从而产生彩虹。==最明显的例子：光盘==。而非周期性表面的衍射，学术界认为其衍射效果是轻微的，一般也不予考虑。
+
+然而，最近由Holzschuch*[762]*对测量材料的分析表明：==许多材料中存在显著的衍射效应==，这可能解释了——为什么用当前模型拟合这些材料是困难的，因为这些模型没有考虑衍射。
+
+- H神同时提出了自己的衍射BRDF。
+- Toisoul and Ghosh 实时衍射模型 **[1772, 1773]**
+
+
+
+### 11.2 Models for Thin-Film Interference
+
+薄膜干涉`Thin-film interference`是一种波动光学现象，当薄电解质层的顶部和底部，产生的反射光路相互干扰时，就会出现这种现象。
+
+<img src="RTR4_C9.assets/image-20201104164550131.png" alt="image-20201104164550131" style="zoom:80%;" />
+
+==具体表现是：an iridescent color shift==，具体分析见书P 362。
+
+为什么要足够薄才能出现这种现象呢？这和`coherence length`（相干长度）有关。将一个光波的复制，不断移动（ displaced？），直到两者不再<u>相互干涉</u>`interfere coherently`。这个长度与光的带宽成反比，==带宽是光的光谱功率分布(SPD)延伸的波长范围==。所以关于光的带宽和相干长度，有很多分析，具体见书P 362（其实，分析也很简单）
+
+> 激光的相干长度非常长，带宽非常窄
+>
+> 由于人的可见光波的范围是[400,700]nm，所以可以产生薄膜干涉的表面大概厚度是1微米，例如：==肥皂泡和油渍==
+
+和衍射一样，薄膜干涉之前也不受重视。然而，A神指出**[27]**此效果能够提升许多日常表面的真实性:arrow_down:。
+
+<img src="RTR4_C9.assets/image-20201104180503252.png" alt="image-20201104180503252" style="zoom: 67%;" />
+
+此效果一些实现与研究：
+
+- Smits and Meyer算法。产生的颜色主要是路径长度差的函数；一维LUT；dense spectral sampling；实时；**[1667]**
+- GAME :Call of Duty: Infinite Warfare。fast thin-film approximation；part of a layered material system。**[386]**
+-  Belcour and Barla。模拟光在薄膜中的多次反射，以及其他物理现象；非实时。**[129]**
+
+
+
+## 12. Layered Materials
+
+在现实中，材质通常覆盖在另一个材质上面。最简单也是最有视觉效果的layering案例之一是清漆`clear coat`——在不同材料上涂上一层光滑的透明层。许多公司，如：迪士尼、虚幻、梦工厂、皮克斯，都在自家的模型中提供了这项支持。
+
+`clear coat`最明显的视觉效果就是：双层反射（透明-空气层、基底-透明层）。一般来说，基底是金属，效果比较明显，因为基底和透明层的IOR相差较大，第二次反射比较明显。
+
+`clear coat`也可以是有颜色的，而这取决于视点和光源的角度，以及材质的IOR（本质上是光在透明层中[传播的距离](而更为本质的是，距离影响光的吸收，而光的吸收导致颜色的变化)）。而这些因素决定了不同公司模型的不同和复杂度。
+
+==在现实中，不同的层往往拥有不同的法线分布，这个实时通常不考虑（虚幻提供，作为可选项），但个人觉得是以后必须攻克的难点。==
+
+- 双W神提出了一种<u>分层微表面模型</u>` layered microfacet model`，其假设是：和微表面的大小相比，层的厚度是小的。他们的模型支持任意数量的层，并跟踪从顶层到底层的反射和折射事件，然后再返回。它对于==实时==实现来说足够简单的**[420,573]**，但是没有考虑到层之间的多重反射。  **[1862，1863]**
+- J神提出了一个全面和准确的框架，来模拟层次材料，包括多次反射。虽然==不适合实时实现==，但所使用的思想可以启发未来的实时技术。 **[811, 812]**
+- Game: Call of Duty: Infinite Warfare。任意层；支持每层不同的Normal Map；支持实时的超复杂材料:arrow_down:。**[386]**
+
+<img src="RTR4_C9.assets/image-20201104184128216.png" alt="image-20201104184128216" style="zoom:67%;" />
+
+
+
+## 13. Blending and Filtering Material
+
+<u>材料混合</u>`Material blending`是将多种材料的属性，即BRDF参数，结合在一起的过程。例如，为带有锈斑的金属片建模，我们可以绘制一个Mask纹理来控制锈斑的位置，并使用它来混合材料属性(高光颜色F~0~，漫反射颜色$\rho_{ss}$和粗糙度$\alpha$)。混合可以作为创建新纹理的预处理过程，通常被称为“烘焙”`baking`。此外，==混合的参数，一般也包括法线n==。
+
+大多数材料混合都是离线完成的，但也可以根据需要延迟到实时运行。在运行中混合纹理元素，提供了一套多样化的效果，同时也节省了内存。游戏为了各种目的而采用材质混合，比如：
+
+- Displaying dynamic damage on buildings, vehicles, and living (or undead) creatures
+- 用户自定义服装。
+- 增加场景和人物的视觉变化。
+
+==混合法线贴图需要特别小心==。通常，通过将处理过程视为[高度图](法线图是从高度图中导出的)之间的混合，可以获得良好的结果**[1086,1087]**。在某些情况下，例如在一个基本表面上覆盖一个细节法线贴图时，其他形式的混合是可取的。
+
+<u>材质过滤</u>`Material filtering`是一个和材质混合密切相关的话题。材质存储在纹理中，而纹理在被机器读取的过程中，会自动进行双线性插值、Mip Map等过滤操作，==而这些操作基于假设：被过滤的量(着色方程的输入)与最终颜色(着色方程的输出)具有线性关系。==而在法线贴图或包含非线性值的纹理上，使用线性mip mapping方法可能产生`artifacts`——闪烁高光`flickering highlights`、表面光泽度或亮度随表面与相机距离的变化而发生变化。由于闪烁高光更加明显，所以其解决方法称为<u>高光抗锯齿</u>`specular antialiasing`。
+
+
+
+### 13.1 Filtering Normals and Normal Distributions
+
+关于错误产生的分析，具体见书 P 367~368。为了获得最佳结果，过滤操作（如mipmapping）应该应用于法线分布`normal distributions`，而不是法线或粗糙度值。这样做意味着用一种稍微不同的方式来思考NDFs和法线之间的关系。通常NDF是在，由法线贴图的每像素法线所决定的局部切线空间中定义的。然而，当在不同的法线上过滤NDFs时，将法线贴图和粗糙度贴图的组合考虑为在切空间中定义的一个倾斜的NDF（one that does not average to a normal pointing straight up）会更有用。
+
+==目前使用的大多数技术都是通过计算法线分布的方差来实现的==。
+
+- T神的一个有趣的观察结果：如果法线分布平均后，不进行重新归一化，那么平均法线的长度与法线分布的宽度成反比。也就是说，原始法线在不同方向上的点越多，它们的平均法线就越短。==他提出了一种基于法线长度，来修正NDF粗糙度的方法==。用修正的粗糙度计算BRDF$\approx$对法线进行滤波。（以下公式基于Blinn-Phong NDF）**[1774]**
+
+![image-20201104194023823](RTR4_C9.assets/image-20201104194023823.png)
+
+​		此方法可以扩展到Beckmann NDF，但是GGX却不能这么直接，因为它和前两者不是明显等价的。更麻烦的是，GGX分布的				方差没有定义，这使得基于方差的技术族在与GGX一起使用时，其理论基础是不可靠的。但在实际中，对GGX扩展使用，却				效果不错。总而言之，==这种方法适合动态法线贴图，而不适合静态法线贴图==（不能与纹理压缩技术完美合作）。 **[1774]** 
+
+- `LEAN mapping`，基于对法线分布的协方差矩阵进行映射。与T神的技术一样，它可以很好地与GPU纹理过滤和线性mip mapping相结合。它还支持各向异性的正态分布，在动态生成的法线上表现不错，但在使用静态法线时需要大量的存储空间。不考虑各向异性的简化版`CLEAN mapping` **[93]**；`LEADR mapping`**[395,396]**扩展了LEAN映射，考虑了位移映射的可见性效果。 **[1320]**
+- `variance mapping`技术族。在实时领域，更多的还是使用静态法线。在这些技术中，当生成法线图的mip map链时，计算因为平均而损失的方差——以上技术都可以这个方法来克服它们的缺点。通常，==这些值用于修改现有粗糙度映射的mip map链==。具体计算方法：计算原始粗糙度的方差，加上法线方差，再转回粗糙度。 **[1266, 1267] 、[998]**
+
+> 以额外的存储为代价来改进结果：可以计算x和y方向的方差，并存储在各向异性的粗糙度映射中。尽管结果不自然，比较像人为设计的
+
+​		==方差映射技术不考虑GPU纹理过滤引入的方差==。为了弥补这一点，方差映射实现时，经常使用一个小的过滤器对法线映射的				顶层mip进行卷积**[740,998]**。在组合多个法线贴图时，例如细节法线贴图[106]，需要注意正确组合法线贴图的方差。
+
+​		方差映射使用高斯波瓣来近似法线分布。这是合理的，但在某些情况下有问题——闪烁的高光（具体见书 P 371）
+
+<img src="RTR4_C9.assets/image-20201104201939156.png" alt="image-20201104201939156" style="zoom:80%;" />
+
+在电影工业中，这通常是通过大量的超采样来解决的（上面的方差映射的问题：闪烁的高光），但这在实时渲染中是不可行的，甚至在离线渲染中也是不可取的。目前已经开发了一些技术来解决这个问题——有些不适合实时使用，但为未来的研究指明了方向**[84,810,1941,1942]**。已经设计了两种实时实现技术：
+
+- W神和B神提出了一种技术，用于渲染游戏《迪士尼无限3.0》中闪闪发光的雪。这项技术的目的是产生一个似是而非的闪光外观，而不是模拟一个特定的NDF。**[187,1837]**
+- Z神和K神开发的技术在多个尺度上模拟法线分布，在空间和时间上是稳定的，并允许多变的外观。 **[1974]** 
+
+==一些值得注意的参考文献==：
+
+- Bruneton等提出了一种处理海洋表面的变化的技术，该技术跨越了几何学到BRDF的尺度，包括环境照明。**[204]**
+- Schilling讨论了一种类似于方差映射的技术，该技术支持带有环境映射`environment maps`的各向异性渲染。**[1565]**
+- 此领域的早期工作的全面概述。 **[205]** 
+
+
+
+## Further Reading and Resources
+
+McGuire’s Graphics Codexand Glassner ’s Principles of ==Digital Image Synthesis== are good references for many of the topics covered in this chapter.  **[1188]  [543, 544]** 
+
+Some parts of Dutr´e’s ==Global Illumination Compendium==  are a bit dated (the BRDF models section in particular), but it is a good reference for ==rendering mathematics== (e.g., spherical and hemispherical integrals). **[399]**
+
+> Glassner ’s and Dutr´e’s references are both freely available online.
+
+For the reader curious to learn more about the ==interactions of light and matter==, we recommend Feynman’s incomparable lectures  (available online), which were invaluable to our own understanding when writing the physics parts of this chapter. **[469]**
+
+Other useful references include Introduction to Modern Optics by Fowles , which is a short and accessible introductory text,  and Principles of Optics by Born and Wolf, a heavier (figuratively and literally) book that provides a more in-depth overview. **[492]  [177]**
+
+==The Physics and Chemistry of Color== by Nassau [1262] describes the physical phenomena behind the ==colors of objects== in great thoroughness and detail.
+
