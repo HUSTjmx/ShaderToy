@@ -1,5 +1,7 @@
 # Chapter 6——Texturing
 
+[toc]
+
 In computer graphics，texturing is a process that takes a surface and modifies its appearance at each location using some image， function,，or other data source.。本章主要讨论纹理对于物体表面的影响，对于程序化纹理介绍较少。
 
 <img src="RTR4_C6.assets/Texturing.png" style="zoom: 150%;" />

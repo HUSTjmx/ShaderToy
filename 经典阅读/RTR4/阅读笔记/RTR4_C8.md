@@ -1,5 +1,7 @@
 # Chapter 8 ——Light and Color
 
+[toc]
+
 ![](RTR4_C8.assets/Light and Color.png)
 
 ## 1. Light  Quantities（光的量化）
