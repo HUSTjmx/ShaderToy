@@ -102,7 +102,7 @@ $\varepsilon(E_{pt}|\Theta)$结合了终端层形成的四种派系`cliques`的�
 
 <img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201104215522251.png" alt="image-20201104215522251" style="zoom:80%;" />
 
-​		其中，$\lambda_f$是权重向量，<.,.>表示一个向量，成本函数$l_{col}(f_i,f_j)$代表两个家具的重叠面积，用来作为碰撞的惩罚。成本函数				$l_{ent}(c)=-H(\Gamma)=\sum_{i}p(\gamma_i)\log p(\gamma_i)$，通过采样人体轨迹，可以更好地利用房间空间，$\Gamma$是房间中计划好的轨迹集合，	 				$H(\Gamma)$是熵` entropy`。通过使用<u>双向快速探索随机树</u>` bi-directional rapidly-exploring random tree`，来规				划任意一个家具的中心到另一个家具的轨迹$\gamma_i$，我们可以获得<u>轨迹概率图</u>`trajectory probability map`——构成了				热度图`heatmap`。
+​		其中，$\lambda_f$是权重向量，<.,.>表示一个向量，成本函数$l_{col}(f_i,f_j)$代表两个家具的重叠面积，用来作为碰撞的惩罚。成本函数$l_{ent}(c)=-H(\Gamma)=\sum_{i}p(\gamma_i)\log p(\gamma_i)$，通过采样人体轨迹，可以更好地利用房间空间，$\Gamma$是房间中计划好的轨迹集合$H(\Gamma)$是熵` entropy`。通过使用<u>双向快速探索随机树</u>` bi-directional rapidly-exploring random tree`，来规划任意一个家具的中心到另一个家具的轨迹$\gamma_i$，我们可以获得<u>轨迹概率图</u>`trajectory probability map`——构成了				热度图`heatmap`。
 
 <img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201104221301627.png" alt="image-20201104221301627" style="zoom:80%;" />
 
@@ -137,3 +137,131 @@ $\varepsilon(E_{pt}|\Theta)$结合了终端层形成的四种派系`cliques`的�
 ## 4. Learning S-AOG
 
 我们使用SUNCG数据集作为训练数据。它包含了超过45K不同的场景和手工创建的逼真的房间和家具布局。我们收集房间类型、房间大小、家具出现情况、家具大小、家具和墙壁之间的朝向和相对距离、家具的可视性、分组出现情况和支持关系的统计数据。概率模型P的参数$\Theta$可以通过最大似然估计（MLE），以着监督的方式学习。
+
+### Weights of Loss Functions
+
+回想一下，在终端层中形成的派系的概率分布为：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105155709925.png" alt="image-20201105155709925" style="zoom: 80%;" />
+
+其中，$\lambda$是权重向量，$l(E_{pt})$是四个不同的`potential functions`给出的损失向量。为了学习权值向量，标准MLE最大化<u>平均对数似然值</u>`the average log-likelihood`：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105160215087.png" alt="image-20201105160215087" style="zoom:80%;" />
+
+This is usually maximized by following the gradient：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105160258511.png" alt="image-20201105160258511" style="zoom:80%;" />
+
+其中，最终结果的右项是当前模型的一组生成示例。通常，在梯度上升的每一次迭代中，对一个均衡分布的马尔科夫链进行采样，在计算上是不可行的。因此，我们不需要等待马尔科夫链收敛，而是按照两个发散的差值梯度进行<u>对比发散</u>`contrastive divergence`（CD）学习
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105161715754.png" alt="image-20201105161715754" style="zoom:80%;" />
+
+其中，$$KL(p_0||p_{\infty})$$是数据分布p~0~与模型分布$p_{\infty}$之间的==Kullback-Leibler发散==，$p_{n^-}$是由数据分布开始的，并运行一小步n的马尔科夫链得到的分布。在本文中，我们设n=1。理论和经验证据都表明，在保持偏差非常小的情况下，这种方法是有效的。对比发散的梯度可计算如下：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105163016909.png" alt="image-20201105163016909" style="zoom:80%;" />
+
+而经验表明，第三项可以忽略，因为它很小，很少反对其他两项的结果。最后，通过从马尔可夫链中生成少量的实例N~，然后通过梯度下降计算，来学习权重向量：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105163400537.png" alt="image-20201105163400537" style="zoom:80%;" />  						
+
+### Branching Probabilities、Grouping Relations
+
+or节点、set节点和地址终端节点的分支概率$\rho_i$的MLE就是每个备选选择的频率：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105163913054.png" alt="image-20201105163913054" style="zoom:80%;" />
+
+分组关系是手工定义的(例如，床头柜与床相关联，椅子与桌子相关联)。以多项式分布的形式学习发生概率，并自动从SUNCG中提取支持关系。
+
+### Room Size and Object Sizes、Affordances
+
+房间大小和对象大小在所有家具和支持对象之间的分布被学习为非参数分布。首先从SUNCG数据集中的三维模型中提取尺寸信息，然后利用核密度估计`kernel density estimation`拟合非参数分布。家具和物体到最近的墙壁的距离和相对方向，分别被计算并装进一个正态对数`log normal`和一个冯米塞斯分布` von Mises distributions`的混合物中。
+
+我们通过计算可能的人体位置的热图来学习所有家具和支持对象的`Affordance map`。这些位置包括带注释的人，我们假设椅子、沙发和床的中心是人们经常光顾的位置。通过累积相对位置，我们得到了合理的非参数分布`Affordance map`：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105164702803.png" alt="image-20201105164702803" style="zoom:67%;" />
+
+
+
+## 5. Synthesizing Scene Configurations
+
+从S-AOG定义的先验概率$p(pg|\Theta)$，对解析图pg进行采样，来配置生成场景。解析树的结构和对象的内部属性(大小)可以很容易地从封闭形式的分布或非参数分布中采样。但是，对象的外部属性(位置和方向)受多个<u>势函数</u>` potential functions`的约束，过于复杂，无法直接采样。在此，我们利用马尔可夫链蒙特卡洛（MCMC）采样器来绘制分布中的典型状态。每次抽样的过程可以分为两个主要步骤：
+
++ 直接对pt的结构和内部属性进行采样。(i)，对or节点的子节点进行采样；(ii)，确定set节点的每个子分支的状态；(iii)，对于每个常规终端节点，从已知分布中抽取大小和人员位置的样本。
++ 使用MCMC方案，通过建议（==by making proposal moves==.），对地址节点和外部属性Aex的值进行采样。在马尔科夫链收敛后，选择一个采样。
+
+我们设计了两种简单的马尔科夫链`dynamics`，其中随机使用概率q~i~（i=1，2）来进行`make proposal moves`：
+
++ Dynamics q~1~：物体的移动。选择一个常规终端节点，然后根据当前的位置采样一个新的位置：$x\rightarrow x+\delta x$，$\delta x$服从二元正态分布。
++ Dynamics q~2~：物体的旋转。选择一个常规终端节点，然后根据当前的朝向采样一个新的朝向：$\theta\rightarrow \theta+\delta \theta$，$\delta \theta$服从二元正态分布。
+
+采用`Metropolis-Hastings`算法，对提出的新解析图$p_g^`$按以下的接受概率接受：
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105171746527.png" alt="image-20201105171746527" style="zoom:80%;" />
+
+> where the proposal probability rate is canceled since the proposal moves are symmetric in probability. A simulated
+>
+> annealing scheme is adopted to obtain samples with high probability as shown in Figure 6
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105171853639.png" alt="image-20201105171853639" style="zoom:80%;" />
+
+
+
+## 6. Experiments
+
+根据不同的标准设计了三个实验：
+
++ 与人工构建的场景在视觉上的相似性；
++ 合成场景的启示地图`affordance map`的准确性；
++ 合成场景的功能性和自然性。
+
+第一个实验将我们的方法与最先进的房间布置方法进行了比较；第二个实验测量了合成功能；第三个是`ablation study`。总体而言，实验表明，我们的算法能够稳健地生成大量展现自然和功能性的真实场景。
+
+### Layout Classification
+
+为了定量评估视觉上的真实度，我们在合成场景和SUNCG场景的俯视分割图上训练了一个分类器。具体地说，我们训练ResNet-152来分类俯视分割图(合成vs SUNCG):arrow_down:。使用分割图的原因是：我们想要评估房间布局而不考虑渲染因素，比如物体材质。我们用两种方法进行比较：1，Yu等人提出的一种最先进的家具布置优化方法；2，通过在布局中添加小的高斯噪声，对SUNCG场景进行轻微的扰动。提出的房间布置算法取一个预先固定的输入房间，对房间进行重新整理。
+
+每种方法和SUNCG随机选取1500个场景：800个用于训练，200个用于验证，500个用于测试。如表1所示，分类器成功区分Yu方法和SUNCG，其准确率为87.49%。我们的方法获得了较好的（76.18%）的性能，表现出更高的真实性和更大的多样性。
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105172623296.png" alt="image-20201105172623296" style="zoom:80%;" />
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105172653005.png" alt="image-20201105172653005" style="zoom:80%;" />
+
+Yu等人与我们方法的定性比较如下图所示。上面：以前的方法只重新安排一个给定的输入场景与一个固定的房间大小和一组预定义的对象。下面：我们的方法对各种场景进行采样。
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105173723725.png" alt="image-20201105173723725" style="zoom:80%;" />
+
+### Affordance Maps Comparison
+
+我们对表2中总结的10个不同场景类别的500个房间进行了采样。对于每一种类型的房间，我们计算生成样本中对象的功能可见图`affordance maps `，并计算从合成样本中、SUNCG数据集中计算出的`affordance maps` 之间的总变化距离和<u>海灵格距离</u>`Hellinger distances`。如果距离接近于 0，则这两个分布是相似的，大多数使用本方法的采样场景与 SUNCG 中手动创建的场景显示出相似的` affordance distributions`。
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105174511312.png" alt="image-20201105174511312" style="zoom:80%;" />
+
+
+
+### Functionality and naturalness
+
+有三种方法可供比较：
+
++ 根据家具出现的统计数字直接采样房间，不增加上下文的关系.
++ 在我们的模型中去掉人的约束，只建立对象关系模型
++ Yu等人的算法
+
+用三种方法向4名受试者展示了抽样的布局。受试者事先被告知房间类别，并被指示在不知道产生这些布局的方法的情况下对给定的场景布局进行评级。对于10个房间类别，使用我们的方法和[44]随机抽取24个样本，使用面向对象建模方法和随机生成方法抽取8个样本。受试者根据两项标准对布局进行评估：
+
++ 房间的功能，例如“卧室”能否满足人们日常生活的需要;
++ 布局的自然和现实性。
+
+问卷的回答范围：1 - 5，5表示完美的功能或完美的自然和现实
+
+<img src="Human-centric Indoor Scene Synthesis Using Stochastic Grammar.assets/image-20201105175141851.png" alt="image-20201105175141851" style="zoom:67%;" />
+
+### Complexity of synthesis
+
+由于采用MCMC采样，时间复杂度难以度量。根据经验，采样一个室内布局大约需要20-40分钟（MCMC 20000次迭代)，在普通PC上渲染640×480图像大约需要12-20分钟。渲染速度取决于与光照、环境和场景大小等相关的设置。
+
+
+
+
+
+
+
