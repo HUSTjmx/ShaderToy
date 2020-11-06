@@ -2,6 +2,8 @@
 
 [toc]
 
+![](RTR4_C9.assets/Physically Based Shading.png)
+
 ## 1.  Physics of Light
 
 ==光和物质的相互作用形成了PBS的基础==。为了理解这些相互作用，对光的本质有一个基本的理解是有帮助的。在==物理光学==中，光被建模为电磁横波`transverse wave`——一种使电场和磁场垂直于其传播方向的波。这两个场的振荡是耦合的（ coupled）。磁场和电场矢量相互垂直，它们的长度之比是固定的（这个比值等于相速度` phase velocity`，==通常称其为光速c==）
