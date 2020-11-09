@@ -448,3 +448,94 @@ allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
 allocInfo.pSetLayouts = layouts.data();
 ```
 
+在我们的例子中，我们将为每个<u>交换链映像</u>` swap chain image`创建一个描述符集，所有这些都具有相同的布局。不幸的是，我们需要布局的所有副本，因为下一个函数需要一个匹配集合数量的数组。
+
+添加一个类成员来保存描述符集的句柄，并使用`vkAllocateDescriptorSets`分配它们
+
+```c
+VkDescriptorPool descriptorPool;
+std::vector<VkDescriptorSet> descriptorSets;
+
+...
+
+descriptorSets.resize(swapChainImages.size());
+if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+    throw std::runtime_error("failed to allocate descriptor sets!");
+}
+```
+
+不需要显式地清理描述符集，因为它们将在销毁描述符池时自动释放。对`vkAllocateDescriptorSets`的调用将分配描述符集，每个描述符集有一个`uniform buffer descriptor.`。
+
+现在已经分配了描述符集，但是仍然需要配置其中的描述符。现在我们将添加一个循环来填充每个描述符
+
+```c
+for (size_t i = 0; i < swapChainImages.size(); i++) {
+
+}
+```
+
+引用缓冲区的描述符，使用`VkDescriptorBufferInfo`结构体配置。此结构指定缓冲区和==包含描述符数据的区域==。
+
+```c
+for (size_t i = 0; i < swapChainImages.size(); i++) {
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = uniformBuffers[i];
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
+}
+```
+
+如果您要覆盖整个缓冲区，就像我们在本例中所做的那样，那么也可以使用`VK_WHOLE_SIZE`作为范围。使用`vkUpdateDescriptorSets`更新描述符的配置，该函数接受`VkWriteDescriptorSet`数组作为参数。
+
+```c
+VkWriteDescriptorSet descriptorWrite{};
+descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+descriptorWrite.dstSet = descriptorSets[i];
+descriptorWrite.dstBinding = 0;
+descriptorWrite.dstArrayElement = 0;
+```
+
+前两个字段指定the descriptor set to update and the binding.。我们给了our uniform buffer binding index为0。请记住，描述符可以是数组，因此我们还需要指定要更新的数组中的第一个索引。我们没有使用数组，所以索引是0。
+
+```c
+descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+descriptorWrite.descriptorCount = 1;
+```
+
+我们需要再次指定描述符的类型。可以在一个数组中同时更新多个描述符，从索引`dstArrayElement`开始。`descriptorCount`字段指定需要更新的数组元素数量。
+
+```c
+descriptorWrite.pBufferInfo = &bufferInfo;
+descriptorWrite.pImageInfo = nullptr; // Optional
+descriptorWrite.pTexelBufferView = nullptr; // Optional
+```
+
+最后一个字段引用一个具有`descriptorCount`结构体的数组，该结构体实际配置描述符。这取决于描述符的类型，您实际上需要使用这三种描述符中的哪一种。``pBufferInfo`字段用于引用缓冲区数据的描述符，`pImageInfo`用于引用图像数据的描述符，`pTexelBufferView`用于引用缓冲区视图的描述符。我们的描述符是基于缓冲区的，所以我们使用`pBufferInfo`。
+
+```c
+vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+```
+
+使用`vkUpdateDescriptorSets`应用更新。它接受两种数组作为参数：`VkWriteDescriptorSet`数组和`VkCopyDescriptorSet`数组。后者可用于相互复制描述符，正如其名称所暗示的那样
+
+
+
+### Using descriptor sets
+
+现在我们需要更新`createCommandBuffers`函数，以便使用`vkCmdBindDescriptorSets`将每个交换链图像的、正确的描述符集实际绑定到着色器中的描述符集。这需要在`vkCmdDrawIndexed`调用之前完成
+
+```c
+vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+```
+
+与顶点和索引缓冲区不同，描述符集不是图形管道所独有的。因此，我们需要指定：是否希望将描述符集绑定到图形或计算管道。下一个参数是描述符所基于的布局。接下来的三个参数指定：第一个描述符集的索引、要绑定的集的数量和要绑定的集的数组。我们一会儿会回到这个问题上。最后两个参数指定一个用于动态描述符的偏移量数组。我们将在以后的章节中讨论这些。
+
+如果现在运行程序，那么什么都不可见。问题是在投影矩阵中做了y翻转，这些顶点现在是按逆时针顺序，而不是顺时针。这将导致剔除。转到createGraphicsPipeline函数并修改：
+
+```c
+rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+```
+
+c
