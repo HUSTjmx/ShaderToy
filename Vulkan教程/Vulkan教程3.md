@@ -538,4 +538,126 @@ rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 ```
 
-c
+
+
+### Alignment requirements
+
+到目前为止，我们忽略了一件事——==那就是c++结构中的数据如何与着色器中的Uniform匹配==。在这两种语言中简单地使用相同的类型似乎已经足够明显了：
+
+```c
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
+layout(binding = 0) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+```
+
+然而，这并不是全部。例如，尝试修改结构和着色器看起来像这样：
+
+```c
+struct UniformBufferObject {
+    glm::vec2 foo;
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
+layout(binding = 0) uniform UniformBufferObject {
+    vec2 foo;
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+```
+
+重新编译着色器，并运行它，会发现彩色方块消失了，这是因为我们没有考虑到==对齐要求==`alignment requirements`。==Vulkan期望：结构中的数据以特定的方式在内存中对齐==，例如：
+
+- 标量`Scalars`必须按N对齐（N= 4字节，32位浮点数）。
+- `vec2`必须按2N对齐（8字节）
+- `vec3`和`vec4`必须按4N对齐
+- 嵌套结构必须按照其成员的基对齐方式，进行对齐，最多四舍五入到16的倍数
+- `mat4`数组必须具有与vec4相同的对齐方式。（4N对齐）
+
+这里有完整的对齐要求：[the specification](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/chap14.html#interfaces-resources-layout).
+
+加入foo之前，所有Uniform的偏移都是16的倍数，而加入foo之后，就都不是16的倍数了，要解决这个问题，我们可以使用c++ 11中引入的==alignas说明符==：
+
+```c
+struct UniformBufferObject {
+    glm::vec2 foo;
+    alignas(16) glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+```
+
+幸运的是，==有一种方法，让我们在大多数情况下不必考虑这些对齐需求==。我们可以在包含GLM之前，定义`GLM_FORCE_DEFAULT_ALIGNED_GENTYPES`
+
+```c
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#include <glm/glm.hpp>
+```
+
+This will force GLM to use a version of `vec2` and `mat4` that has the alignment requirements already specified for us。如果添加了这个定义，那么可以删除alignas说明符，程序仍然可以工作。
+
+不幸的是，如果开始使用嵌套结构，这种方法可能会失效。请考虑c++代码中的以下定义：
+
+```c
+struct Foo {
+    glm::vec2 v;
+};
+
+struct UniformBufferObject {
+    Foo f1;
+    Foo f2;
+};
+```
+
+下面的着色器定义：
+
+```c
+struct Foo {
+    vec2 v;
+};
+
+layout(binding = 0) uniform UniformBufferObject {
+    Foo f1;
+    Foo f2;
+} ubo;
+```
+
+在这种情况下，f2的偏移量为8，而它的偏移量应为16，因为它是一个嵌套结构。在这种情况下，您必须自己指定对齐方式：
+
+```c
+struct UniformBufferObject {
+    Foo f1;
+    alignas(16) Foo f2;
+};
+```
+
+These gotchas are a good reason to always be explicit about alignment. That way you won't be caught offguard by the strange symptoms of alignment errors：
+
+```c
+struct UniformBufferObject {
+    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
+};
+```
+
+### Multiple descriptor sets
+
+正如某些结构和函数调用所暗示的那样，实际上可以同时绑定多个描述符集。在创建管道布局时，需要为每个描述符集指定描述符布局。着色器可以像这样引用特定的描述符集：
+
+```c
+layout(set = 0, binding = 0) uniform UniformBufferObject { ... }
+```
+
+可以使用此特性，将每个对象不同的描述符和共享的描述符放入单独的描述符集中。在这种情况下，您可以避免在draw调用之间重新绑定大多数描述符，这可能更有效.
