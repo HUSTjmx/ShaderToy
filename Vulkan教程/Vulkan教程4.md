@@ -724,3 +724,337 @@ samplerInfo.magFilter = VK_FILTER_LINEAR;
 samplerInfo.minFilter = VK_FILTER_LINEAR;
 ```
 
+magFilter和minFilter字段指定了如何对放大或缩小的`texels`进行插值。
+
+```c
+samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+```
+
+可以使用``addressMode`字段指定每个轴的寻址模式。可用的值列在下面。上面的图片展示了其中的大部分。注意，坐标轴称为U, V和W，而不是X, Y和Z——这是纹理空间坐标的约定。
+
+- `VK_SAMPLER_ADDRESS_MODE_REPEAT`: ==Repeat== the texture when going beyond the image dimensions.
+- `VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT`: Like ==repeat, but inverts== the coordinates to mirror the image when going beyond the dimensions.
+- `VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE`: Take the color of the edge closest to the coordinate beyond the image dimensions.
+- `VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE`: Like clamp to edge, but instead uses the edge opposite to the closest edge.
+- `VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER`: Return a solid color when sampling beyond the dimensions of the image.
+
+我们在这里使用哪种寻址模式并不重要，因为在本教程中，我们不打算在图像之外进行采样。然而，重复模式可能是最常见的模式，因为它可以用于瓷砖纹理，如地板和墙壁。
+
+```c
+samplerInfo.anisotropyEnable = VK_TRUE;
+samplerInfo.maxAnisotropy = 16.0f;
+```
+
+:arrow_up:这两个字段指定：==是否应该使用各向异性滤波==。没有理由不使用它，除非考虑到性能问题。最大各向异性`maxAnisotropy`字段限制了纹理采样的数量——值越低，性能越好，但质量越低。现在没有图形硬件可以使用超过16个样本，因为超过16个样本之间的差异可以忽略不计。
+
+```c
+samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+```
+
+`borderColor`字段指定：当使用`VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER`时，对图像边界之外进行采样时，获得的颜色。可以返回黑色、白色或透明的，格式可以是float或int。（不能随意指定颜色）
+
+```c
+samplerInfo.unnormalizedCoordinates = VK_FALSE;
+```
+
+`unnormalizedCoordinates`字段指定了你想用哪个坐标系来处理图像中的`texels`。如果这个字段是`VK_TRUE`，那么可以简单地使用 [0，texWidth) 和 [0，texHeight)。如果是`VK_FALSE`，则可以在所有轴上使用[0，1]来寻址。==总是使用归一化坐标==，因为这样就可以用完全相同的坐标，来使用不同分辨率的纹理。
+
+```c
+samplerInfo.compareEnable = VK_FALSE;
+samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+```
+
+如果启用了比较函数，那么texel将首先与一个值进行比较，并将比较结果用于过滤操作。==这主要用于阴影贴图的百分比逼近过滤==`percentage-closer filtering`。我们将在以后的章节中讨论这个问题。
+
+```c
+samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+samplerInfo.mipLodBias = 0.0f;
+samplerInfo.minLod = 0.0f;
+samplerInfo.maxLod = 0.0f;
+```
+
+所有这些字段都适用于mipmapping。我们将在后面的章节中讨论mipmapping。
+
+添加一个类成员来持有采样器对象的句柄，并使用`vkCreateSampler`创建采样器：
+
+```c
+VkImageView textureImageView;
+VkSampler textureSampler;
+
+...
+
+void createTextureSampler() {
+    ...
+
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+}
+```
+
+注意采样器没有在任何地方引用`VkImage`。采样器是一个独特的对象，它提供了接口，来从纹理中提取颜色。它可以应用到任何图像，无论是1D, 2D还是3D。==这与许多旧api不同，旧api将纹理图像和过滤合并到单一状态中==。
+
+当我们不再访问图像时，在程序的最后销毁采样器：
+
+```c
+void cleanup() {
+    cleanupSwapChain();
+
+    vkDestroySampler(device, textureSampler, nullptr);
+    vkDestroyImageView(device, textureImageView, nullptr);
+
+    ...
+}
+```
+
+
+
+### 2.3 Anisotropy device feature
+
+如果您现在运行您的程序，您将看到如下的验证层消息：
+
+![image-20201112165721652](Vulkan教程4.assets/image-20201112165721652.png)
+
+这是因为各向异性滤波`anisotropic filtering `实际上是一个可选的设备特性。我们需要更新`createLogicalDevice`函数来请求它：
+
+```c
+VkPhysicalDeviceFeatures deviceFeatures{};
+deviceFeatures.samplerAnisotropy = VK_TRUE;
+```
+
+即使现代显卡不太可能不支持它，我们也应该更新`isDeviceSuitable`以检查它是否可用：
+
+```c
+bool isDeviceSuitable(VkPhysicalDevice device) {
+    ...
+
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+}
+```
+
+`vkGetPhysicalDeviceFeatures`通过设置布尔值，来重新使用`VkPhysicalDeviceFeatures`结构，来指示支持哪些特性而不是请求哪些特性。
+
+也可以不使用它：
+
+```c
+samplerInfo.anisotropyEnable = VK_FALSE;
+samplerInfo.maxAnisotropy = 1.0f;
+```
+
+在下一章中，我们将把图像和采样对象暴露给着色器，在正方形上绘制纹理。
+
+
+
+## 3.  Combined image sampler
+
+### 3.1 Introduction
+
+在这一章中，==我们将研究一种新的描述符==：组合图像采样器`combined image sampler`。这个描述符使着色器能够通过一个采样对象访问图像资源，就像我们在前一章中创建的那样。
+
+我们将从修改描述符布局、描述符池和描述符集开始，以包含这样一个`combined image sampler`描述符。在那之后，我们将添加纹理坐标，并修改片元着色器，来从纹理读取颜色。
+
+
+
+### 3.2 Updating the descriptors
+
+回到`createDescriptorSetLayout`函数，为`combined image sampler`描述符添加一个`VkDescriptorSetLayoutBinding`。我们只需把它放在`uniform buffer`后的绑定中即可。
+
+```c
+VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+samplerLayoutBinding.binding = 1;
+samplerLayoutBinding.descriptorCount = 1;
+samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+samplerLayoutBinding.pImmutableSamplers = nullptr;
+samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+VkDescriptorSetLayoutCreateInfo layoutInfo{};
+layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+layoutInfo.pBindings = bindings.data();
+```
+
+确保设置`stageFlags`，以表明我们打算在片段着色器中使用`combined image sampler`描述符:arrow_up:。
+
+==我们还必须创建一个更大的描述符池，以便为组合图像采样器的分配腾出空间==，方法是在`VkDescriptorPoolCreateInfo`中添加另一个类型为`VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER`的`VkPoolSize`。转到`createDescriptorPool`函数，并修改它，为这个描述符加入一个`VkDescriptorPoolSize`。
+
+```c
+std::array<VkDescriptorPoolSize, 2> poolSizes{};
+poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+
+VkDescriptorPoolCreateInfo poolInfo{};
+poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+poolInfo.pPoolSizes = poolSizes.data();
+poolInfo.maxSets = static_cast<uint32_t>(swapChainImages.size());
+```
+
+描述符池不足是==验证层无法发现问题==的一个很好的例子。从Vulkan 1.1开始，如果描述符池不够大，`vkAllocateDescriptorSets`可能会报错：`VK_ERROR_POOL_OUT_OF_MEMORY`，但驱动程序也可能会尝试在内部解决这个问题。这意味着有时（取决于硬件、池大小和分配大小），驱动程序会让我们逃脱这个限制（get away with an allocation that exceeds the limits of our descriptor pool）。其他时候，`vkAllocateDescriptorSets`会失败并返回：`VK_ERROR_POOL_OUT_OF_MEMORY`。
+
+由于Vulkan将分配的责任转移给了驱动程序，因此不再严格要求只分配特定类型（`VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER`等）的描述符，因为在创建描述符池时，相应的`descriptorCount`成员指定了这些描述符。
+
+最后一步是：将实际的图像和采样器绑定到描述符集中的描述符。
+
+```c
+for (size_t i = 0; i < swapChainImages.size(); i++) {
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = uniformBuffers[i];
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = textureImageView;
+    imageInfo.sampler = textureSampler;
+
+    ...
+}
+```
+
+组合图像采样器必须在`VkDescriptorImageInfo`结构中指定。:arrow_up:
+
+```c
+std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+descriptorWrites[0].dstSet = descriptorSets[i];
+descriptorWrites[0].dstBinding = 0;
+descriptorWrites[0].dstArrayElement = 0;
+descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+descriptorWrites[0].descriptorCount = 1;
+descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+descriptorWrites[1].dstSet = descriptorSets[i];
+descriptorWrites[1].dstBinding = 1;
+descriptorWrites[1].dstArrayElement = 0;
+descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+descriptorWrites[1].descriptorCount = 1;
+descriptorWrites[1].pImageInfo = &imageInfo;
+
+vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+```
+
+这一次我们使用的是`pImageInfo`数组，而不是`pBufferInfo`数组。描述符现在可以被着色器使用了。
+
+
+
+### 3.3 Texture coordinates
+
+==纹理映射还缺少一个重要的成分，那就是每个顶点的实际坐标==——决定如何将图像实际映射到几何图形。
+
+```c
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec3 color;
+    glm::vec2 texCoord;
+
+    static VkVertexInputBindingDescription getBindingDescription() {
+        VkVertexInputBindingDescription bindingDescription{};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return bindingDescription;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+        attributeDescriptions[1].binding = 0;
+        attributeDescriptions[1].location = 1;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+        return attributeDescriptions;
+    }
+};
+```
+
+修改顶点结构，加入一个`vec2`作为纹理坐标。还添加了一个`VkVertexInputAttributeDescription`，这样我们就可以在顶点着色器中使用<u>访问纹理坐标</u>`access texture coordinates`作为输入。这是必要的，以便能够将它们传递给片元着色器。
+
+```c
+const std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+};
+```
+
+
+
+### 3.4 Shaders
+
+最后一步是修改着色器以从纹理中采样颜色。我们首先需要修改顶点着色器，将纹理坐标传递给片段着色器：
+
+```c
+layout(location = 0) in vec2 inPosition;
+layout(location = 1) in vec3 inColor;
+layout(location = 2) in vec2 inTexCoord;
+
+layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec2 fragTexCoord;
+
+void main() {
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
+    fragColor = inColor;
+    fragTexCoord = inTexCoord;
+}
+```
+
+`frag TexCoord`值在光栅化的过程中，被平滑地插入到正方形的区域中。我们可以通过让片段着色器输出纹理坐标作为颜色，来可视化这一点：
+
+```c
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) in vec3 fragColor;
+layout(location = 1) in vec2 fragTexCoord;
+
+layout(location = 0) out vec4 outColor;
+
+void main() {
+    outColor = vec4(fragTexCoord, 0.0, 1.0);
+}
+```
+
+<img src="Vulkan教程4.assets/image-20201112173558995.png" alt="image-20201112173558995" style="zoom:50%;" />
+
+在GLSL中，组合图像采样器描述符由`sampler uniform`表示。在片段着色器中添加对它的引用。
+
+```c
+layout(binding = 1) uniform sampler2D texSampler;
+```
+
+```c
+void main() {
+    outColor = texture(texSampler, fragTexCoord);
+}
+```
+
+使用内置纹理函数对纹理进行采样。它以采样器和坐标作为参数。采样器自动处理滤波和变换。
+
+<img src="Vulkan教程4.assets/image-20201112173850065.png" alt="image-20201112173850065" style="zoom:50%;" />
+
+尝试通过将纹理坐标缩放到大于1的值来试验寻址模式。例如，当使用`VK_SAMPLER_ADDRESS_MODE_REPEAT`时：
+
+<img src="Vulkan教程4.assets/image-20201112174008508.png" alt="image-20201112174008508" style="zoom:50%;" />
