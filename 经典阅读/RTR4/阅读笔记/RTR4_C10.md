@@ -87,13 +87,15 @@ $$
 
 这种方法已经可以用于各种各样的几何光，所以了解他们的理论背景是很重要的。这种方法的思想类似==蒙特卡洛重要性采样==。而一个更加便利的优化是：视线的反射光，打中光源，才考虑调整光矢量，否则就直接将光源视作点光源。（具体的，特别是基于定积分的`mean value theorem`的讨论，见书 P 385，这几段没怎么看懂）
 
+<img src="RTR4_C10.assets/image-20201112194821769.png" alt="image-20201112194821769" style="zoom:50%;" />
+
 > 关于中值定理这段，我的个人理解是：我们在最近点周围进行重要性采样，结果需要进行积分（一开始，我还以为是只采样一个最近点，还想着，着这样效果会好吗？还是太年轻），这个时候，根据中值定理，只需要对采样区域面积进行积分，然后乘上中值就可以得到区域光下，该点的辐照度。
 
 这个技术的缺陷，和粗糙度重映射导致的过度模糊相反，可能导致高光峰值部分过度"陡峭"。一些改进技术，其中一个有点意思——考虑的是$N\cdot H$值最大的光源表面点。
 
 
 
-### General Light Shapes
+### 1.2 General Light Shapes
 
 目前讨论的技术，最大的问题是——只考虑灯光是球形的。现实中的光源通常是形状各异的，而且也不是均匀发射的。
 
@@ -101,6 +103,74 @@ $$
 
 <img src="RTR4_C10.assets/image-20201109205011824.png" alt="image-20201109205011824" style="zoom:67%;" />
 
-对球形光最简单的扩展就是胶囊光`Tube Light`。对于`Lambertian BRDFs`，p神提出了一个封闭形式的积分拟合，这相当于用适当的衰减函数从线段端点的两个点光源来评估照明：
+对球形光最简单的扩展就是胶囊光`Tube Light`。对于`Lambertian BRDFs`，p神提出了一个封闭形式的积分拟合，这相当于用适当的衰减函数，从线段端点的两个点光源来评估照明：
 
 <img src="RTR4_C10.assets/image-20201109205431453.png" alt="image-20201109205431453" style="zoom:67%;" />
+
+而对于`Phone Specular BRDF`的积分，p神提出了一种基于`most representative point`的方法，基本思路是：在线段灯上取一个点光源，这个光源满足它到对应得向量和反射向量的夹角最小。
+
+> 值得注意得是，在我的理解下，这里的所有反射向量和一般情况的不同，这里应该是view vector的在渲染点的反射向量。
+
+k神进行了改进，以效率换准确率——寻找的点，是离反射向量最近的点，并加入一个缩放因子，来拟合能量守恒。
+
+<span style="color:green;font-size:1.3rem">平面区域灯：</span>相对线性灯和环形灯，一个在现实生活中用途更为广泛的是`planar area lights`，其几何形状可以是长方形、圆形、或者任意。
+
+D神提出了第一个实用的拟合 **[380]**。这个方法也基于代表点，并从`mean value theorem`开始，寻找光照积分的全局最大值，以此作为代表点。对于`Lambertian BRDFs`，其积分是：(图13:arrow_down:)
+
+<img src="RTR4_C10.assets/image-20201112195013341.png" alt="image-20201112195013341" style="zoom:67%;" />
+
+仔细看看公式，不难发现，其实是两个决定因素：1，$(n\cdot l)^+$测试的是光源上点的入射向量和表面点法线的夹角，越小越好，其最佳点记为P~c~；2，$\frac{1}{r^2_l}$测试的是光源上点到表面渲染点的距离，也是越小越好，其最佳点记为P~r~。那么，全局最大点，应该位于这两点的连线上，$p_{max}=t_m\cdot p_c+(1-t_m)\cdot p_r$。D神使用数值积分来为许多不同的配置找到最佳代表点，然后找到一个平均效果最好的t~m~。D神的一些跟进研究，包括对`textured card lights`的适配，见书 P 388。
+
+`polygonal area lights`的拟合：Lambert在理想漫反射平面的封闭拟合；A神的拓展，在高光上进行拟合，非实时；L神在性能上进行优化，满足实时需求。**[967]  [74]**  **[1004]**
+
+<span style="color:green;font-size:1.3rem">LCTs：</span>以上所有的算法，都基于假设对模型进行简化，然后通过对结果积分进行拟合。==H神提出了一种不同的、通用的、精确的思路==——` linearly transformed cosines`（LTCs）。基本思路：首先设计一类球面函数，这类函数既具有很强的表现力(即可以有多种形状)，又可以很容易地集成在任意球面多边形上:arrow_down:。**[711]**
+
+<img src="RTR4_C10.assets/image-20201112202237937.png" alt="image-20201112202237937" style="zoom:80%;" />
+
+LTCs只用了一个3×3矩阵变换的余弦叶，所以它们可以在半球上调整大小、拉伸和旋转，以适应各种形状。简单余弦叶的积分与球面多边形的积分是很成熟的。==H神最关键的观察是：用变换矩阵对积分进行拓展，并不会改变积分的复杂性==。
+
+==我们可以用矩阵的逆，来变换多边形域，并消去积分内的矩阵，返回一个简单的余弦叶作为被积函数。==
+
+<img src="RTR4_C10.assets/image-20201112203049611.png" alt="image-20201112203049611" style="zoom:67%;" />
+
+对于一般的BRDFs和区域光，唯一剩下的工作是：找到方法（近似），将球体上的BRDF函数表达为一个或多个LTCs，这项工作可以离线完成，并在以BRDF参数为索引进行制表：粗糙度、入射角或其他。
+
+LTCs方法比代表点的效果好，但更耗时。
+
+
+
+## 2. Environment Lighting
+
+以上区域光讨论的积分，所有方向都是恒定的辐射率，而在实际场景中，场景光（间接光）的辐射率通常不是常数。尽管我们在这里将讨论环境光，但我们并不会引入GI算法。==核心区别是：本节的所有渲染公式没有依赖其他表面的知识，but rather on a small set of light primitives。==
+
+最简单的环境光方法就是`ambient light`。别看只是一个简单的常数，但确实提升了场景的真实性。
+
+`ambient light`的具体视觉效果取决于我们使用的BRDF。对于`Lambertian`表面来说：
+
+<img src="RTR4_C10.assets/image-20201112205711484.png" alt="image-20201112205711484" style="zoom:50%;" />
+
+而对于任意的BRDF，其等式如下：
+
+<img src="RTR4_C10.assets/image-20201112205748213.png" alt="image-20201112205748213" style="zoom: 67%;" />
+
+可以简化成$L_o(v)=L_A\cdot R(v)$，早期的实时渲染程序将$R(v)$视为一个常数，称为`ambient color`，c~amb~。
+
+
+
+##  3. Spherical and Hemispherical Functions
+
+为了扩展环境照明，我们需要一种方法来表示从任何方向射入物体的辐射率`radiance`。首先，我们将radiance看作是对方向进行积分的函数，而不是表面位置`surfaceposition`。这样做的前提是：照明环境是无限远的。
+
+<span style="color:green;font-size:1.3rem">Spherical Functions：</span>定义在单位球面上，用S来表示定义域。无论是生成一个值，还是多个值，这些函数的工作方式都不变。
+
+假设在`Lambertian surface`的情况下，球面函数可以通过一个预先计算的radiance函数来计算环境照明，e.g., radiance convolved with a cosine lobe, for each possible surface normal direction。球面函数在全局光照算法中也得到了广泛的应用。
+
+与球函数相关的是用于`hemisphere`函数。我们把这些表示称为球基`spherical bases`，因为它们是定义在球上的函数的向量空间的基。将一个函数转换为一个给定的`representation`称为投影`projection`，从一个给定的表示求函数的值称为重构`reconstruction`。
+
+每种表示都有自己的一组权衡。我们在给定的`basis`上，可能寻找的属性是：
+
++ 高效的编码(投影)和解码(查找)
++ The ability to represent arbitrary spherical functions with few coefficients and low reconstruction error。
++ 投影的旋转不变性`Rotational invariance`。这个等价性意味着一个近似的函数，例如球谐函数，在旋转时不会改变。
++ Ease（简化） of computing sums and products of encoded functions
++ 球面积分和卷积计算的简化
