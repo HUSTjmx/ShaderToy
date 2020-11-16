@@ -414,3 +414,70 @@ H神引入了`H-Basis`**[627]**。
 
 <span style="color:green;font-size:1.3rem">这种方法是目前最流行的方法，它的投影`projection`直接在现代GPU上集成了</span>。
 
+<img src="RTR4_C10.assets/image-20201116191745488.png" alt="image-20201116191745488" style="zoom:67%;" />
+
+也可以对一帧渲染六次，得到的效果也不错。
+
+<img src="RTR4_C10.assets/image-20201116192541454.png" alt="image-20201116192541454" style="zoom:67%;" />
+
+旧时代中，cube map的边界是个问题，因为那时的GPU不能够很好地在边界处执行双线性插值，而现代GPU都可以跨边界执行过滤。
+
+
+
+### 4.4 Other Projections
+
+<span style="color:green;font-size:1.3rem">dual paraboloid environment mapping</span>，双抛物线环境映射，使用两张纹理，每个进行抛物线投影`parabolic projections`。创建一个类似于`Sphere Map`的圆形纹理，覆盖一个环境半球。 **[702, 704]**
+
+视线的反射向量，其Z分量用来决定访问哪个纹理，公式如下：
+
+<img src="RTR4_C10.assets/image-20201116193745515.png" alt="image-20201116193745515" style="zoom:67%;" />
+
+上诉公式来计算`front Image`，对于`back Image`，则取z分量的相反数，代入上述公式。
+
+==Octahedral mapping==：不是周围的环境（一个球）映射到一个正方体上，这个方法将其映射到八面体，然后将八个面cut下来，然后平铺在一张纹理中（下图右:arrow_down:）。这个纹理可以是正方形，也可以是长方形。 **[434]**
+
+<img src="RTR4_C10.assets/image-20201116194512172.png" alt="image-20201116194512172" style="zoom:67%;" />
+
+对于正方形纹理，进行映射索引时，比较简单。对于一个视线反射向量r，进行归一化：
+
+<img src="RTR4_C10.assets/image-20201116195522874.png" alt="image-20201116195522874" style="zoom:67%;" />
+
+反之，如果是正的，我们需要用变换向外“折叠”八面体的第二部分：
+
+<img src="RTR4_C10.assets/image-20201116195703047.png" alt="image-20201116195703047" style="zoom:67%;" />
+
+==这个技术没有边缘的过滤问题==，因为 the seams of the parameterization correspond with the edges of the texture used。纹理的`wrap-around`采样模式可以自动从另一边访问纹理，并执行正确的插值（这个理由才是人看得懂的）。
+
+对于径向对称的环境，此时可以采取特殊的技术，所需的存储更少。 **[1705]** 
+
+
+
+## 5. Specular Image-Based Lighting
+
+当光源无限远时，环境映射也被称为`specular light probes`。之所以使用这个术语，是因为它们捕捉了场景中给定点的，各个方向上的亮度，并使用该信息来计算一般的BRDFs，但不仅限于pure mirrors or Lambertian surfaces。而`specular cube maps`则是使用环境映射技术来模拟光滑表面的反射。
+
+为了体现表面的粗糙度，环境贴图需要进行预过滤`prefiltered`。而这种模糊应该是非线性的，不同的纹理部分应该以不同的方式进行过滤。
+
+<img src="RTR4_C10.assets/image-20201116201443130.png" alt="image-20201116201443130" style="zoom:67%;" />
+
+靠经验主义来进行过滤走不长远，最好是依据BRDF的`specular lobe`形状，来进行模糊，这样就可以在参数的调控下，模拟各种反射效果。参数一般是五个：粗糙度，视图向量和法线的方位角。
+
+
+
+### 5.1 Prefiltered Environment Mapping
+
+这个技术是视线和法线独立的，因此我们只需为不同的粗糙度生成不同的贴图，其计算方法见 书 P 416。
+
+对于径向对称的高光波瓣，其唯一的问题，是水平裁剪`horizon clipping`。
+
+<img src="RTR4_C10.assets/image-20201116205814330.png" alt="image-20201116205814330" style="zoom:67%;" />
+
+这与我们之前讨论区域照明近似时，遇到的问题相同(Sec 10.1)，而在实时中，通常会忽略这个问题。这样做会导致在掠角处，过度明亮的渲染。
+
+H神使用了MipMapping技术来模拟不同粗糙度的预过滤环境映射，其Level越高，高光波瓣越宽，表面越模糊，当与菲涅耳项结合使用时，这种反射映射在光滑表面上表现不错。。 **[704]** 
+
+<img src="RTR4_C10.assets/image-20201116210207117.png" alt="image-20201116210207117" style="zoom:80%;" />
+
+
+
+#### Convolving the Environment Map
