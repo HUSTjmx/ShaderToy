@@ -55,3 +55,115 @@ B神在2016年提出的方法，将Shadow项G~1~从Smith中分离了出来。
 在F、D、G中，唯一依赖波长的是菲涅尔项，对于非偏振光，F定义为：
 
 ![image-20201119181020576](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119181020576.png)
+
+#### Diffraction: Modified Harvey-Shack Theory
+
+<img src="A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119183012255.png" alt="image-20201119183012255" style="zoom:67%;" />
+
+该理论基于光在表面上的传播距离，如上图，这种光路长度（`optical path length`，OPD）的差异可表示如下：
+
+![image-20201119183259664](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119183259664.png)
+
+导致光波发生相位变化：$(2\pi / \lambda )(cos\theta_i+cos\theta_o)h(x,y)$，对这些相位变化进行平均可以得到反射方程。此时，对于反射项$\rho_{diff}$，可以得到如下的计算公式：
+
+![image-20201119184141845](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119184141845.png)
+
+其中，A是根据相位差得到的权重因子，$S_{HS}(f)$是散射方程，$Q(i,o)$是衍射的颜色项，$\sigma_s$是表面粗糙度。由这个公式也可解释，为什么越接近掠射角，衍射效应越明显。==控制衍射的主要参数是二维向量f==（如下图:arrow_down:）。f是出射光（视线向量v）和入射光的反射向量。之间差异，投影在切平面上，最后除上波长。
+
+<img src="A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119185003604.png" alt="image-20201119185003604" style="zoom:67%;" />
+
+<img src="A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119184845159.png" alt="image-20201119184845159" style="zoom:80%;" />
+
+#####  Color and Polarization
+
+$Q(i,o)$是衍射波瓣的颜色项，依赖于IOR，但和菲涅尔项不同，它来自针对光滑表面衍射的`Rayleigh-Rice theory`——此理论是一种`scalar theory`，但其无法解释偏振效应。K神建议将其预测值乘以相同的Q因子，来解释偏振效应。
+
+> 在拍摄表面光滑的物体，如玻璃器皿、水面、陈列橱柜、油漆表面、塑料表面等，==常常会出现耀斑或反光，这是由于光线的偏振而引起的==。在拍摄时加用偏振镜，并适当地旋转偏振镜面，能够阻挡这些[偏振光](https://baike.baidu.com/item/偏振光)，借以消除或减弱这些光滑物体表面的反光或亮斑。要通过取景器一边观察一边转动镜面，以便观察消除偏振光的效果。当观察到被摄物体的反光消失时，既可以停止转动镜面。
+
+Q依赖于出射方向和入射的反射向量之间的方位角$\phi$，Q的定义如下：
+
+![image-20201119191546373](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119191546373.png)
+
+Q包括`cross-polarization transfer`：部分横向偏振光被视为垂直偏振光，并相互转移，用Q~sp~和Q~ps~表示。
+
+##### Smooth Surface Linearization
+
+作者这里使用的是指数形式的A，而有些研究者则使用光滑表面的拟合：
+
+![image-20201119192619555](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119192619555.png)
+
+这个公式有如此变化的原因在于，我们做出了假设：微表面的几何信息远小于波长。使用一个线性拟合：
+
+![image-20201119193045605](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119193045605.png)
+
+衍射波瓣变成了：
+
+![image-20201119193111528](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119193111528.png)
+
+散射函数可以表达成PSD（`Power Spectral Density`）的缩放版本。（应该是我所知道的SPD）早期的`Harvey-Shack`模型对于OPD有不同的计算方法：$OPD=2cos\theta_ih(x,y)$。它们都在两个地方依赖波长：衍射强度与$\frac{1}{\lambda^4}$（反比）；波瓣的宽度与$\lambda$（正比）——这是由于f包含$1/\lambda$。（这个正比关系不够直观，还需看看）
+
+> 在一定程度上，粗糙度可以看成微表面的尺度等级
+
+#####  K-correlation Model
+
+如果表面高度的空间<u>自协方差函数</u>` autocovariance function`是高斯型函数，那么$S_{HS}$也是高斯型的，然而，大多数光学表面没有高斯自协方差函数，在大的空间频率下，它们往往有一个逆幂律的衰落。对于这些表面，最广泛使用的是**K-correlation Model**：
+
+![image-20201119200909096](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119200909096.png)
+
+其中，$\Gamma$是Gamma函数，对这个分布进行积分，得到表面粗糙度σ~s~^2^。它只有在c>1的情况下才是有限的，并且等于：
+
+![image-20201119201545962](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119201545962.png)
+
+此时，简化的形式如下：
+
+![image-20201119201621723](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119201621723.png)
+
+> B. J. Hoenders, E. Jakeman, H. P. Baltes, and B . Steinle. 1979. K Correlations and Facet Models in Diffuse Scattering. *Optica Acta: International Journal of Optics* 26, 10 (1979), 1307–1319. DOI:https://doi.org/10.1080/713819894
+
+#####  Renormalization
+
+为了能量守恒，$S_{HS}$必须重新归一化，通过除以$f$的积分：（f的变化是有限的，受限于单位圆盘内）
+
+![image-20201119202902968](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119202902968.png)
+
+这个重归一化确保了衍射波瓣的能量是恒定的，$\sigma_{rel}$也可用在衍射和反射的分配上：
+
+![image-20201119203426308](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119203426308.png)
+
+在实验中，作者预先计算了归一化因子$\frac{\sigma_s}{\sigma_{rel}}$，取了大量的$\theta$、b、c的值来进行计算。
+
+
+
+##  4. OUR TWO-SCALE BRDF MODEL
+
+正如上文所言，作者将表面信息分为两部分，`micro-geometry`和`nano-geometry`，但是两者还是相关的：
+
+<img src="A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119205624438.png" alt="image-20201119205624438" style="zoom:67%;" />
+
+### 4.1 Generic Two-Scale Model
+
+整个表面的反射率的积分求解如下：（可以看出就是宏观BRDF的一般推导公式）
+
+![image-20201119210440113](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119210440113.png)
+
+一般情况下，这个公式并没有封闭形式的解，
+
+![image-20201119210630884](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119210630884.png)
+
+将公式展开，左边：我们考虑微表面是理想镜面的情况，即$refl(i)=o$，（也就是m=h）此时：
+
+![image-20201119211058597](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119211058597.png)
+
+###  4.2 Evaluating the Cook-Torrance Diffraction Lobe
+
+对于衍射波瓣项$\rho_{CTD}$，也不存在封闭形式的解，因此，我们需要忽略积分中某些值得变化，来进行拟合。首先：
+
+![image-20201119212214597](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119212214597.png)
+
+然后用上诉公式对A进行近似：
+
+![image-20201119212657581](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119212657581.png)
+
+在极值处，拟合效果不错，更具体地说，$2\pi(2cos\theta_d)\sigma_{rel}/\lambda<1/2$成立时，表现不错。如下图:arrow_down:
+
+![image-20201119212924285](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119212924285.png)
