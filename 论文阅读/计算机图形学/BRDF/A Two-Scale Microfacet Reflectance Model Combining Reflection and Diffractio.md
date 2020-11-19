@@ -167,3 +167,43 @@ Q包括`cross-polarization transfer`：部分横向偏振光被视为垂直偏�
 在极值处，拟合效果不错，更具体地说，$2\pi(2cos\theta_d)\sigma_{rel}/\lambda<1/2$成立时，表现不错。如下图:arrow_down:
 
 ![image-20201119212924285](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119212924285.png)
+
+被积的两个函数，$S_{NS}$、D，变化急剧，在大部分积分域中为0。当两者处于最大值时（无论是m=n还是f=0），我们来拟合其它变化较慢的函数：
+
+![image-20201119221554281](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119221554281.png)
+
+最后一个积分是球面上定义的两个函数之间的卷积：$S(\theta)=S_{HS}(2cos\theta_dsin\theta)cos^2\theta$ and $D(\theta)$。形式如下：
+
+![image-20201119222901437](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119222901437.png)
+
+大致就是微面法线分布和衍射波瓣函数的球形卷积，再乘上一个平方余弦项。为了计算这个卷积，作者计算了每个函数的`Spherical Harmonics`系数，将它们相乘并计算逆变换（见Appendix A）——两者都是旋转对称的。
+
+
+
+### 4.3 Exponential Power Distribution NDF
+
+本文的法线分布函数使用的是`Exponential Power Distribution`——在高光峰值周围急剧下降（这里的$\theta$是m和n间的夹角）
+
+![image-20201119224426538](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119224426538.png)
+
+主要有两个参数：$\beta$控制波峰的宽度，p控制峰度`kurtosis`，也就是它是否在原点急剧下降。这个分布类似于2014年的`BRDF model A`。这个模型是形状不变的，而形状不变性允许我们使用史密斯阴影和重要采样。
+
+我们使用Smith的方法，计算阴影项G:（这里的$\theta$依据情况，是m和v，m和l的夹角）
+
+![image-20201119225110560](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119225110560.png)
+
+由于形状不变性，$\Lambda$可以表示成$\beta,tan\theta,p$的函数，作者就可以预计算$\Lambda$，然后存储在表中（使用那三个参数作为索引）。
+
+
+
+### 4.4 Practical Convolution Computations
+
+使用`K-correlation model`进行拟合：
+
+![image-20201119230110262](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119230110262.png)
+
+拟合结果：
+
+![image-20201119230231416](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119230231416.png)
+
+其中，s和g是我们预计算的函数，存储了参数的所有值。
