@@ -68,7 +68,7 @@ B神在2016年提出的方法，将Shadow项G~1~从Smith中分离了出来。
 
 ![image-20201119184141845](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119184141845.png)
 
-其中，A是根据相位差得到的权重因子，$S_{HS}(f)$是散射方程，$Q(i,o)$是衍射的颜色项，$\sigma_s$是表面粗糙度。由这个公式也可解释，为什么越接近掠射角，衍射效应越明显。==控制衍射的主要参数是二维向量f==（如下图:arrow_down:）。f是出射光（视线向量v）和入射光的反射向量。之间差异，投影在切平面上，最后除上波长。
+其中，A是根据相位差得到的权重因子，$S_{HS}(f)$是散射方程，$Q(i,o)$是衍射的颜色项，$\sigma_s$是表面粗糙度。由这个公式也可解释，为什么越接近掠射角，衍射效应越明显。==控制衍射的主要参数是二维向量f==（如下图:arrow_down:）。f是出射光（视线向量v）和入射光的反射向量之间差异，投影在切平面上，最后除上波长。
 
 <img src="A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119185003604.png" alt="image-20201119185003604" style="zoom:67%;" />
 
