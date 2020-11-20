@@ -753,7 +753,7 @@ Imageworks使用不同的`inverted NDF`来表示光泽`sheen`，可以添加到�
 
 > 需要注意。衍射光一般分布在反射光的周围
 
-在这种情况下，只有一部分光波超反射方向传播，剩下的光以一种定向模式衍射出来。==反射光和衍射光的区分，取决于纳米几何凸起的高度，或者更精确地说，取决于高度分布的方差==。The angular spread of diffracted light around the specular reflection direction depends on the width of the nanogeometry bumps relative to the light wavelength（不规则性与光波的相对大小，决定了反射光周围的衍射光的扩散范围，成反比关系）。
+在这种情况下，只有一部分光波朝反射方向传播，剩下的光以一种定向模式衍射出来。==反射光和衍射光的区分，取决于纳米几何凸起的高度，或者更精确地说，取决于高度分布的方差==。The angular spread of diffracted light around the specular reflection direction depends on the width of the nanogeometry bumps relative to the light wavelength（不规则性与光波的相对大小，决定了反射光周围的衍射光的扩散范围，成反比关系）。
 
 周期性的 `nanogeometry`（纳米级不规则性）表面，产生的衍射最为明显，因为重复行为通过构造干涉`constructive interference`增强了衍射光，从而产生彩虹。==最明显的例子：光盘==。而非周期性表面的衍射，学术界认为其衍射效果是轻微的，一般也不予考虑。
 
