@@ -192,7 +192,7 @@ Q包括`cross-polarization transfer`：部分横向偏振光被视为垂直偏�
 
 ![image-20201119225110560](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119225110560.png)
 
-由于形状不变性，$\Lambda$可以表示成$\beta,tan\theta,p$的函数，作者就可以预计算$\Lambda$，然后存储在表中（使用那三个参数作为索引）。
+由于形状不变性，$\Lambda$可以表示成$\beta,tan\theta,p$的函数，作者就可以预计算$\Lambda$，然后存储在表中（使用那三个参数作为索引，390kb的表）。
 
 
 
@@ -206,4 +206,86 @@ Q包括`cross-polarization transfer`：部分横向偏振光被视为垂直偏�
 
 ![image-20201119230231416](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119230231416.png)
 
-其中，s和g是我们预计算的函数，存储了参数的所有值。
+其中，s和g是我们预计算的函数，存储了参数的所有值。低于一个阈值，$g(u)\approx u$：与D的卷积是一个缩放；高于另一个阈值，$g(u)$则是常数：(S*D)仅仅是$\theta_h$的函数，而独立于$\theta_d、\lambda$。这个阈值则依赖于$(c,\beta,p)$。这四个参数就预计算存储在表中（2.5MB的表）
+
+在实际中，如果D相对于S，有一个急剧的波峰，那么D就相当于一个脉冲函数。接近镜面的方向，θ~d~很小，所以g是常数，ρ~CTD~是只依赖于θ~h~，没有基于波长的效果。而在远离镜面的方向，$\theta_d$越大，g是线性的，我们接近标准衍射波瓣（依赖波长）。
+
+
+
+### 4.5 Multi-Layer Models
+
+我们的BRDF模型只在`top material interface`上建立交互模型。我们将其与多层模型结合起来，如塑料，即在扩散层上覆盖一层透明清漆。（or subsurface (see Figure 7), a BRDF approximation of subsurface scattering by participating media）
+
+![image-20201120120947382](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120120947382.png)
+
+![image-20201120121159128](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120121159128.png)
+
+作者使用双尺度模型在`top interface`上建模反射，使用高光折射在多层材质上建模折射。进入较低层的能量是：
+
+![image-20201120121435066](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120121435066.png)
+
+其中，F就是菲涅尔项，对于塑料，反射率取决于漫反射层的反射率$\rho_d$：
+
+![image-20201120122013856](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120122013856.png)
+
+其中$F_{dr}$是菲涅尔漫反射率，具体来说是：菲涅尔反射率的积分$*$入射方向的余弦角。
+
+对于次表面，则取决于散射材质的反射率albedo：
+
+![image-20201120122520439](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120122520439.png)
+
+其中$ \theta_i^,,\theta_o^,$是折射光线和表面法线的夹角。
+
+
+
+### 4.6 Importance Sampling
+
+本文模型的重要性采样，仅依赖于入射方向i，忽略卷积效应和重归一化：
+
+![image-20201120123049039](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120123049039.png)
+
+我们取一个范围在$[0,1)$内的随机变量$u_1$，如果$u_1<A_{imp}$，则采样`Cook-Torrance`模型，反之，则是衍射模型。
+
+对前者进行采样时，取两个范围同为$[0,1)$随机变量$(u_2,u_3)$，然后使用$(\theta_m,\phi_m)$来建立微面法线m：
+
+![image-20201120123646959](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120123646959.png)
+
+其中$\gamma_u^{-1}$是归一化上不完全伽马函数的倒数（the inverse of the normalized upper incomplete gamma function），$\beta$控制波峰的宽度，p控制峰度`kurtosis`（就是之前指数NDF中的参数）
+
+![image-20201120124444179](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120124444179.png)
+
+对衍射波瓣进行采样，是相似的，不过是对向量差f进行构建：
+
+![image-20201120124626717](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120124626717.png)
+
+其中，$f\in [0,(1+sin\theta_i)/\lambda]$，我们选择$\phi_f$，使o~p~保持在单位圆盘内：
+
+![image-20201120125114879](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120125114879.png)
+
+每个采样必须乘上权重$\phi_{max}/\pi$。这个模型的PDF是：
+
+![image-20201120125537919](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120125537919.png)
+
+重要性权重，定义为PDF的逆，在掠食角度时可能变得非常大。
+
+
+
+## 5. VALIDATION WITH MEASURED MATERIALS
+
+作者使用了MERL的100中材质来进行拟合，使用`Levenberg-Marquadt`优化来搜索最优的参数
+
+> M. I. A. Lourakis. 2004. levmar: Levenberg-Marquardt nonlinear least squares algorithms in C/C++. http://www.ics.forth.gr/~lourakis/levmar/. (July 2004)
+
+作者在整个参数域$(\theta_i,\theta_o,\phi_o-\phi_i)$上进行拟合，使用$L^2$范数：
+
+![image-20201120130451869](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120130451869.png)
+
+作者做了两个改动：==一是==使用Bagher等人[2016]的压缩权重$w_C$。它极大地提高了拟合过程的稳定性，防止了过拟合：
+
+![image-20201120130622972](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120130622972.png)
+
+其中，中值$median$是被测数据的中值，乘上一个权重$cos\theta_i$，而p则取1.4。
+
+==其次==，我们用p(i,o)补偿MERL采集设备在掠射角度引入的误差，M神使用`spheres`加速获取过程:
+
+![image-20201120131111761](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120131111761.png)
