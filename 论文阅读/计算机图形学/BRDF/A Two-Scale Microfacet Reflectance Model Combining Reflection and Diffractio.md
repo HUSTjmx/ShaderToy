@@ -52,7 +52,7 @@ B神在2016年提出的方法，将Shadow项G~1~从Smith中分离了出来。
 
 ![image-20201119180613994](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119180613994.png)
 
-在F、D、G中，唯一依赖波长的是菲涅尔项，对于非偏振光，F定义为：
+在F、D、G中，唯一依赖波长的是菲涅尔项，对于非偏振光（自然光），F定义为：
 
 ![image-20201119181020576](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201119181020576.png)
 
@@ -286,6 +286,87 @@ Q包括`cross-polarization transfer`：部分横向偏振光被视为垂直偏�
 
 其中，中值$median$是被测数据的中值，乘上一个权重$cos\theta_i$，而p则取1.4。
 
-==其次==，我们用p(i,o)补偿MERL采集设备在掠射角度引入的误差，M神使用`spheres`加速获取过程:
+==其次==，我们用p(i,o)补偿MERL采集设备在掠射角度引入的误差，M神使用`spheres`加速获取过程：
+
+> a single photograph covers all outgoing directions. For each pixel, a camera sensor integrates over a small spatial domain, operating a spatial convolution between the pixel footprint and the incoming signal. For a photograph of a sphere, this translates into an angular convolution between the BRDF and the pixel footprint with its width divided by cosθ (see Figure 10 and supplemental material)
 
 ![image-20201120131111761](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120131111761.png)
+
+这个卷积有两个效果，在图10中可以看到：它降低了信号的频率内容，并降低了信号的最大强度。假设像素响应为高斯分布，计算后一种效果，用：
+
+![image-20201120135414810](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120135414810.png)
+
+其中，参数k依赖于BRDF的频率内容`frequency content`。对于漫反射或Glossy平面，带有低频效应，$k\approx0$，采集的信号没有失真；对于高光平面（光滑平面），$k\approx1$，在掠射角处信号强度骤减。
+
+
+
+### 5.1 Results and Comparison
+
+作者将自己的模型和四个参考模型进行比较，分别是：`Shifted-Gamma Distribution (SGD)`，`Smooth reflectance model`，`He model`，`Cook-Torrance model with the Exponential Power Distribution (EPD)`。
+
+![image-20201120140445896](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120140445896.png)
+
+并使用了如下的几个指标：视觉图像差异，平均图像差异（使用sMAPE）, BRDF能量差异（使用RMSE），以及波瓣形状。SGD和Smooth模型与底层物理模型不一致：SGD基于Cook-Torrance，但依赖于通道的NDF参数，这意味着每个颜色通道的微观几何形状是不同的。光滑模型基于衍射，但没有波长依赖性和重归一化。
+
+![image-20201120140631790](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120140631790.png)
+
+#### Comparison between Models
+
+所有模型都提供一个好的材料拟合，除了在高光处有些例外。基于衍射波瓣的模型（He、Smooth），在漫反射、Gloosy材料上表现不错，而基于CT的模型（另外三个）则在高光镜面材质上表现更好。我们的模型在RMSE度量上表现最好
+
+<img src="A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120141512646.png" alt="image-20201120141512646" style="zoom:67%;" />
+
+在视觉上，我们基本和现实值没有太多差别：
+
+![image-20201120141841958](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120141841958.png)
+
+而有趣的是，对于某些漫反射材质，哪怕本文模型的RMSE比较大，但视觉效果却很不错，除了掠射角外，与实测数据的波瓣形状都有较好的拟合
+
+![image-20201120142201795](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120142201795.png)
+
+本文模型在预测反射波瓣形状方面很出色。Low等人[2012]指出，在镜面波峰之外，衍射模型可以更好地预测波瓣形状。我们改进了它们的拟合，特别是在掠射角处，考虑微观几何和衍射几何之间的结合。（下图是波瓣形状可视化的结果，本文的模型都很好，Smooth在掠射角出表现不好，SGD则在靠近法线处反而不佳）
+
+![image-20201120142545016](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120142545016.png)
+
+衍射波瓣强度随着波长的减少而增加(从红到蓝)。所以高光波瓣会随波长变化。（能量守恒嘛）
+
+![image-20201120144604837](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120144604837.png)
+
+### 5.2 Editing Parameters
+
+我们的模型有两组不同的参数。粗糙度$\beta$和坡度$p$控制CT波瓣。$\sigma_s,b,c$控制衍射波瓣：$\sigma_s$是`nano-geometry`的标准差，b是长度的倒数，为了增大衍射效应，需要增大$\sigma_s$，减小b。图16显示了在保持Cook-Torrance不变的情况下，用相同的值乘以s和除以b，增加衍射效应的效果。
+
+![image-20201120143757391](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120143757391.png)
+
+图17显示了相反的结果：在保持其他参数不变的情况下，改变粗糙度$\beta$。比较这两个图，增加粗糙度对整个球有影响，使它看起来更漫反射，而增加衍射效应，对球的中心有影响，使它看起来更闪烁`glazy`。（我的理解，就是球的边缘还处于光滑的情况下，球的中心先一步"模糊"）
+
+![image-20201120143932451](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120143932451.png)
+
+
+
+## 6. CONCLUSION AND FUTURE WORK
+
+在现有模型的基础上，考虑多层材质和多次散射。
+
+> Jakob, E. D’Eon, O. Jakob, and S. Marschner. 2014. A Comprehensive Framework for Rendering Layered Materials. ACMTrans. Graph. (Proc. SIGGRAPH 2014) 33, 4 (2014). DOI:https://doi.org/10.1145/2601097.2601139
+
+> Heitz, J. Hanika, E. d’Eon, and C. Dachsbacher. 2016. Multiple-Scattering Microfacet BSDFs with the Smith Model. ACM Trans. Graph. (Proc. SIGGRAPH 2016) 35, 4, Article 58 (July 2016). DOI:https://doi.org/10.1145/2897824.2925943
+
+
+
+
+
+## PRACTICAL CONVOLUTION
+
+计算球面卷积$(S∗D)$：
+
++ 计算各个函数的`Spherical Harmonics coefficien`。因为每个函数都绕Z轴具有旋转对称性，只有SH系数在m = 0时是非零的：
+
+  ![image-20201120145227761](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120145227761.png)
+
+  
+
+  将它们相乘得到的球谐系数``Spherical Harmonics coefficien``
+
+![image-20201120145306375](A Two-Scale Microfacet Reflectance Model Combining Reflection and Diffractio.assets/image-20201120145306375.png)
+
