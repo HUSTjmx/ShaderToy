@@ -165,7 +165,7 @@ LTCs方法比代表点的效果好，但更耗时。
 
 假设在`Lambertian surface`的情况下，球面函数可以通过一个预先计算的radiance函数来计算环境照明，e.g., radiance convolved with a cosine lobe, for each possible surface normal direction。球面函数在全局光照算法中也得到了广泛的应用。
 
-与球函数相关的是用于`hemisphere`函数。我们把这些表示称为球基`spherical bases`，因为它们是定义在球上的函数的向量空间的基。<span style="color:blue;font-size:1.2rem">将一个函数转换为一个给定的`representation`称为投影`projection`，从一个给定的表示求函数的值称为重构`reconstruction`</span>。
+与球函数相关的是用于`hemisphere`函数。我们把这些表示称为球基`spherical bases`，因为它们是定义在球上的函数的向量空间的基。<span style="color:red;font-size:1.2rem">将一个函数转换为一个给定的`representation`称为投影`projection`，从一个给定的表示求函数的值称为重构`reconstruction`</span>。
 
 每种表示都有自己的一组权衡。我们在给定的`basis`上，可能寻找的属性是：
 
@@ -185,7 +185,7 @@ LTCs方法比代表点的效果好，但更耗时。
 
 <img src="RTR4_C10.assets/image-20201115120344813.png" alt="image-20201115120344813" style="zoom:67%;" />
 
-表格形式也有缺点。在低分辨率下，硬件滤波所提供的质量通常是不可接受的。在处理光照时，卷积是一种常见的操作，计算卷积的计算复杂度与样本的数量成正比，可能会令人望而却步。此外，投影在旋转下不是不变的。通过在投影和重构过程中，使用与每个样本相关联的核函数，可能缓解这些问题。然而，更常见的是，使用足够密集的采样。
+表格形式也有缺点。在低分辨率下，硬件滤波所提供的质量通常是不可接受的。在处理光照时，卷积是一种常见的操作，计算卷积的计算复杂度与样本的数量成正比，可能会令人望而却步。此外，投影在旋转下不是不变的。通过在投影和重构过程中，使用与每个样本相关联的核函数，可能缓解这些问题。然而，更常见的是，使用足够多的采样。
 
 通常，当我们需要存储复杂的、高频率的函数时，就会使用表格形式。如果我们需要用很少的参数，对球面函数进行压缩编码，可以使用更复杂的基` bases`。
 
@@ -236,7 +236,7 @@ $$
 $$
 F_G(v)=\sum_k{w_kG(v,d_k,\lambda_k)}
 $$
-<span style="color:blue;font-size:1.2rem">将一个球面函数投影到这个表达式中，需要找到使重构误差最小的参数集$\{w_k,d_k,\lambda_k\}$</span>。这一过程通常通过数值优化来完成，通常使用非线性最小二乘优化算法(如Levenberg-Marquardt)。实际使用过程中，最好是：选择一组固定宽度和方向的高斯波瓣，作为基。
+<span style="color:red;font-size:1.2rem">将一个球面函数投影到这个表达式中，需要找到使重构误差最小的参数集$\{w_k,d_k,\lambda_k\}$</span>。这一过程通常通过数值优化来完成，通常使用非线性最小二乘优化算法(如Levenberg-Marquardt)。实际使用过程中，最好是：选择一组固定宽度和方向的高斯波瓣，作为基。
 
 > 所以说，我们实际编程中，使用的是什么呢？在实际运行过程中，应该是重建，但在科研中，对于某一些材质地拟合，则是投影。
 
@@ -460,13 +460,13 @@ H神引入了`H-Basis`**[627]**。
 
 <img src="RTR4_C10.assets/image-20201116201443130.png" alt="image-20201116201443130" style="zoom:67%;" />
 
-靠经验主义来进行过滤走不长远，最好是依据BRDF的`specular lobe`形状，来进行模糊，这样就可以在参数的调控下，模拟各种反射效果。参数一般是五个：粗糙度，视图向量和法线的方位角。
+靠经验主义来进行过滤走不长远，最好是依据BRDF的`specular lobe`形状，来进行模糊，这样就可以在参数的调控下，模拟各种反射效果。==参数一般是五个：粗糙度，视线向量和法线的 polar angles。==
 
 
 
 ### 5.1 Prefiltered Environment Mapping
 
-这个技术是视线和法线独立的，因此我们只需为不同的粗糙度生成不同的贴图，其计算方法见 书 P 416。
+==这个技术是视线和法线独立的==，因此我们只需为不同的粗糙度生成不同的贴图，其计算方法见 书 P 416。
 
 对于径向对称的高光波瓣，其唯一的问题，是水平裁剪`horizon clipping`。
 
@@ -545,3 +545,93 @@ K神在采样算法上进行优化，来提高环境映射的效果，主要是�
 <img src="RTR4_C10.assets/image-20201121130903214.png" alt="image-20201121130903214" style="zoom:67%;" />
 
 一些被提及的BRDF模型： ==Lafortune BRDF==**[954]** 、==He-Torrance model==  **[686]** 
+
+
+
+##  6. Irradiance Environment Mapping
+
+无论是否过滤，==高光环境贴图==都使用反射视线向量作为索引，不过存储的辐射率值不一样。未过滤的环境贴图存储的是入射辐射率，而过滤的贴图存储的是出射辐射率。
+
+相反的是，==用于漫反射的环境贴图使用表面法线n作为索引==，存储的是辐照度值`irradiance `。因此也被称为`irradiance environment maps`。相比高光实现Glossy的固有问题——视线反射向量对应的反射情况不唯一，辐照环境映射就没有这个问题。而且==辐照度贴图要求的分辨率极低==，可以使用预过滤的高光环境贴图的最低等级Mip来存储。最后呢，对于此贴图，环境光和余弦波瓣的卷积是明确的，而无需近似。
+
+对于贴图中的每个`texel`，我们需要在给定法线方向上，对影响表面的、所有光照的余弦加权进行求和。具体来说，通过对原始环境纹理应用一个`far-reaching filter`（覆盖整个可见半球），来创建辐照贴图:arrow_down:。滤波器包含余弦因子。
+
+![image-20201121143745795](RTR4_C10.assets/image-20201121143745795.png)
+
+![image-20201121143942371](RTR4_C10.assets/image-20201121143942371.png)
+
+辐照环境贴图与镜面环境贴图分开存储和访问，通常以独立于视图的表示方式，如立方体图。:arrow_down:
+
+![image-20201121145144411](RTR4_C10.assets/image-20201121145144411.png)
+
+由于辐照度环境t贴图使用了非常宽的过滤器，所以实时生成是昂贵的。K神讨论了如何在GPU上卷积生成此贴图。**[897]**
+
+
+
+### 6.1 Spherical Harmonics Irradiance
+
+除了使用上诉类似Cube Map的方法，还可以使用本章第三节的球协函数法。R神**[1458]**指出，仅使用前9个SH系数，辐照度环境映射的表示精度就可达到1%。
+
+SH是一个比之前的Cube Map更紧凑的方法，并且在渲染时，可以通过计算一些简单的多项式来重建辐照度。甚至对于低频的间接光，可以只使用前4个系数来构建。
+
+根据上节K神的理论，==辐照度函数E(n)的SH系数，可以通过入射辐射函数L(l)的SH系数乘上一个常数==，并用$\sqrt{4\pi/(2l+1)}$（$l$是频带索引）进行缩放来计算，换一个角度，就是：E(n)本身等于L(l)和$cos(\theta)^+$的卷积。（也就是说余弦波瓣的SH系数是一个常数）。而余弦的SH系数只有前九个的值是有效的，足够大，这也解释了为什么一般只用九个SH系数来表示。
+
+> 由于夹紧的余弦函数在球面的z轴上是旋转对称的，它在SH中呈现出一种特殊的形式：它的投影在每个频带中只有一个非零系数。非零系数对应于图10.21中心列(401页)的基函数，也称为纬向谐波`zonal harmonics`。
+
+> `ringing`：信号处理过程中常见的问题。一般是由于使用少量基函数，来拟合高频函数。
+
+动态立方体环境映射可以投射到SH基上**[871,897,1458]**。由于立方体环境映射是入射辐射函数的离散表示，在方程10.21中对球面的积分变成了求和：
+
+![image-20201121154147421](RTR4_C10.assets/image-20201121154147421.png)
+
+其中，t是当前·Texel的索引，$r[t]$则是指向此纹理的向量，$f_j(r[t])$则是第$j$个SH基函数，$L(t)$则是存储在此Texel中的辐射率。
+
+然后使用之前的算法，计算辐照度系数：
+
+![image-20201121154710245](RTR4_C10.assets/image-20201121154710245.png)
+
+之前也谈论过，这里再次强调——==将常见的光源投影到SH的过程进行简化是重要的==，我们j可以将很多远处或微弱的光源，进行计算舍弃，但是仍保留其效果。`Fill lights`就是一个重要的例子。
+
+在SH中，进行反向推导也是简单的——从SH反投影回实际光源。==这样就产生了一个有意思的方法==：先将一个光源集投影到SH上，然后反投影几个光源来代表这个光源集，这样可以在不影响渲染的情况下，减少光源的数量。
+
+
+
+### 6.2 Other Representations
+
+![image-20201121160916823](RTR4_C10.assets/image-20201121160916823.png)
+
+除了SH和Cube Map，基于大部分环境贴图都是特征明显的观察（顶部是天空，底部是地面），P神提出了一个新的方法，`hemisphere lighting `。这个方法只使用两个颜色，L~sky~和L~ground~。这种情况下的辐照度积分是：**[1356]**
+
+![image-20201121160751670](RTR4_C10.assets/image-20201121160751670.png)
+
+其中，$\theta$是天空半球轴线和表面法线的夹角。B神提出了一个更快的拟合方法 **[1752]**：
+
+![image-20201121161114720](RTR4_C10.assets/image-20201121161114720.png)
+
+而关于高频光的保留，则涉及很多全局光照技术，将会在下一章具体分析。
+
+
+
+## 7. Sources of Error
+
+在开发实时渲染模型时，需要考虑的一个重要方面是：==确保不同形式的照明之间的差异不明显==。从不同的表现形式中获得连贯的光照结果，在视觉上甚至可能比每种表现形式所犯的绝对近似误差更重要。
+
+> :star:总而言之，就是在复杂场景中，处理不同的lighting时（太阳直接光、SH漫反射环境光、CubeMap反射环境光等），线性处理得到的结果，应该是光滑的（函数是连续平缓的）。
+
+另外一个关键点是`Occlusions`，时至今日仍然没有一个实时阴影技术可以精确考虑光源的形状。而对于环境照明，阴影的计算更是困难的，因为此时的光没有一个明确的入射方向，所以无法使用诸如阴影贴图之类的常规方法。
+
+最后记住，我们讨论的所有模型，并不是真实世界光源的精确表示。
+
+
+
+## Further Reading and Resources
+
+The book ==Light Science and Magic: An Introduction to Photographic Lighting== by Hunter  is a great reference for understanding <span style="color:green;font-size:1.3rem">real-world photographic lights</span>. **[791]**
+
+For <span style="color:green;font-size:1.3rem">movie lighting </span>，==Set Lighting Technician’s Handbook: Film Lighting Equipment, Practice, and Electrical Distribution==  is a great introduction.  **[188]**
+
+The work pioneered by Debevec in the area of image-based lighting is of great interest to anyone who needs to <span style="color:green;font-size:1.3rem">capture environment maps</span> from real-world scenes. Much of this work is covered in ==a SIGGRAPH 2003 course== **[333]**, as well as in the book ==High Dynamic Range Imaging: Acquisition, Display, and Image-Based Lighting== by Reinhard et al. **[1479]**.
+
+One resource that can help simulation are  <span style="color:green;font-size:1.3rem">light profiles</span>. The Illuminating Engineering Society (IES) publishes a handbook and file format standard for lighting measurements . Data in this format is commonly available from many manufacturers. The IES standard is limited to describing lights by only their angular emission profile. It does not fully model the effect on the falloff due to optical systems, nor the emission over the light surface area. **[960, 961]**
+
+Szirmay-Kalos ’s  state-of-the-art report on specular effects includes many references to <span style="color:green;font-size:1.3rem">environment mapping techniques</span>. **[1732]**
