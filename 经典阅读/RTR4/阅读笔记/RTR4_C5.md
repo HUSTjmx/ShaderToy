@@ -4,7 +4,7 @@
 
 本章将讨论那些适用于真实感渲染（photo realistic）和程序化渲染（stylized，非真实渲染？）的着色器Shading的方方面面。
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\23.png)
+![](RTR4_C5.assets\23.png)
 
 ## 1. Shading Models
 
