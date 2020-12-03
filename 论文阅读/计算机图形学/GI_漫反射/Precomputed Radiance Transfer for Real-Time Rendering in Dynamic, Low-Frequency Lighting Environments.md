@@ -22,7 +22,7 @@
 
 为了描述我们的技术，假设：有一个漫反射凸物体，被一个无限远的环境贴图照亮。这个物体对环境贴图的渲染响应，可以视作一个`transfer function`，将入射光映射到出射光，在这种情况下简单地执行余弦加权积分。
 
-本文的方法是：为给定对象计算**昂贵光传输**所需的**复杂传递函数**。最终的传递函数其形式为密集的向量组或矩阵。通过在**线性基**（SH）上表示入射辐射率和传递函数，我们利用光传输的线性，将光积分**转化为**：两者的系数`coefficient`矢量之间的简单点积（漫反射接收者），或通过一个传递矩阵（`Glossy`接收者），对照明系数矢量进行线性变换。
+本文的方法是：为给定对象计算**昂贵光传输**所需的**复杂传递函数**。最终的传递函数其形式为密集的向量组或矩阵。通过在**线性基**（SH）上表示入射辐射率和传递函数，利用光传输的线性，将光积分**转化为**：两者的系数`coefficient`矢量之间的简单点积（漫反射接收者），或通过一个传递矩阵（`Glossy`接收者），对照明系数矢量进行线性变换。
 
 <img src="Precomputed Radiance Transfer for Real-Time Rendering in Dynamic, Low-Frequency Lighting Environments.assets/image-20201130210154624.png" alt="image-20201130210154624" style="zoom:80%;" />
 
@@ -144,7 +144,7 @@ T_{DS}(L_p)=(\rho_p/\pi)\int{L_p(s)H_{Np}(s)V_p(s)\mathrm{d}s}
 $$
 这里的$V_p(s)$是二值可见性函数。转移$M_p^{DS}=H_{N_p}(s)V_p(s)$现在**不是无关紧要**的，我们使用<u>传输模拟器</u>`transport simulator`预计算（第5节）。和上一个方法不同，这里只是要二阶SH参数是不够的，因为$V_p$会产生**高频照明细节**。而在光滑光照环境下，使用四阶或五阶SH系数会产生不错的结果。
 
-<span style="color:green;font-size:1.3rem">方法3</span>，包含满分射下的自反射，定义`interreflected diffuse transfer`为：:arrow_down:
+<span style="color:green;font-size:1.3rem">方法3</span>，包含漫分射下的自反射，定义`interreflected diffuse transfer`为：:arrow_down:
 $$
 T_{DI}(L_p)=T_{DS}(L_p)+(\rho_p/\pi)\int{\overline{L}_p(s)H_{Np}(s)(1-V_p(s))\mathrm{d}s}
 $$
@@ -231,7 +231,7 @@ $L_p$上的线性算子，其SH投影可以通过等式（7）表示为对称矩
 
 ![image-20201201191635852](Precomputed Radiance Transfer for Real-Time Rendering in Dynamic, Low-Frequency Lighting Environments.assets/image-20201201191635852.png)
 
-在阴影Pass中，我们首先将传输向量或矩阵初始化为0，然后再累积方向$s_d$上的传输。G
+在阴影Pass中，我们首先将传输向量或矩阵初始化为0，然后再累积方向$s_d$上的传输。
 
 <span style="color:green;font-size:1.1rem">Glossy中间项分析</span>：lossy转移定义中的**中间因子**代表：从q回传到p的、前一个bounce pass所发出的辐射度。首先我们知道的，对于Glossy而言，转移矩阵的结果是入射辐射度，所以需要和BRDF核进行卷积，所以中间项中包含$G_{r_q}$。而两个函数的卷积的SH投影，根据公式6，可以得知$\alpha_k$的来历和值（缩放因子）。
 
@@ -239,7 +239,7 @@ $L_p$上的线性算子，其SH投影可以通过等式（7）表示为对称矩
 
 明显，要**重复**此Pass，直到给定Pass的总能量低于某个阈值，对于典型的材料，它衰减得相当快。最后的，对每个Pass的值进行求和，来实现自反射。
 
-
+> ==注意Glossy情况，矩阵的J是实时运行时采样的入射光的系数数量==
 
 最后，此模型的一个**简单扩展**，是考虑镜面。对于镜面，不考虑传输`transfer`。
 

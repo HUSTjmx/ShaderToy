@@ -583,7 +583,7 @@ E神在游戏`LittleBigPlanet`中对辐照度体积进行了优化，每个采�
 
 ==辐射传输理论==`Radiative transfer theory `是模拟电磁辐射在介质中传播的一般方法。它解释了散射、发射`emission`和吸收。但除了最简单的情况外，在实时**模拟**这些方法成本太高。然而，一些`in the field`使用的方法被证明在实时领域是有效。
 
-<span style="color:green;font-size:1.3rem">Light propagation volumes（LPV）</span>，其**灵感**来自辐射传播中的`discrete ordinate methods`。思路：场景被分解成一个规则的**三维单元网格**。每个单元存储了经过它的辐射率的**方向分布**`directional distribution `。
+<span style="color:green;font-size:1.3rem">Light propagation volumes（LPV）</span>，其**灵感**来自辐射传播中的`discrete ordinate methods`。思路：场景被分解成一个规则的**三维单元网格**。每个单元存储了经过它的辐射率的**方向分布**`directional distribution `。**[854]**
 
 - 在第一步中，光线被注入到**包含直接光照亮的表面**的单元格`CELL`中。可以使用**RSM**来找到这些单元格。注入的光线是表面反射的亮度`radiance`。因此，==它在法线周围形成一个分布==，并从材质的`albedo`获得它的颜色。
 - 接下来，光线被传播`propagated`。每个单元**分析**相邻单元的**radiance fields**。然后，修改自己的分布，以考虑来自各个方向的辐射。
@@ -601,4 +601,52 @@ E神在游戏`LittleBigPlanet`中对辐照度体积进行了优化，每个采�
 
 
 
-### Voxel-Based Methods
+### 5.7 Voxel-Based Methods
+
+G神提出的`voxel cone tracing global illumination`（**VXGI**）也使用体素来表示场景。几何体存储在稀疏八叉树`sparse voxel octree`中（13.10）。**关键概念**是：这个结构提供了一个类似于mip map的场景表示，这样就可以快速测试空间的遮挡情况。体素也包含了所代表的几何体的**反射光量**的信息。 **[304]** （具体实现细节见 书 P 494 - 495）
+
+<img src="RTR4_C11.assets/image-20201203201537092.png" alt="image-20201203201537092" style="zoom:80%;" />
+
+==一个简单的算法过程介绍==：
+
++ 对于每个像素，追踪数个射线锥。
++ 对于每个锥，沿着锥的轴对树进行一系列查找，查找提供此方向上的`filtered`**辐射率**，以及**被遮挡的百分比**——用来减弱光。
++ 当累积亮度时，首先乘以遮挡因子。这一策略不能检测到由多个**局部遮挡**造成的**全遮挡**，但结果是可信的。
+
+早期虚幻引擎的一个使用。每个像素只跟踪一个圆锥射线，而通过全局滤波来优化效果。**[1229]**
+
+此类方法的==最大问题==是：**查找的高消耗**——在遍历**分层数据**结构时，大部分时间都花在：等待从内存中提取下一个节点上。
+
+一些优化算法见书 P 496。
+
+<img src="RTR4_C11.assets/image-20201203203316525.png" alt="image-20201203203316525" style="zoom: 50%;" />
+
+
+
+### 5.8 Screen-Space Methods
+
+用途不大。
+
+
+
+### 5.9 Other Methods
+
+3.5的计算AO的方法扩展到计算GI diffuse。
+
+
+
+##  6. Specular Global Illumination
+
+本节将聚焦于视相关效果，需要一个能够携带**高频信息**的辐射率表示方法。不同于漫反射方法，这里的技术只考虑一个小空间角方向的入射光。
+
+使用一些辐射率表示方法，如：AHD、HL2，可以粗略地表示全局视相关效果，但会有诸多`artifacts`。滤波可以**优化**，但更为常见的是使用更高的精度来表示辐射率：使用球形高斯（SG）波瓣以及X神的方法**[1940]**，可以得到对**经典BRDF高光波瓣**的有效拟合。此时，可以假设F项和G项是常数，可以得到如下公式：
+
+<img src="RTR4_C11.assets/image-20201203205522854.png" alt="image-20201203205522854" style="zoom:80%;" />
+
+其中，M是G和F的组合，$L_k(l)$是第k个球形高斯。X神还提出了`anisotropic spherical Gaussian`（**ASG**）来对D进行建模，最后提出了对积分项（ASG和SG的点积）的有效拟合。
+
+> :star:关于更精确的数据表达，可以来模拟简介高光，从2020.12初看的那篇关于`PRT`的论文就可见一斑：论文中考虑的就是两种情况，漫反射和Glossy，后者不就是视相关的高光效果嘛。
+
+###  6.1 Localized Environment Maps
+
+到目前讨论的所有方法，都无法处理**抛光材料**，都不能很好编码入射光的**细节**。
