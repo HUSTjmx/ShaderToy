@@ -610,7 +610,7 @@ G神提出的`voxel cone tracing global illumination`（**VXGI**）也使用体�
 ==一个简单的算法过程介绍==：
 
 + 对于每个像素，追踪数个射线锥。
-+ 对于每个锥，沿着锥的轴对树进行一系列查找，查找提供此方向上的`filtered`**辐射率**，以及**被遮挡的百分比**——用来减弱光。
++ 对于每个锥，沿着锥的轴对树进行一系列查找，查找此方向上的`filtered`**辐射率**，以及**被遮挡的百分比**——用来减弱光。
 + 当累积亮度时，首先乘以遮挡因子。这一策略不能检测到由多个**局部遮挡**造成的**全遮挡**，但结果是可信的。
 
 早期虚幻引擎的一个使用。每个像素只跟踪一个圆锥射线，而通过全局滤波来优化效果。**[1229]**
@@ -635,18 +635,126 @@ G神提出的`voxel cone tracing global illumination`（**VXGI**）也使用体�
 
 
 
+
+
 ##  6. Specular Global Illumination
 
 本节将聚焦于视相关效果，需要一个能够携带**高频信息**的辐射率表示方法。不同于漫反射方法，这里的技术只考虑一个小空间角方向的入射光。
 
-使用一些辐射率表示方法，如：AHD、HL2，可以粗略地表示全局视相关效果，但会有诸多`artifacts`。滤波可以**优化**，但更为常见的是使用更高的精度来表示辐射率：使用球形高斯（SG）波瓣以及X神的方法**[1940]**，可以得到对**经典BRDF高光波瓣**的有效拟合。此时，可以假设F项和G项是常数，可以得到如下公式：
+使用一些辐射率表示方法，如：AHD、HL2，可以粗略地表示全局视相关效果，但会有诸多`artifacts`。滤波可以**优化**，==但更为常见的是使用更高的精度来表示辐射率==：使用球形高斯（**SG**）波瓣以及X神的方法**[1940]**，可以得到对**经典BRDF高光波瓣**的有效拟合。此时，可以假设F项和G项是常数，可以得到如下公式：
 
 <img src="RTR4_C11.assets/image-20201203205522854.png" alt="image-20201203205522854" style="zoom:80%;" />
 
 其中，M是G和F的组合，$L_k(l)$是第k个球形高斯。X神还提出了`anisotropic spherical Gaussian`（**ASG**）来对D进行建模，最后提出了对积分项（ASG和SG的点积）的有效拟合。
 
-> :star:关于更精确的数据表达，可以来模拟简介高光，从2020.12初看的那篇关于`PRT`的论文就可见一斑：论文中考虑的就是两种情况，漫反射和Glossy，后者不就是视相关的高光效果嘛。
+> :star:关于更精确的数据表达，可以来模拟间接高光，从2020.12初看的那篇关于`PRT`的论文就可见一斑：论文中考虑的就是两种情况，漫反射和Glossy，后者不就是视相关的高光效果嘛。
 
 ###  6.1 Localized Environment Maps
 
-到目前讨论的所有方法，都无法处理**抛光材料**，都不能很好编码入射光的**细节**。
+到目前讨论的所有方法，都无法处理**抛光材料**` polished materials`，都不能很好编码入射光的**细节**。
+
+其中一个**解决方法**是使用更多的SH或SG参数，但会面临一个表现问题：需要的参数实在太多了。
+
+而实时领域，最为流行的GI方法是**局部环境贴图**`localized environment maps`。入射辐射度表示成一张环境贴图，稀疏地分布在整个场景中——增加的**角度分辨率**换取了入射光的空间精度。这种在场景中，特定点渲染的环境映射通常称为**反射探针**`reflection probes`。最早使用这个技术的是`Half-life 2`。
+
+<img src="RTR4_C11.assets/image-20201206202856729.png" alt="image-20201206202856729" style="zoom:80%;" />
+
+可以使用10.5节的技术，结合这里的局部环境贴图，来渲染间接高光。
+
+<span style="color:green;font-size:1.3rem">parallax correction</span>：表面的位置离环境贴图的中心越远，得到的结果与实际情况的差异就越大。其中一个解决方法就是**视差校正:arrow_down:**，基本思路：并不是直接采样局部贴图，而是根据视线反射向量和场景的交点，再和贴图中心进行连接，来得到采样值。此技术已在游戏领域广泛使用，且同时支持**前向**和**延迟渲染**。**[194]**
+
+![image-20201207122710071](RTR4_C11.assets/image-20201207122710071.png)
+
+> 术语 reflection proxies：高光探针的形状
+
+关于此技术的一些问题和解决方法，具体见书 P 502。[807 1395](关于Glossy的误差问题)、[1730 1184](给反射探针添加额外的深度信息)
+
+
+
+###  6.2 Dynamic Update of Environment Maps
+
+上一节的贴图一般是离线完成的，而对于拥有诸多变体的户外场景，则需要实时更新环境贴图。而此类技术的==最大挑战==就是：保持效果不错的前提下，进行各自优化。
+
+常见优化思想：分批更新（不要一次更新所有探针）、实时卷积近似 **[279]、[960 1154]、[1120]**、纹理压缩 **[1259]**、G-buffer预计算**[384 1154]**。
+
+
+
+###  6.3 Voxel-Based Methods
+
+随着硬件的发展，可以使用**基于体素**的方法来得到更优的视觉效果。
+
+<span style="color:green;font-size:1.3rem">Voxel cone tracing</span>：体素锥跟踪——在稀疏八叉树**[307]**和`cascaded`（11.5.7）——也可以用于高光渲染。该方法对存储在**稀疏体素八叉树**中的场景，执行圆锥跟踪。单个圆锥轨迹只提供一个值，表示圆锥所覆盖的立体角的平均亮度。
+
+> 对于漫反射照明，需要跟踪多个锥，因为只使用一个锥是不准确的
+
+特别是，对于高光渲染来说，我们只需要跟踪一个圆锥曲线就足够了。
+
+
+
+###  6.4 Planar Reflections
+
+限制太大，不做介绍。
+
+> If there is a limited number of **reflective surfaces**, and they are **planar**, we can use the regular GPU rendering pipeline to create an image of the scene reflected off such surfaces
+
+
+
+###  6.5 Screen-Space Methods
+
+<img src="RTR4_C11.assets/image-20201207140636867.png" alt="image-20201207140636867" style="zoom:67%;" />
+
+此类技术族统称为`screen-space reflections`（<span style="color:red;font-size:1.5rem">SSR</span>），被S神首次提出**[1678]**。
+
+**基本思路**：很简单，有点像`RayMarching`，就是从视点往每个像素打一个射线，然后根据法线重定位方向，之后，不断访问Z-Buffer，进行深度比较，确认交点。
+
+正交投影导致采样不均匀，M神建议使用`digital differential analyzer`（<span style="color:green;font-size:1.3rem">DDA</span>），代替RayMarching **[1179]**。
+
+- 首先，要追踪的光线的起点和终点都被投射到屏幕空间中，沿着这条线的像素依次被检查，以保证均匀的精度。这种方法的一个结果是，交集测试不需要对每个像素的视图空间深度进行完全重构。
+
+关于具体渲染，可以不仅仅投射一条，而是进行**重要性采样**，投射多条射线。**屏幕空间反射**通常以降低的分辨率为代价，来进行计算**[1684,1812]**——时域滤波用于弥补降低的质量。
+
+通过==深度图分层==`hierarchical depth buffer`，可以加速追踪`tracing`过程。具体原理可见书 P 507和下图。**[1798]** 、 **[599]**（具体实现的一些探讨）
+
+<img src="RTR4_C11.assets/image-20201207141820327.png" alt="image-20201207141820327" style="zoom:80%;" />
+
+
+
+此技术的一些限制及思考：数据受限所导致的一些问题、薄物体的深度值所导致的一些问题**[315]**。
+
+
+
+==本章中描述的不同方法通常相互叠加，以交付一个完整而健壮的系统==。屏幕空间反射**SSR**作为第一层，如果它不能提供准确的结果，则使用局部反射探针；如果也没有，则使用全局默认探测[**1812]**。
+
+
+
+##  7. Unified Approach
+
+==实时路径跟踪已经成为研究的重点==。在图形界有一种说法:“<span style="color:red;font-size:1.5rem">光线追踪是未来的技术，而且永远是!</span>”。
+
+> Applications of real-time path tracing include architectural walkthroughs and pre-visualization for movie rendering
+
+> GPU主要目标一直是栅格化三角形，但目前已经出现专门支持光追的GPU。
+
+光线追踪依赖于**加速方案**，例如使用`bounding volume hierarchy `(**BVH**)来加速可见性测试。
+
+但目前，哪怕是最好的优化算法、最好的GPU也无法做到实时光追，但==可以实时产生带有噪点的图像，再进行滤波==，来达到不错的效果:arrow_down:。 **[95, 200, 247, 1124, 1563].**
+
+<img src="RTR4_C11.assets/image-20201207145645207.png" alt="image-20201207145645207" style="zoom:67%;" />
+
+
+
+
+
+## Further Reading and Resources
+
+Pharr et al.’s book ==Physically Based Rendering== **[1413]** is an excellent guide to non-interactive global illumination algorithms. What is particularly valuable about their work is that they describe in depth what they found works. 
+
+Glassner’ s (now free) ==Principles of Digital Image Synthesis== **[543, 544]** discusses the physical aspects of the interaction of light and matter. 
+
+==Advanced Global Illumination== by Dutr´e et al. **[400]** provides a foundation in radiometry and on (primarily off-line) methods of solving Kajiya’ s rendering equation.
+
+McGuire’s Graphics Codex **[1188]** is an electronic reference that holds a huge range of equations and algorithms pertaining to computer graphics. 
+
+Dutr´e’s ==Global Illumination Compendium== **[399]** reference work is quite old, but free. 
+
+Shirley’s series of short books **[1628]** are an inexpensive and quick way to learn about **ray tracing**.
