@@ -18,7 +18,7 @@
 
 ![image-20201209132813233](Multi-Scale Modeling and Rendering of Granular Materials.assets/image-20201209132813233.png)
 
-将每一个颗粒视为显式的**几何形状**，并使用*路径追踪*模拟全局光传输，这是一种**通用解决方案**，但仅适用于较小的颗粒集合。另一种极端是只考虑光滑的大尺度外观。不幸的是，这两者的参数是**无法通用**的。
+将每一个颗粒视为显式的**几何形状**，并使用*路径追踪*模拟全局光传输，这是一种**通用解决方案**，但仅适用于较小的颗粒集合。另一种极端是只考虑光滑的大尺度外观。但这两者的参数是**无法通用**的。
 
 > 首次考虑体积光传输的经典论文：DURANT, S., CALVO-PEREZ, O., VUKADINOVIC, N., AND GR- EFFET, J.-J. 2007. *Light scattering by a random distribution of particles embedded in absorbing media*: full-wave Monte Carlo solutions of the extinction coefficient. Journal of the Optical Society of America 24, 9, 2953–2962
 
@@ -53,7 +53,7 @@
 
 ### 3.1 Stochastic Granular Model（随机粒子模型）
 
-<span style="color:yellow;font-size:1.2rem">Tiled sphere packings：</span>我们依靠一个程序化平铺的、填充球的**无限场**来填满*集合形状*的体积。每个球体包含一粒颗粒，由于球体不重叠，所以颗粒不能重叠。这简化了系统，但限制了粒子的$f$，特别是**非球形粒子**。
+<span style="color:yellow;font-size:1.2rem">Tiled sphere packings：</span>作者依靠一个程序化平铺的、填充球的**无限场**来填满*集合形状*的体积。每个球体包含一粒颗粒，由于球体不重叠，所以颗粒不能重叠。这简化了系统，但限制了粒子的$f$，特别是**非球形粒子**。
 
 <span style="color:yellow;font-size:1.2rem">Randomized instantiation：</span>把无限场的每个不同的球体作为一个**位置**，用于从*示例集*中随机选择一个粒子进行实例化。**示范颗粒**根据用户指定的混合概率（见图1）选择；集合网格（具有一致法线）定义了空间中粒子**实例化的区域**，并且每个实例**随机旋转**。
 
