@@ -241,3 +241,25 @@ bloom图像可以*downsampled*几次，并从生成的一组图像中**重新采
 
 + **最后一个Pass**计算运动模糊。*与景深类似*，每个像素都要检查附近*可能快速移动并与像素重叠的*样本。不同的是，每个样本都有自己的**速度向量**。有不同的方法来*过滤和混合*相关样本。**一种方法**是利用最大速度的大小来确定核的方向和宽度。如果这个速度小于半像素，则不需要运动模糊；否则，沿最大速度方向进行图像采样**[1173]**。
 
+具体关于此技术的讨论集扩展，可见书 P 542。
+
+
+
+## Further Reading and Resources
+
+Several textbooks are dedicated to ==traditional image processing==, such as Gonzalez and Woods **[559]**. 
+
+In particular, we want to note Szeliski’s Computer Vision: ==Algorithms and Applications== **[1729]**, as it discusses image processing and many other topics and how they relate to synthetic rendering. The electronic version of this book is *free for download*; see our website *realtimerendering.com* for the link. 
+
+The course notes by Paris et al. **[1355]** provide a formal introduction to ==bilateral filters==, also giving numerous examples of their use. 
+
+The articles by McGuire et al. **[208, 1173]** and Guertin et al. [621] are lucid expositions of their respective work on ==motion blur==; code is available for their implementations. 
+
+Navarro et al. **[1263]** provide a thorough report on ==motion blur== for both interactive and batch applications.
+
+ Jimenez **[832]** gives a detailed, well-illustrated account of ==filtering and sampling== problems and solutions involved in *bokeh, motion blur, bloom, and other cinematic effects.* 
+
+Wronski **[1918]** discusses restructuring a complex **post-processing pipeline** for efficiency.
+
+For more about simulating a range of ==optical lens effects==, see the lectures presented in a SIGGRAPH course organized by Gotanda **[575]**.
+
