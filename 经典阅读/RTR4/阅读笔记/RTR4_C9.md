@@ -48,7 +48,7 @@
 
 另一个重要的情况是==光通过均匀介质传播==，均匀介质包括：晶体，不含杂质、无缝隙的液体和其它固体。在均质介质中，散射波在除原传播方向外的所有方向上都发生破坏性干扰`interfere destructively`。原始波与各个分子散射的波结合后。除了相位速度和（在某些情况下）振幅之外，==最终结果与原始波相同，不表现出任何散射效应==。
 
-旧波和新波的相速度之比，构成了介质的一个光学属性，`index of refraction`（==IOR==、折射率，用n表示）。有些介质具有吸收性，其中的光，随着距离的不断深入，强度逐渐衰减——下降的速率被称为`attenuation index`（用$\kappa$表示）。这两者通常组合起来，$n+i\kappa$，称之为==复折射率==`complex index of refraction`。折射率将分子层面上，光与介质相互作用的细节抽象出来，and enables treating the medium as a continuous volume, which is much simpler。
+旧波和新波的相速度之比，构成了介质的一个光学属性，`index of refraction`（==IOR==、折射率，用n表示）。有些介质具有吸收性，其中的光，随着距离的不断深入，强度逐渐衰减——下降的速率被称为`attenuation index`（用 $\kappa$ 表示）。这两者通常组合起来，$n+i\kappa$，称之为==复折射率==`complex index of refraction`。折射率将分子层面上，光与介质相互作用的细节抽象出来，and enables treating the medium as a continuous volume, which is much simpler。
 
 ![image-20201027133006222](RTR4_C9.assets/image-20201027133006222.png)
 
