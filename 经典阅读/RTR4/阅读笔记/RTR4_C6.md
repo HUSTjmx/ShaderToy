@@ -519,3 +519,4 @@ For extensive coverage of ==three-dimensional procedural textures==, see Texturi
 
 The book Advanced Game Development with Programmable Graphics Hardware [1850] has many details about ==implementing parallax occlusion mapping== techniques, as do Tatarchuk’s presentations [1742, 1743] and Szirmay-Kalos and Umenhoffer’s survey [1731]  
 
+![]()
