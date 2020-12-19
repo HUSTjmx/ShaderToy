@@ -106,4 +106,116 @@
 
 ## 5. Approximate Voxel Cone Tracing
 
-此方法首先用于过滤，来抗锯齿。想法是：沿着射线步近，然后在本文的层次表示中，进行查找（查找的层）
+此方法首先用于**过滤**，来**抗锯齿**。想法是：沿着射线步近，然后在本文的层次表示中，进行查找（**查找的层**和圆锥半径相关）。
+
+![image-20201218120026619](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218120026619.png)
+
+我们跟踪遮挡α和潜在的颜色值c，代表指向**锥体原点**的反射光。每一步中，我们从**八叉树**中检索适当过滤的场景信息和遮挡值α~2~，来计算一个新的输出亮度c~2~。然后利用经典的`volumetric front-to-back accumulation`（体积前后累积法）更新数值：
+$$
+c=\alpha c+(1-\alpha)\alpha _2c_2\\
+\alpha=\alpha+(1-\alpha)\alpha_2
+$$
+此外，为了确保良好的**集成质量**，即使对于大锥，沿着射线的**连续样本之间的距离d**并不与**当前体素大小d**一致。因此使用了校正：$\alpha_s^/=1-(1-\alpha_s)^{d^//d}$。
+
+
+
+## 6. Ambient Occlusion
+
+这里对于AO，使用函数$f(r)$进行距离衰减。因此，调整后的遮挡因子为：
+$$
+\alpha_f(p+rw):=f(r)\alpha(p+rw)
+$$
+![image-20201218122239154](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218122239154.png)
+
+![image-20201218122458480](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218122458480.png)
+
+![image-20201218122511960](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218122511960.png)
+
+
+
+## 7. Voxel Shading
+
+本文考虑了Phong-BRDF，即一个大的**漫射波瓣**，和一个可以表示为高斯波瓣的**镜面波瓣**。尽管如此，我们的照明方案可以很容易地扩展到任何叶混合的BRDF。
+
+![image-20201218123311192](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218123311192.png)
+
+
+
+## 8. Indirect Illumination
+
+主要分两步：
+
+- 在场景表示的叶子中捕捉光源的入射光。**储存入射光，而不是射出光，将允许我们模拟光滑表面**。然后将过滤输入光，并分配到八叉树的所有层次上。
+- 进行==近似锥跟踪==，在八叉树结构中记录入射光是复杂的，因此，在详细描述这个过程之前，我们暂时假设它已经存在于八叉树结构中。
+
+![image-20201218123813990](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218123813990.png)
+
+
+
+### 8.1 Two-bounce indirect illumination
+
+首先使用延迟渲染，来决定哪些表面点需要计算**间接照明**。然后发送几个锥，来查询八叉树中的光照，来执行最后的收集`gathering`。
+
+
+
+### 8.2 Capturing Direct Illumination
+
+**这里主要来介绍如何存储入射辐射度**。基本上，每个像素代表一个我们想要在场景中反弹的光子`photon`。作者称之为==light-view map==。接下来，要把这些**光子**存储在**八叉树表示法**中，准确地说，我们希望将它们存储为一个**方向分布**和**能量**。
+
+为了溅射光子`splat the photons`，使用一个片元着色器（每个**light-view map**像素都有一个线程）。因为其**分辨率**通常高于voxel网格的最低层，因此可以假设：可以直接将光子溅射到八叉树的**叶子节点**上，而不需要引入`Gaps`。
+
+> 此外，光子总是可以被放置在体素结构最精细的层次上，因为它们存储在表面，而只有折叠空体素才能产生稀疏的表示。
+
+**Value Transfer to Neighboring Bricks**
+
+为了简化这个解释，假设八叉树是完整的，这样就可以在每个叶节点上启动一个**线程**。
+
+将执行六次==Pass==，每根轴（x、y、z）两次。在第一个x轴通道中（图9，只有左侧），每个线程将把当前节点的体素数据添加到其右侧砖块的相应体素中。x轴的下一次==Pass==将通过复制值，把数据从右边(我们现在有总和的地方)传输到左边。
+
+<img src="Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218130349424.png" alt="image-20201218130349424" style="zoom:80%;" />
+
+**Distribution over levels**
+
+在八叉树的最低层次上有了**相干的信息**，下一步是过滤这些值，并将结果存储到更高的层 (==MIP-map==)中。
+
+一个简单的解决方案是：在上层的每个voxel上启动一个线程，从下层获取数据。然而，这有一个**重要的缺点**。对于共享的voxels，**同样的计算要执行多次（最多8次）**。同时，线程的计算成本也因处理的==voxel==不同而不同，导致调度不平衡。
+
+本文的**解决方案**是：执行三个单独的==Pass==，其中所有线程的代价大致相同。其想法是**只计算部分过滤结果**，并使用之前==bricks==之间的转移来完成结果。
+
+- 第一次==Pass==使用较低层次上涉及的**27个体素值**，来计算中心体素（==黄色==）。
+- 第二次==Pass==，计算位于**节点面中心**（==蓝色==）的体素的==过滤响应==的一半。因为只计算了一半的值，所以只涉及18个体素值。
+- 最后，第三次==Pass==启动**corner voxels**（绿色）的线程，则只计算一个octant内的像素。
+
+然后，可以使用那个转移过程。
+
+**Sparse Octree**
+
+到目前为止，我们假设八叉树是**完整的**，但实际上，我们的结构是**稀疏的**。此外，上面描述的**解决方案**消耗了很多资源：在过滤过程中，启动了所有节点线程，即使是那些不包含任何光子的节点。
+
+**直射光**往往只影响到场景的一小部分，所以避免零值的过滤是至关重要的。一个**解决方案**是为每个光景图像素启动一个线程，在层级中找到**应该应用过滤的**节点并执行它。
+
+本文的想法是减少线程的数量，并获得接近每个过滤通道的**最佳线程集**——依靠从==光景图==导出的==二维节点图==`2D node map`。这个节点图实际上是一个==MIP图金字塔==。最低一级节点图的像素（最高分辨率）存储了包含光景图中相应光子的**3D叶子节点**的索引。更高层次的节点图像素（分辨率较低）存储了上一层次节点的==最低公共祖先节点==的索引。
+
+<img src="Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218134702541.png" alt="image-20201218134702541" style="zoom:80%;" />
+
+在我们的==八叉树结构==中，仍然每个像素启动一个线程，来计算**最低节点映射**的每一个mip映射==Pass==。但是，当一个线程在树中向下查找**它必须为之计算mip映射值**的节点时，它首先查找节点映射的当前级别，以验证是否与另一个线程没有共同祖先。如果存在，除了左上角的线程外，所有检测到这个共同祖先的线程都终止，然后左上角的线程负责计算剩余的过滤值。这个策略是相当成功的，我们获得了> 2加速。
+
+
+
+## 9. Anisotropic voxels for improved cone-tracing
+
+![image-20201218135631561](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218135631561.png)
+
+
+
+## 10. Results and Discussion
+
+![image-20201218135741524](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218135741524.png)
+
+本文的方法和LPV方法都存在==light leaking==，上图的墙壁。
+
+![image-20201218135918582](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218135918582.png)
+
+内存的高占用是个问题。​
+
+![image-20201218140233631](Interactive Indirect Illumination Using Voxel Cone Tracing.assets/image-20201218140233631.png)
