@@ -129,7 +129,7 @@ bloom图像可以*downsampled*几次，并从生成的一组图像中**重新采
 
 
 
-# 4. Depth of Field
+## 4. Depth of Field
 
 对于给定设置的照相机镜头，有一个*物体聚焦的范围*，即<span style="color:red;font-size:1.3rem">depth of field（景深）</span>。这个范围之外的物体是模糊的——越远越模糊。
 
