@@ -540,6 +540,8 @@ W神提出了一个**图像空间方法**来渲染焦散。[**1928, 1929**]
 
 > 对于皮肤而言，多次散射占主导地位
 
+
+
 ### 6.1 Wrap Lighting
 
 **最简单的实现技术**可能是`wrap lighting`[**193**]。在已有的基础上，还需要添加一个`color shift`[**586**]，这是为了考虑光在材质中”**旅行**“时产生的**部分吸收**。例如：渲染皮肤时，需要应用一个红色的**色移**。
@@ -547,6 +549,8 @@ W神提出了一个**图像空间方法**来渲染焦散。[**1928, 1929**]
 > 有点熟悉啊？在区域光那节也讲过。[**10.1**]
 
 Kolchin[**922**]指出，这种效应取决于表面曲率，他推导了一个**基于物理的版本**。虽然派生表达式的计算代价有些昂贵，但其背后的思想是有用的。
+
+
 
 ### 6.2 Normal Blurring
 
@@ -559,6 +563,8 @@ Stam[**1686**]指出，多重散射可以模拟为**扩散过程**`diffusion`。
 - 还提出了一个**实时渲染技术**，通过为高光，以及R，G，B的漫反射提供不同的法线贴图 [**245**]。
 - 一般来说，漫反射各通道的法线贴图，基本都是高光法线贴图的模糊版本，因此可以只使用一个法线贴图， 不同通道选择不同的Mip，缺点是会丢失**色移**。（毕竟各通道使用的是同一张贴图）
 
+
+
 ###  6.3 Pre-Integrated Skin Shading
 
 结合前两节的内容，P神提出了一种**预积分的皮肤渲染技术 **[**1369**]。对散射和透光率积分，并存储在一张**二维查找表**中，LUT的第一个**坐标轴**基于$n\cdot l$，第二个**轴**基于 $1/r=||\partial n/\partial p||$（表示*表面曲率*）——==曲率越高，对透射和散射颜色的影响越大==。因为每个三角形的曲率都是**恒定的**，所以这些值必须在离线情况下，进行烘焙和平滑。
@@ -566,6 +572,8 @@ Stam[**1686**]指出，多重散射可以模拟为**扩散过程**`diffusion`。
 为了处理**表面小细节**的次表面散射，P神对Ma的技术[**1095**]（上一节）进行调整：除了各通道使用不同的法线贴图，还根据材料的<span style="color:yellow;font-size:1.3rem">diffusion profile </span>对其进行**模糊**。
 
 ==这个技术会忽略光在阴影边界上的扩散==，因为默认情况下它只依赖于曲率。为了让散射曲线跨越**阴影边界**，半影轮廓可以用来**偏置**LUT坐标。因此，这种快速技术能够近似*下一节介绍的高质量方法*。
+
+
 
 ### 6.4 Texture-Space Diffusion
 
@@ -582,6 +590,8 @@ Stam[**1686**]指出，多重散射可以模拟为**扩散过程**`diffusion`。
 不是应用多个**高斯Pass**，H神[**631**]提出了单一的**12-sample内核**——既可以应用在纹理空间作为预处理，也可以应用在片元着色器中。
 
 **缺点**：复杂场景的开销太大；需要两次渲染等
+
+
 
 ### 6.5 Screen-Space Diffusion
 
@@ -605,6 +615,8 @@ J神提出了<span style="color:orange;font-size:1.3rem">屏幕空间方法</spa
 > 一般计算：模糊后的辐照度$\times$albedo $+$ Specular lighting 
 
 当渲染网格**漫反射照明**时，Jimenez等人提出的技术[**827**]还通过使用反表面法线**−n**，对从*对面入射的光*进行采样，增加了来自背面贡献的**次表面透射**。当然，需要对其进行微调，主要使用透光率，==而透光率则和物体内部的深度有关==——可以通过经典阴影贴图算法得到。
+
+
 
 ###  6.6 Depth-Map Techniques
 
@@ -650,5 +662,104 @@ B神 [**105**] 提出了一种<span style="color:red;font-size:1.3rem">廉价的
 - 中间是==皮质==` cortex`，含有赋予**纤维颜色**的黑色素。*真黑素*就是其中一种色素，它导致棕色 $\sigma_{a,e}=(0.419,0.697,1.37)$；另一种是`pheomelanin`，负责染红头发 $\sigma_{a,p}=(0.187,0.4,1.05)$
 - 里面是==髓质==`medulla`。它很小，在建模人类头发时，常常被忽略[**1128**]。然而，它在**动物皮毛**中占毛量的很大一部分，在动物皮毛中具有更大的意义。
 
-利用**双向散射分布函数**（*BSDF*）描述头发纤维的相互照明作用。
+利用**双向散射分布函数**（*BSDF*）描述头发纤维的相互照明作用，它和BRDF的区别在于——是在球域上进行积分，而不是半球域。
+
+
+
+### 7.1 Geometry and Alpha
+
+详细见书 P 663。
+
+
+
+### 7.2 Hair
+
+9.10.3节讨论的BRDF模型通过Ray March来实现`furry`，[**847**]。M神专门研究人类头发，提出了开创性的模型（<span style="color:red;font-size:1.3rem">马氏模型</span>）[**1128**]，如上图:arrow_up:。
+
+- 从视觉上看，`R`代表头发上的**无色镜面反射**。
+- `TT`被视为一个亮点。
+- `TRT`组件对于渲染真实的头发是**至关重要**的，因为它将导致头发**偏心闪烁**，即，在现实生活中，头发的横截面不是一个完美的圆形，而是一个椭圆形。
+
+<img src="RTR4_C14.assets/image-20201224123711561.png" alt="image-20201224123711561" style="zoom:67%;" />
+
+马氏模型没有考虑更加复杂的光路，并且不是能量守恒的，这些问题被 **d’ Eon**解决了 [**346**]。
+
+- **能量守恒**：加入粗糙度，缩紧高光锥。
+- 包含**复杂路径** $TR^*T$。
+- 可以通过测量黑色素`melanin`消光系数，来控制**透光率**。
+
+- C神也提出了一个**能量守恒模型** [**262**]。它给出了粗糙度和多个散射颜色的参数化。
+
+我们可能想要在角色的头发上创建一个特殊的高光效果。为了更好的控制，可以将最初散射路径（*R, TT, TRT*）和复杂散射分开 [**1525**]。这是通过维持**第二组BSDF参数**来实现的，仅用于复杂散射路径；通过将BSDF按**进出方向**归一化，仍能达到**能量守恒**的目的。
+
+以上方法难以实时运行，一般是用在电影的离线渲染中，但也发展了不少<span style="color:red;font-size:1.3rem">实时方法</span>：
+
+- S神提出了一个特别的BSDF，使用`large quad ribbons`（大的四边形丝带）来渲染头发 [**1560**]:star:。​
+
+- 使用入射和出射方向作为参数，将SDF存入**LUT**纹理中，就可以实时运行马氏模型，但局限于静态头发。[**1274**]
+
+- 最近的一个*基于物理的实时模型* [**863**] :star:用简化的**数学方法**来近似，达到了令人信服的结果。但这种简化算法通常不具有先进的**体积阴影**或**多次散射**。如下图:arrow_down:。[**863**]
+
+    <img src="RTR4_C14.assets/image-20201224130143660.png" alt="image-20201224130143660" style="zoom:67%;" />
+
+考虑体积阴影，最近的一个解决方案 [**36,863**]，依赖于使用$d$计算的**透射率**——d是进入头发区域的路径长度。这是一种*实用且直接*的方法，因为它依赖于任何引擎中常见的**阴影贴图**。然而，它不能代表由*密集的发丝*引起的*局部密度变化*，这对明亮的头发特别重要:arrow_down:。为了解决这个问题，可以使用体积阴影。
+
+<img src="RTR4_C14.assets/image-20201224131240816.png" alt="image-20201224131240816" style="zoom:67%;" />
+
+进一步在实时中考虑**多次散射**，目前的解决方案不是很多。Z神提出了一种先进的<span style="color:red;font-size:1.3rem">双散射技术</span> [**1972**]：（效果如下图:arrow_down:）
+
+- 通过结合*渲染像素*和*光源位置*之间遇到的每根头发的**BSDF**，计算**全局透射率系数**$\Psi^G$。这个值可以在GPU上通过计算*头发的数量*和光路上的*平均线方向*（ mean strand orientation）来评估，后者影响BSDF和透光率。
+- 考虑**局部散射项**$\Psi^L$。
+- 计算$\Psi^G+\Psi^G\Psi^L$，加入到` pixel strand BSDF`，来累加光源贡献。
+
+<img src="RTR4_C14.assets/image-20201224132711171.png" alt="image-20201224132711171" style="zoom:67%;" />
+
+最后考虑环境光。[**1560**]
+
+> <span style="color:red;font-size:1.3rem">一个全面的实时头发渲染课程</span>。[**1954**] :star:
+
+
+
+### 7.3 Fur
+
+与头发不同的是，皮毛`fur`通常被认为是*短而半组织*的，通常存在于动物身上。可以使用**体积纹理**进行渲染 [**1203**]。
+
+例如，L神 [**1031**] 使用*一组8个纹理*来表示皮毛。每个纹理代表到表面给定距离的一组头发的切片。这个模型被渲染了8次，顶点着色程序每次都沿着顶点法线将每个三角形稍微向外移动。通过这种方式创建的嵌套模型称为<span style="color:Orange;font-size:1.3rem">shell</span>。这个渲染技术沿着*物体轮廓边缘*分开，as the hairs break up into dots as the layers spread out。
+
+<img src="RTR4_C14.assets/image-20201224133350727.png" alt="image-20201224133350727" style="zoom:80%;" />
+
+引入几何着色器，我们可以实际产生**毛皮线**。在《*失落星球*》中使用了这种技术。[**1428**]
+
+- 渲染一个表面。在每个像素处存储值：皮毛颜色、长度、角度。
+- 然后几何着色器处理这张图像，把每个像素变成一个半透明的几何线。
+- 皮毛在两个`pass`中进行渲染。首先在屏幕空间中，渲染*向下指*的皮毛（从屏幕底部到顶部进行排序）。 In this way, blending is performed correctly。
+- 在第二个`Pass`中，从顶部到底部，渲染*指向上*的皮毛。
+
+也可以使用上一节的技术，线可以被渲染为从**蒙皮表面**挤压成**几何形状**的四边形，例如《*星球大战*》[**36**]。Ling-Qi [**1052**]（闫巨佬啊）已经证明了将头发模拟成*均匀圆柱体*是不够的，对于动物皮毛，**髓质**相对于毛发半径要深得多，也大得多——这减少了**光散射**的影响。闫神提出了基于双层圆柱体的BSDF模型 [**1052**]，它考虑了更详细的路径，如TttT、TrRrT、TttRttT等，小写字母表示与髓质的交互。
+
+
+
+## 8. Unified Approaches
+
+性能已经满足**实时体积渲染**，那么未来还可能怎么应用呢？
+
+目前，固体材质和体积材质的渲染是分离的，正如D神等人所暗示的 [**397**]，可以使用统一方案，来表示**固体**和**参与介质**。
+
+一种可能的表示方法是使用==对称的GGX== [**710**] (<span style="color:orange;font-size:1.3rem">SGGX</span>)，它是第9.8.1节中介绍的**GGX法线分布函数**的扩展。在这种情况下，表示体积内**定向片状颗粒**（oriented flake particles）的<span style="color:red;font-size:1.3rem">微片理论</span>（`microflake theory`）取代了微面理论。从某种意义上说，与网格相比，==LOD==将更加实用，因为它可以简单地作为材质属性的体积过滤。
+
+<img src="RTR4_C14.assets/image-20201224140206688.png" alt="image-20201224140206688" style="zoom:80%;" />
+
+
+
+# Further Reading and Resources
+
+ ==General volumetric rendering== is explained in the course notes of Fong et al. [**479**], providing considerable background theory, optimization details, and solutions used in movie production. 
+
+For ==sky and cloud rendering==, this chapter builds on Hillaire’ s extensive course notes [**743**], which have more details than we could include here. The animation of volumetric material is outside the scope of this book. 
+
+We recommend that the reader reads these articles about ==real-time simulations== [**303, 464, 1689**] and especially the complete book from Bridson [**197**].
+
+McGuire’s presentation [**1182**], along with McGuire and Mara’s article [**1185**], gives a wider understanding of ==transparency-related effects== and a range of strategies and algorithms that can be used for various elements. 
+
+For ==hair and fur rendering== and simulation, we again refer the reader to the extensive course notes by Yuksel and Tariq [**1954**].
 

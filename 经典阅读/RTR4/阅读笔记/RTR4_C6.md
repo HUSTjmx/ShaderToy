@@ -354,7 +354,7 @@ if(texture.a<alphaThreshold) discard;
 
 这个二进制可见性测试允许三角形面片以任何顺序呈现，因为透明片段会被丢弃。我们通常将阈值设为0，来去除完全透明的部分，这样作会有很多好处。而对于`Cutout`，我们通常将阈值设为0.5（或更高），然后忽略所有的alpha值，不使用混合。这样做可以避免` out-of-order artifacts`。然而，由于只有两层透明度(完全不透明和完全透明)，所以质量很低。
 
-> Another solution is to perform two passes for each model—one for solid cutouts, which are written to the z-buffffer, and the other for semitransparent samples, which are not.
+> Another solution is to perform two passes for each model—one for solid cutouts, which are written to the z-buffer, and the other for semitransparent samples, which are not.
 
 ==透明度测试的另外两个问题==是`too much magnification  and too much minification`。下图是一个例子，其中树木的叶子比预期的更加透明。
 
@@ -402,7 +402,7 @@ float hash3D(x,y,z)
 
 对于`alpha map`的使用，重要的理解color value之间的双线性插值。在某些情况下，例如（255，0，0，255）和（0，255，0，2）之间直接进行插值，会得到（127，127，0，128）——红色和浅浅的绿色产生了黄色？，这不符合常识。所以我们需要在插值之前，根据Alpha对颜色进行调整，例如将（0，255，0，2）调整为（0，2，0，2），这样混合就会产生正确的结果（127，1，0，127）。==所以核心是——根据Alpha对color进行预计算==
 
-==如果忽视双线性插值的结果是预计算得到的，会导致decal和cutout对象出现黑边。==（不懂啥意思，具体以后可见P208）(个人理解是：读取纹理的过程中已经边缘使用Alpha进行预计算颜色，但Alpha Blend阶段不知道这个结果是预计算的，在边缘出依然进行混合，导致边缘处颜色太暗了，即使使用深度测试，依然会有种情况（预处理时已经变暗了），所以我们的一个常见的方法是在边缘处挨着的透明texel由（0，0，0，0）改成（R,G,B,0）,这样边缘处进行线性插值时，就不会导致颜色变黑了）
+==如果忽视双线性插值的结果是预计算得到的，会导致decal和cutout对象出现黑边。==（不懂啥意思，具体以后可见P208）(个人理解是：读取纹理的过程中已经边缘使用Alpha进行预计算颜色，但Alpha Blend阶段不知道这个结果是预计算的，在边缘处依然进行混合，导致边缘处颜色太暗了，即使使用深度测试，依然会有种情况（预处理时已经变暗了），所以我们的一个常见的方法是在边缘处挨着的透明texel由（0，0，0，0）改成（R,G,B,0）,这样边缘处进行线性插值时，就不会导致颜色变黑了）
 
 
 
