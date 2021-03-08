@@ -2,13 +2,46 @@
 
 ## Actor
 
-| 函数名                   | 大概作用            |
-| ------------------------ | ------------------- |
-| GetActorLocation()       | 获得自身的世界位置  |
-| SetActorLocation(NewPos) | 设置自身的世界位置  |
-| GetComponentTransform()  | 获取自身的Transform |
-|                          |                     |
-|                          |                     |
+| 函数名                                         | 大概作用                            |
+| ---------------------------------------------- | ----------------------------------- |
+| GetActorLocation()                             | 获得自身的世界位置                  |
+| SetActorLocation(NewPos)                       | 设置自身的世界位置                  |
+| GetComponentTransform()                        | 获取自身的Transform                 |
+| SetActorTickEnabled(false);                    | 设置Actor能否响应Tick               |
+| SetActorHiddenInGame(true);                    | 设置Actor是否可见                   |
+| SetActorEnableCollision(true);                 | 设置Actor是否开启触发               |
+| GetActorBounds(false, ItemOrigin, ItemBounds); | 返回组成Actor的所有组件组成的AABB盒 |
+| GetTransform()                                 | 得到世界坐标下Transform的位置       |
+| GetActorForwardVector()                        | 获得前向向量                        |
+| GetActorRightVector()                          | 获得右向向量                        |
+| GetActorRotation()                             | 获得旋转角度                        |
+| SetActorRotation(NewRotation);                 | 设置旋转角度                        |
+
+| 成员名        | 大概含义      |
+| ------------- | ------------- |
+| RootComponent | Actor的根组件 |
+|               |               |
+|               |               |
+
+
+
+## Pawn
+
+| 函数名                         | 大概作用               |
+| ------------------------------ | ---------------------- |
+| AddMovementInput(InputVector); | 让Pawn向前移动指定距离 |
+| GetController()                | 获取控制器             |
+|                                |                        |
+
+
+
+## PlayController
+
+| 函数名                        | 大概作用 |
+| ----------------------------- | -------- |
+| AddYawInput(CameraInput.X);   |          |
+| AddPitchInput(CameraInput.Y); |          |
+|                               |          |
 
 
 
@@ -22,7 +55,8 @@
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | SetStaticMesh(MeshAsset.Object);                             | 指定静态网格                                                 |
 | AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale); | 作为子组件附加到`root`上，后面一个参数感觉大多数情况不用改变 |
-|                                                              |                                                              |
+| SetCollisionProfileName(UCollisionProfile::Pawn_ProfileName); | 暂定                                                         |
+| SetMobility(EComponentMobility::Movable);                    | 设置网格组件的移动性                                         |
 
 ## 场景组件
 
@@ -32,7 +66,18 @@
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | AttachToComponent(Root, FAttachmentTransformRules::SnapToTargetIncludingScale); | 作为子组件附加到`root`上，后面一个参数感觉大多数情况不用改变 |
 | SetRelativeTransform(FTransform(FRotator(0, 0, 0), FVector(250, 0, 0), FVector(0.1f))); | 设置场景组件的相对变换（相对于父物体）                       |
-|                                                              |                                                              |
+| SetRelativeLocation(FVector(OrbitDistance * FMath::Cos(CurrentValueInRadians), OrbitDistance * FMath::Sin(CurrentValueInRadians), GetRelativeLocation().Z)); | 设置场景组件的相对位移（相对于父物体）                       |
+| GetForwardVector()                                           | 得到向前向量                                                 |
+
+## 输入组件
+
+==UInputComponent* PlayerInputComponent；==
+
+| 函数名                                                       | 大概作用               |
+| ------------------------------------------------------------ | ---------------------- |
+| BindAction("DropItem", EInputEvent::IE_Pressed, this, &AInventoryCharacter::DropItem); | 绑定函数和`Action`输入 |
+| BindAxis("MoveForward", this, &AInventoryCharacter::MoveForward); | 绑定函数和`Axis`输入   |
+|                                                              |                        |
 
 
 
@@ -59,6 +104,14 @@ UPROPERTY(EditAnywhere)
 
 这是一种模板类型，允许我们将指针限制为**基类**或其**子类**。 这也意味着在编辑器中，我们将得到一个**预过滤的类列表**，以便从中选择，防止我们意外地分配一个无效的值。
 
+### FVector类型
+
+| 函数名           | 大概作用                                                     |
+| ---------------- | ------------------------------------------------------------ |
+| GetSafeNormal(); | 获得向量的归一化版本                                         |
+| Rotation();      | ![image-20210306191328810](UE4个人词典.assets/image-20210306191328810.png) |
+|                  |                                                              |
+
 
 
 # 工具函数
@@ -73,4 +126,5 @@ UPROPERTY(EditAnywhere)
 | ConstructorHelpers::FObjectFinder<UStaticMesh>                 (TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'")); | 帮助我们加载资源；传入一个字符串，该字符串包含我们试图加载的资源的路径 |
 | GetOwner();                                                  | 获取自己父物体的指针                                         |
 | GetWorld();                                                  | 获取当前世界的指针                                           |
+| Cast<APlayerController>(GetController())                     | 动态投影`Cast`一个类型安全的物体                             |
 
