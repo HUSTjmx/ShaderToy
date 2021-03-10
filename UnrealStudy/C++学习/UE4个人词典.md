@@ -37,11 +37,11 @@
 
 ## PlayController
 
-| 函数名                        | 大概作用 |
-| ----------------------------- | -------- |
-| AddYawInput(CameraInput.X);   |          |
-| AddPitchInput(CameraInput.Y); |          |
-|                               |          |
+| 函数名                                             | 大概作用 |
+| -------------------------------------------------- | -------- |
+| AddYawInput(CameraInput.X);                        |          |
+| AddPitchInput(CameraInput.Y);                      |          |
+| AddMovementInput(GetActorForwardVector(), amount); |          |
 
 
 
@@ -111,6 +111,22 @@
 | SetLightColor(FLinearColor::Blue); | 设置颜色   |
 |                                    |            |
 
+## 旋转-位移组件
+
+==URotatingMovementComponent* RotatingComponent;==
+
+控制父物体移动，旋转
+
+```c++
+#include "GameFramework/RotatingMovementComponent.h"
+```
+
+| 成员名       | 大概作用   |
+| ------------ | ---------- |
+| RotationRate | 旋转的速度 |
+|              |            |
+|              |            |
+
 
 
 
@@ -156,11 +172,11 @@ UPROPERTY(EditAnywhere)
 
 ![image-20210308164803355](UE4个人词典.assets/image-20210308164803355.png)
 
-| 函数名                 | 大概作用               |
-| ---------------------- | ---------------------- |
-| GetGameMode(TheWorld); | 返回当前的基础游戏模式 |
-|                        |                        |
-|                        |                        |
+| 函数名                                                       | 大概作用                     |
+| ------------------------------------------------------------ | ---------------------------- |
+| GetGameMode(TheWorld);                                       | 返回当前的基础游戏模式       |
+| ![image-20210309145138638](UE4个人词典.assets/image-20210309145138638.png) | 获取场景下指定类型的所有实例 |
+|                                                              |                              |
 
 ### FSimpleDelegate（委托）
 
@@ -169,6 +185,14 @@ UPROPERTY(EditAnywhere)
 | ExecuteIfBound();                                   | 仅使用于**没有返回值**的委托函数 |
 | BindUObject(this, &ADelegateListener::EnableLight); | 绑定指定函数到这个委托           |
 | Unbind();                                           | 解绑                             |
+
+### TBaseMulticastDelegate（组播委托）
+
+| 函数名                                                      | 大概作用                 |
+| ----------------------------------------------------------- | ------------------------ |
+| Broadcast();                                                | 广播，通知各个委托接收者 |
+| Remove(MyDelegateHandle);                                   | 移除对应的成员           |
+| AddUObject(this, &AMulticastDelegateListener::Togglelight); | 添加对应的成员           |
 
 
 
