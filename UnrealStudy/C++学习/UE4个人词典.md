@@ -37,11 +37,11 @@
 
 ## PlayController
 
-| 函数名                        | 大概作用 |
-| ----------------------------- | -------- |
-| AddYawInput(CameraInput.X);   |          |
-| AddPitchInput(CameraInput.Y); |          |
-|                               |          |
+| 函数名                                             | 大概作用 |
+| -------------------------------------------------- | -------- |
+| AddYawInput(CameraInput.X);                        |          |
+| AddPitchInput(CameraInput.Y);                      |          |
+| AddMovementInput(GetActorForwardVector(), amount); |          |
 
 
 
@@ -79,6 +79,56 @@
 | BindAxis("MoveForward", this, &AInventoryCharacter::MoveForward); | 绑定函数和`Axis`输入   |
 |                                                              |                        |
 
+## 粒子组件
+
+==UParticleSystemComponent* SpawnPoint;==
+
+| 函数名                              | 大概作用                           |
+| ----------------------------------- | ---------------------------------- |
+| SetTemplate(ParticleSystem.Object); | 设置粒子系统组件使用的**粒子系统** |
+|                                     |                                    |
+|                                     |                                    |
+
+## Box组件
+
+==UBoxComponent* TriggerZone;==
+
+简单的盒型触发器。
+
+| 函数名                                | 大概作用     |
+| ------------------------------------- | ------------ |
+| SetBoxExtent(FVector(200, 200, 100)); | 设置范围大小 |
+|                                       |              |
+|                                       |              |
+
+## 点光源组件
+
+==UPointLightComponent* PointLight;==
+
+| 函数名                             | 大概作用   |
+| ---------------------------------- | ---------- |
+| SetVisibility(false);              | 设置可见性 |
+| SetLightColor(FLinearColor::Blue); | 设置颜色   |
+|                                    |            |
+
+## 旋转-位移组件
+
+==URotatingMovementComponent* RotatingComponent;==
+
+控制父物体移动，旋转
+
+```c++
+#include "GameFramework/RotatingMovementComponent.h"
+```
+
+| 成员名       | 大概作用   |
+| ------------ | ---------- |
+| RotationRate | 旋转的速度 |
+|              |            |
+|              |            |
+
+
+
 
 
 # 宏
@@ -90,8 +140,6 @@
  `blueprintspawnablcomponent` 添加到==类的元值==中，意味着**组件的实例**可以添加到编辑器中的 ==Blueprint 类==中；==类组说明符==`ClassGroup`允许我们指出我们的组件属于类列表中的哪个类别:
 
 
-
-# 函数
 
 # 类型
 
@@ -111,6 +159,40 @@ UPROPERTY(EditAnywhere)
 | GetSafeNormal(); | 获得向量的归一化版本                                         |
 | Rotation();      | ![image-20210306191328810](UE4个人词典.assets/image-20210306191328810.png) |
 |                  |                                                              |
+
+### FTimerManager
+
+| 函数名                                                       | 大概作用                                       |
+| ------------------------------------------------------------ | ---------------------------------------------- |
+| SetTimer(SpawnTimerHandle, this, &ANewCreateActor::SpawnUnit, SpawnInterval, true); | 设置一个计时器，每隔指定时间间隔，调用指定函数 |
+|                                                              |                                                |
+|                                                              |                                                |
+
+### UGameplayStatics
+
+![image-20210308164803355](UE4个人词典.assets/image-20210308164803355.png)
+
+| 函数名                                                       | 大概作用                     |
+| ------------------------------------------------------------ | ---------------------------- |
+| GetGameMode(TheWorld);                                       | 返回当前的基础游戏模式       |
+| ![image-20210309145138638](UE4个人词典.assets/image-20210309145138638.png) | 获取场景下指定类型的所有实例 |
+|                                                              |                              |
+
+### FSimpleDelegate（委托）
+
+| 函数名                                              | 大概作用                         |
+| --------------------------------------------------- | -------------------------------- |
+| ExecuteIfBound();                                   | 仅使用于**没有返回值**的委托函数 |
+| BindUObject(this, &ADelegateListener::EnableLight); | 绑定指定函数到这个委托           |
+| Unbind();                                           | 解绑                             |
+
+### TBaseMulticastDelegate（组播委托）
+
+| 函数名                                                      | 大概作用                 |
+| ----------------------------------------------------------- | ------------------------ |
+| Broadcast();                                                | 广播，通知各个委托接收者 |
+| Remove(MyDelegateHandle);                                   | 移除对应的成员           |
+| AddUObject(this, &AMulticastDelegateListener::Togglelight); | 添加对应的成员           |
 
 
 
