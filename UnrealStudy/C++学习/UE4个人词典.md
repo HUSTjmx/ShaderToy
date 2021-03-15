@@ -22,21 +22,22 @@
 
 ## Actor
 
-| 函数名                                                       | 大概作用                                |
-| ------------------------------------------------------------ | --------------------------------------- |
-| GetActorLocation()                                           | 获得自身的世界位置                      |
-| SetActorLocation(NewPos)                                     | 设置自身的世界位置                      |
-| GetComponentTransform()                                      | 获取自身的Transform                     |
-| SetActorTickEnabled(false);                                  | 设置Actor能否响应Tick                   |
-| SetActorHiddenInGame(true);                                  | 设置Actor是否可见                       |
-| SetActorEnableCollision(true);                               | 设置Actor是否开启触发                   |
-| GetActorBounds(false, ItemOrigin, ItemBounds);               | 返回组成Actor的所有组件组成的AABB盒     |
-| GetTransform()                                               | 得到世界坐标下Transform的位置           |
-| GetActorForwardVector()                                      | 获得前向向量                            |
-| GetActorRightVector()                                        | 获得右向向量                            |
-| GetActorRotation()                                           | 获得旋转角度                            |
-| SetActorRotation(NewRotation);                               | 设置旋转角度                            |
-| GetComponents(PrimitiveComponents); //`TArray<UPrimitiveComponent*> PrimitiveComponents;` | 获得Actor的所有组件，并传入输入参数数组 |
+| 函数名                                                       | 大概作用                                     |
+| ------------------------------------------------------------ | -------------------------------------------- |
+| GetActorLocation()                                           | 获得自身的世界位置                           |
+| SetActorLocation(NewPos)                                     | 设置自身的世界位置                           |
+| GetComponentTransform()                                      | 获取自身的Transform                          |
+| SetActorTickEnabled(false);                                  | 设置Actor能否响应Tick                        |
+| SetActorHiddenInGame(true);                                  | 设置Actor是否可见                            |
+| SetActorEnableCollision(true);                               | 设置Actor是否开启触发                        |
+| GetActorBounds(false, ItemOrigin, ItemBounds);               | 返回组成Actor的所有组件组成的AABB盒          |
+| GetTransform()                                               | 得到世界坐标下Transform的位置                |
+| GetActorForwardVector()                                      | 获得前向向量                                 |
+| GetActorRightVector()                                        | 获得右向向量                                 |
+| GetActorRotation()                                           | 获得旋转角度                                 |
+| SetActorRotation(NewRotation);                               | 设置旋转角度                                 |
+| GetComponents(PrimitiveComponents); //`TArray<UPrimitiveComponent*> PrimitiveComponents;` | 获得Actor的所有组件，并传入输入参数数组      |
+| ActorToWorld()                                               | 获得根节点的，从局部坐标到世界坐标的变换矩阵 |
 
 
 
@@ -324,6 +325,7 @@ TActorIterator<AActor> It(GetWorld(), AActor::StaticClass())
 | GetWorld();                                                  | 获取当前世界的指针                                           |
 | Cast<APlayerController>(GetController())                     | 动态投影`Cast`一个类型安全的物体                             |
 | AddDynamic(this, &AWarrior::OnOverlapsBegin);                | 工具宏；添加指定函数到委托中。                               <img src="UE4个人词典.assets/image-20210311161351127.png" alt="image-20210311161351127" style="zoom:200%;" /> |
+| DrawDebugLine(GetWorld(), GetActorLocation(), EndLocation, FColor::Red); | 在场景中画线；#include "DrawDebugHelpers.h"                  |
 
 
 
