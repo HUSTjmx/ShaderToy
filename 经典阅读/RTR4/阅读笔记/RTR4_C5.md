@@ -122,7 +122,7 @@ $$
 
 材质系统的设计者思考了如下几种策略去实现这些目标：
 
-+ Subtractive  ：使用编译时预处理器条件（compile-time preprocessor conditionals  ）和动态分支的组合来删除未使用的部分，并在相互排斥的选项之间进行切换。
++ Subtractive  ：使用编译时==预处理器条件==（compile-time preprocessor conditionals  ）和动态分支的组合来删除未使用的部分，并在相互排斥的选项之间进行切换。
 + 代码重用：将一些函数写在可分享的文件中，然后其他需要使用的地方使用'#include'
 + Additive  ：个人理解其作用和代表是：shader可视化编辑器。
 + Template-based ：定义了一个接口，不同的实现只要符合该接口，就可以插入其中。一个常见例子是将模型参数的计算和模型本身的计算分开。
@@ -276,6 +276,13 @@ $$
 为了正确地渲染透明对象，我们需要在不透明对象之后绘制它们。而在绘制半透明物体时，也要按照从远到近的顺序，否则视觉上会不正确。一个简单的方法是根据它们到视点的距离进行排序。Objects that interpenetrate are impossible to resolve on a per-mesh basis for all view angles，short of breaking each mesh into separate pieces.  尽管如此，由于它的简单性和速度，以及不需要额外的内存或特殊的GPU的支持，仍是常用的。
 
 ==其他技术也可以帮助改善外观，比如每一个透明网格绘制两次==，先渲染背面，然后渲染正面。The over equation can also be modified so that blending front to back gives thesame result. This blending mode is called the ==under operator==  ：
+$$
+\begin{align}
+c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
+a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
+\end{align}
+$$
+
 $$
 \begin{align}
 c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
