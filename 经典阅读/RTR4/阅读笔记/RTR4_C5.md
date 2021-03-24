@@ -237,9 +237,7 @@ Effective sampling patterns are a key element in reducing aliasing。45度角，
 
 近几年，利用深度、法线等额外的Buffer，发展了很多抗锯齿技术：SRAA（subpixel reconstruction antialiasing ，仅对几何边界进行抗锯齿），GBAA（geometry buffer antialiasing ），DEAA（distance-to-edge antialiasing ）
 
-- ==DLAA==（directionally localized antialiasing ）：基于这样的观察：接近垂直的边缘应该在水平方向上模糊，同样接近水平方向上模糊
-
-  应该在垂直方向上模糊。
+- ==DLAA==（directionally localized antialiasing ）：基于这样的观察：接近垂直的边缘应该在水平方向上模糊，同样接近水平方向上模糊应该在垂直方向上模糊。
 
 Iourcha提出根据MSAA的采样结果来寻找边界，以此得到更好的结果。例如，一种每个像素采样四次的技术只能为一个对象的边缘提供五个层次的混合。估计边缘位置可以有更多的位置，从而提供更好的结果。这些方法统称为 image-based 算法。
 
