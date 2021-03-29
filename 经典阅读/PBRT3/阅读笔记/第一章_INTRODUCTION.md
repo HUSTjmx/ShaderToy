@@ -16,7 +16,7 @@
 
 
 
-## 3. pbrt: SYSTEM OVERVIEW
+## 3. PBRT: 系统前瞻
 
 ![image-20210301140100883](第一章_INTRODUCTION.assets/image-20210301140100883.png)
 
@@ -32,7 +32,7 @@
 
 - ==options==结构然后被传递给`pbrtInit()`函数，该函数执行**系统范围**的初始化。``main()``函数然后解析给定的**场景描述**，从而创建一个场景和一个积分器。在所有渲染完成后，``pbrtCleanup()``在系统退出之前，进行最后的清理。
 
-#### SCENE REPRESENTATION
+### 场景表示
 
 - ==\<Main Program\>==
 
@@ -99,7 +99,7 @@
 
     ![image-20210301150032867](第一章_INTRODUCTION.assets/image-20210301150032867.png)
 
-#### INTEGRATOR INTERFACE AND SamplerIntegrator
+### 积分器接口和采样积分器
 
 - 呈现场景的图像是由==实现Integrator接口的类==的实例处理的。Integrator是一个抽象基类，它定义了所有积分器必须提供的`Render()`方法。在本节中，我们将定义一个积分器——**采样积分器**。
 
@@ -129,7 +129,7 @@
 
 ![image-20210303215407396](第一章_INTRODUCTION.assets/image-20210303215407396.png)
 
-#### THE MAIN RENDERING LOOP
+### 主渲染循环
 
 在场景和积分器被分配和初始化之后，将调用`Integrator:: Render()`方法，启动==pbrt==执行的第二阶段：==主渲染循环==。在每一个图像平面上的一系列位置，该方法使用相机和采样器，来生成一个`ray`到场景中，然后使用`Li()`来确定**沿射线**到达图像平面上的==光量==。这个值传递给`Film`。图1.17总结了该方法中使用的主要类以及它们之间的数据流。
 
@@ -175,4 +175,83 @@
 
 ![image-20210305131056235](第一章_INTRODUCTION.assets/image-20210305131056235.png)
 
-`CameraSample`结构体
+`CameraSample`结构体记录`film`上的位置，**相机**会生成对应的射线`ray`。它还存储了**时间**和**镜头位置样本值**，分别用于渲染带有移动物体的场景，和模拟**非针孔孔径的相机模型**。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329101846276.png" alt="image-20210329101846276" style="zoom:67%;" />
+
+**相机接口**提供了两个方法来生成射线：`Camera::GenerateRay()`：为给定的**图像采样位置**返回一个射线；`Camera::GenerateRayDifferential()`，它返回一个==射线微分==，它包含了生成射线的信息。之后，`ScaleDifferentials()`方法缩放了射线微分，来考虑在每个像素取多个样本的情况下，`film plane`上样本之间的**实际间距**。
+
+相机也会返回一个和射线相关联的==浮点权重值==，对于**简单的相机模型**，每条射线的权重是相等的，而**实际相机模型**，到达图像中心的射线多于边缘的（中心的权重大于边缘的），所以会产生一种特殊效果，也就是==vignetting==。回到正题，这个**返回的权重**会在之后使用，来**缩放**射线对图像的贡献。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329103054583.png" alt="image-20210329103054583" style="zoom:80%;" />
+
+下一步，来决定沿着这条射线，到达`image plane`的辐射率`radiance`。这个过程由`Li()`负责：
+
+<img src="第一章_INTRODUCTION.assets/image-20210329103551767.png" alt="image-20210329103551767" style="zoom:80%;" />
+
+`Li()`是一个纯虚方法，它返回给定光线原点的**入射辐射率**。参数如下：
+
+- `ray`。对应射线
+- `scene`。要渲染的场景
+- `sampler`。用**蒙特卡罗积分法**求解**光输运方程**的==采样生成器==。
+- `arena`。内存区域
+- `depth`。在进行`Li()`之前的射线`bounce`数。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329104228216.png" alt="image-20210329104228216" style="zoom:80%;" />
+
+关于不正确的辐射值，进行处理报错。可以去看实际代码。
+
+知道辐射率之后，对图像进行更新。`FilmTile::AddSample()`更新`tile's image`的像素值，具体细节将在`7.8,7.9`进行阐述。
+
+![image-20210329104720310](第一章_INTRODUCTION.assets/image-20210329104720310.png)
+
+最后，释放内存：
+
+<img src="第一章_INTRODUCTION.assets/image-20210329104941796.png" alt="image-20210329104941796" style="zoom:80%;" />
+
+一个贴图`tile`中所有样本的辐射值被计算出来，==FilmTile==就被交给`film`的`MergeFilmTile()`方法，该方法将`tile`的像素添加到最终图像中。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329105354486.png" alt="image-20210329105354486" style="zoom:80%;" />
+
+
+
+### 一种用于WHITTED光追的积分器
+
+![image-20210329110207808](第一章_INTRODUCTION.assets/image-20210329110207808.png)
+
+后文会有很多积分器，这里我们提出一种基于**WHITTED光追**算法的**积分器**。这种积分器可以精确地计算镜面（如玻璃、镜子和水）反射和透射的光，但它不包括其他类型的间接照明。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329110116059.png" alt="image-20210329110116059" style="zoom:80%;" />
+
+<img src="第一章_INTRODUCTION.assets/image-20210329110250542.png" alt="image-20210329110250542" style="zoom:80%;" />
+
+==Whitted积分器==的工作原理是：沿反射和折射光线方向**递归计算亮度**，直到到达最大深度（一般设定是5）。
+
+![image-20210329110612575](第一章_INTRODUCTION.assets/image-20210329110612575.png)
+
+这个积分器也要实现`Li()`方法：
+
+<img src="第一章_INTRODUCTION.assets/image-20210329110735747.png" alt="image-20210329110735747" style="zoom:80%;" />
+
+首先是找到与场景的交点，如果没有，则需要返回一个辐射值，可以看做是无限大的光源，如天空。`Light::Le()`可以返回这个值。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329111239409.png" alt="image-20210329111239409" style="zoom:80%;" />
+
+然后是考虑光的散射情况。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329111518855.png" alt="image-20210329111518855" style="zoom:80%;" />
+
+<img src="第一章_INTRODUCTION.assets/image-20210329112045959.png" alt="image-20210329112045959" style="zoom:50%;" />
+
+<img src="第一章_INTRODUCTION.assets/image-20210329112027894.png" alt="image-20210329112027894" style="zoom:80%;" />
+
+发现交点后，来根据**表面材质**散射光。==ComputeScatteringFunctions()==方法处理此任务，计算**纹理函数**以确定**表面属性**，然后初始化**BSDF表示**。这种方法通常需要为构成这种表示的对象分配内存;
+
+<img src="第一章_INTRODUCTION.assets/image-20210329112807068.png" alt="image-20210329112807068" style="zoom:80%;" />
+
+如果光线碰巧击中了**发射体**（如区域光源），**积分器**通过调用`SurfaceInteraction:: Le()`方法来计算`emitted radiance`。如果对象不是发射的，这个方法返回一个`black spectrum`。
+
+<img src="第一章_INTRODUCTION.assets/image-20210329113734509.png" alt="image-20210329113734509" style="zoom:80%;" />
+
+对于每个光，**积分器**调用`light::Sample_Li()`方法来计算落在渲染点上的**光的辐射度**。这个方法还返回从渲染点到光源的**方向向量**$w_i$。我们还需要一个`VisibilityTester`对象来判断渲染点和光源之间的可见性，
+
