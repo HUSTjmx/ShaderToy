@@ -1,4 +1,4 @@
-# 0Lecture 1
+# Lecture 1
 
 结合神经网络的渲染的两个问题：1、实时性。2、需要手动调整、选择。
 
@@ -267,3 +267,36 @@ PRT的基本想法：（假设场景中，只有光照条件会变）
 
 ![image-20210405141248523](Games202学习笔记1.assets/image-20210405141248523.png)
 
+
+
+
+
+# Lecture 7  Real-time Global Illumination (in 3D)
+
+## Precomputed Radiance Transfer
+
+![image-20210418150552012](Games202学习笔记1.assets/image-20210418150552012.png)
+
+![image-20210419113210818](Games202学习笔记1.assets/image-20210419113210818.png)
+
+
+
+## More basis functions
+
+![image-20210419115803222](Games202学习笔记1.assets/image-20210419115803222.png)
+
+![image-20210419120123771](Games202学习笔记1.assets/image-20210419120123771.png)
+
+
+
+## GI——RSM
+
+在RTR中，我们处理GI，实际就是处理Bounce一次的间接光。
+
+![image-20210419123111948](Games202学习笔记1.assets/image-20210419123111948.png)
+
+![image-20210419123720584](Games202学习笔记1.assets/image-20210419123720584.png)
+
+![image-20210419124510879](Games202学习笔记1.assets/image-20210419124510879.png)
+
+![image-20210419125612947](Games202学习笔记1.assets/image-20210419125612947.png)
