@@ -300,3 +300,57 @@ PRT的基本想法：（假设场景中，只有光照条件会变）
 ![image-20210419124510879](Games202学习笔记1.assets/image-20210419124510879.png)
 
 ![image-20210419125612947](Games202学习笔记1.assets/image-20210419125612947.png)
+
+
+
+# Lecture 8  Real-time Global Illumination (Screen Space)
+
+## Light Propagation Volume (LPV)
+
+high level。
+
+![image-20210430120848514](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430120848514.png)
+
+![image-20210430120932406](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430120932406.png)
+
+![image-20210430121259571](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121259571.png)
+
+![image-20210430121614415](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121614415.png)
+
+![image-20210430121808684](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121808684.png)
+
+![image-20210430121847566](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121847566.png)
+
+## Voxel Global Illumination (VXGI)
+
+![image-20210430122946417](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430122946417.png)
+
+![image-20210430123055966](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430123055966.png)
+
+![image-20210430124309680](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430124309680.png)
+
+## SSAO
+
+![image-20210430130001900](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430130001900.png)
+
+
+
+![image-20210430130550284](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430130550284.png)
+
+![image-20210430130832230](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430130832230.png)
+
+> AO就是一个平均的可见性。
+
+![image-20210430131434758](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430131434758.png)
+
+![image-20210430131618742](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430131618742.png)
+
+![image-20210430132107775](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430132107775.png)
+
+![image-20210430132255577](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430132255577.png)
+
+![image-20210430133013058](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133013058.png)
+
+![image-20210430133237861](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133237861.png)
+
+![image-20210430133800391](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133800391.png)
