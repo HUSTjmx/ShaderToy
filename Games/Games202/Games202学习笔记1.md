@@ -354,3 +354,39 @@ high level。
 ![image-20210430133237861](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133237861.png)
 
 ![image-20210430133800391](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133800391.png)
+
+
+
+# Lecture 9  Real-time Global Illumination (Screen Space Cont)
+
+## SSDO
+
+![image-20210506105210603](Games202学习笔记1.assets/image-20210506105210603.png)
+
+![image-20210506105240012](Games202学习笔记1.assets/image-20210506105240012.png)
+
+![image-20210506105736817](Games202学习笔记1.assets/image-20210506105736817.png)
+
+![image-20210506110258529](Games202学习笔记1.assets/image-20210506110258529.png)
+
+
+
+## SSR
+
+![image-20210506110958946](Games202学习笔记1.assets/image-20210506110958946.png)
+
+![image-20210506111735700](Games202学习笔记1.assets/image-20210506111735700.png)
+
+![image-20210506112058849](Games202学习笔记1.assets/image-20210506112058849.png)
+
+更好的方法：
+
+![image-20210506112241591](Games202学习笔记1.assets/image-20210506112241591.png)
+
+![image-20210506112412197](Games202学习笔记1.assets/image-20210506112412197.png)
+
+![image-20210506113242382](Games202学习笔记1.assets/image-20210506113242382.png)
+
+![image-20210506114526971](Games202学习笔记1.assets/image-20210506114526971.png)
+
+![image-20210506115808466](Games202学习笔记1.assets/image-20210506115808466.png)
