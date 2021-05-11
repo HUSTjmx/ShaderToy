@@ -308,3 +308,279 @@ Elek等人[Ele09]提出通过**忽略散射的变化**，来降低**4D散射LUT*
 
 ### Background and Previous work
 
+当使用**单一全景纹理**渲染天空和云的经典方法时，Guerette建议使用一种著名的**视觉流技术**，以便给人一种天空运动的错觉。云层看起来朝着设定好的方向移动，比如全球风向。这是一个有效方法，但不涉及任何云形状，天气或照明的变化。
+
+![image-20210511083035854](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511083035854.png)
+
+在飞行模拟器的案例中，Harris提出了将云渲染成**粒子的体积**`volumes of particles `[Har02]。该方法在近处渲染所有的粒子，而在距离较远的情况下，用`impostors`来代表粒子群。这样就有可能根据摄像机的距离和相对位移，以较低的速度更新`impostors`。另一种基于粒子的云计算方法是由Yusov[Yus14]提出的。通过考虑到太阳和天空的动态照明，使用每一个粒子的预积分照明，可以渲染出==层积云==。通过使用**深度感知的混合**，避免了简单的颗粒状外观，这种混合是通过使用一种叫做`Rasterizer Ordered Views`的新硬件功能实现的，见上图。这两种基于粒子的方法在渲染云层时非常有效，但大多限于类似积云的形状。
+
+![image-20210511083651367](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511083651367.png)
+
+一些**基于体积的云计算渲染技术**也已经在研究。例如，Bouthors用网格和`ray mached hyper textures`的混合渲染云。最终的散射光是通过位于云形表面的**盘状集光器**收集的。光线转换是在实时的`ray Marching`过程中积分的，并使用离线预计算的转换表进行加速。如图28所示，最终结果具有非常高的视觉质量，但它也有不可忽视的GPU成本。此外，组合的**网格**和**超纹理数据**对于艺术家来说并不容易理解、创建和编辑。
+
+![image-20210511084026955](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511084026955.png)
+
+在实时游戏中，`Reset`是第一个展示了先进的云渲染和大气交互的游戏[Ltd]。然而，并没有太多关于算法细节的披露。[Sch15] 施耐德提出了一种视觉上类似的`ray marching`方法，允许渲染**动态照明的体积云**。通过少量的参数，该方法允许呈现复杂的云形状，如上图所示。使用包含`Perlin-Worley`噪声的体积纹理被认为是一个很好的拟合，来表示菜花状的积云形状。由此产生的云是**完全动态的**，可以根据时间和天气演变。这一技术非常适用于实时游戏，因为它使用了**散射光解决方案的时域积分**，允许时域积分最终的散射结果。
+
+对于Frostbite，使用[Ltd]和[Sch15]，因为有以下优势：
+
++ 真实的云形状
++ 大规模云
++ 随天气变化
++ 动态体积光和阴影支持
+
+> 总结来说，需要符合基于物理的Frostbite框架：材料信息与照明解耦，并且是能量守恒的。这可以确保在处理一天中的动态时间和天气时，可以适应任何照明环境。
+
+### Cloud participating media material Clouds
+
+云是由非常厚的**参与介质**构成的。Hess et la. [HKS98]测量了水云`water clouds`，并总结出了`single scattering albedo`$\rho=1$和**高消光系数**$\sigma_t$，对于层云来说，在[0.04, 0.06]范围内，对于积云来说，在[0.05, 0.12]范围内。鉴于$\rho$非常接近于1，可以假设$\sigma_t=\sigma_s$。
+
+**云的单次散射**是其**定义外观**的一个非常重要的部分。如果只有单一散射，并且由于它们的厚度，云看起来像`dirty/smoky element`，在其表面只有散射光。为了避免这种情况，必须考虑到**云层外观的另一个决定性组成部分**：在它们内部发生的许多散射事件。第5.7节将详细介绍如何接近这一特性。
+
+### Cloud authoring
+
+艺术家可以创作云，它们的分布方式与[Sch15]中的方式非常相似，但在我们的游戏和使用案例中需要一些额外的控制。这种用于**生成云朵形状的体积方法**被称为`procedural`，它使用算法从几个参数中生成内容。**使用算法来生成艺术数据是很难控制的**，而且也不总是与艺术家的设想兼容。这就是为什么为艺术家定义一组有意义的输入参数，以实现他们的设想是很重要的。本节解释了艺术家在==Frostbite==中创作体积云的控制方法。
+
+作为一种程序方法，可以很容易地想到成千上万种方法来生成**参数和控件**，这些参数和控件将使用公式**混合在一起**生成体积云。作者将在此呈现符合游戏和美工需求的方法。
+
+#### Cloud distribution and density
+
+**云层**被假定保持在**围绕地球的一个恒定高度的单一板块**内。它们是由**单一的参与介质**制成的，只是**密度**不同。艺术家创建的天气纹理`weather texture`具有世界空间大小和世界范围。如果有必要，该纹理会被缩放，并在全世界范围内重复。具体可见下图：
+
+![image-20210511090221155](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511090221155.png)
+
+**云类型**`cloud type`沿纹理空间的`X`轴用来索引另一个**云类型纹理**。沿纹理空间的`Y`轴是云层内的**归一化高度**。而对于云类型纹理有：
+
++ 红色通道：the density of the cloud within the layer height.
++ 绿色通道：应用的==侵蚀量==（小尺度噪声侵蚀大尺度噪声）。这直接映射到云表面的==湍流量==。`0`映射为平滑，`1`映射为完全被**三维侵蚀纹理**侵蚀，参数类似于[Sch15]。
+
+![image-20210511090715471](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511090715471.png)
+
+**云类型纹理**`cloud type texture`允许艺术家沿大气层高度指定云层轮廓。使用这样的纹理给予艺术家很多自由。
+
+在对云层进行**射线行进**时，作者根据天气纹理、类型纹理以及与[Sch15]类似的两种不同的**体积噪声纹理**来评估云的密度。一个**低频噪声**`L`首先被用来给云提供一个基础形状，并打破天气纹理的可重复性，也称为==基础形状==。然后用一个**高频噪声**`H`来侵蚀该基础形状，并**在边缘增加细节**。在接下来的第5.4节中介绍了一种生成这些**体积噪声纹理**的方法。
+
+### Cloud noise
+
+在[Sch16]中描述的**云计算渲染算法**提出使用一个特定的、`tile-able`体积噪声纹理设置，但没有给出源代码。作者在这一节中描述了纹理的生成，并链接到一个可以访问源代码的开放源码库。
+
+$noise_L$体积纹理是由==Perlin-Worley噪声==和多个八度`octaves`的**Perlin噪声**组合生成的。$noise_H$纹理是以多个八度的**Worley噪声**生成的。
+
+这种纹理可以表现为4分量的RGBA纹理。在Frostbite中，简单地使用一个单分量的体积纹理，代表最终的单通道噪声。由于减少了所需的内存带宽，这使得云计算的渲染速度快了很多，但仍能得到相同的最终视觉效果。
+
+![image-20210511092254700](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511092254700.png)
+
+> 请参考附录D的描述和更多关于如何获取代码的细节。
+
+#### Cloud material
+
+**云参与媒体材质**被描述为`single participating media materia`。它由以下参数组成：
+
++ 吸收系数$\sigma_a$
++ 散射系数$\sigma_s$
++ 双叶相位函数（之后介绍）
+
+### Cloud rendering
+
+![image-20210511092656413](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511092656413.png)
+
+#### Ambient lighting
+
+云的**环境光**`ambient`是用球面谐波表示的**全局光探针**来采样的。出于性能的考虑，在计算环境照明时，没有考虑**环境光的遮挡**。考虑到目前的游戏预算，这是不实际的，而且由于**体积云的程序性很强**，涉及到复杂的噪声形状和侵蚀过程，**预积分遮挡**也很棘手。作者只考虑Frostbite`global probe`的第一个非方向项。因此，**环境贡献光的亮度往往会太亮**。为了消除这种影响，作者给艺术家提供了一种方法，根据`[0, 1]`的比例缩小环境成分。考虑到天空，即大气散射，如果不使用**多重散射解决方案**，可能会导致云层略微发蓝。为了解决这个问题，还为艺术家提供了一种方法，使环境光产生的亮度**去饱和化**。
+
+作者还使用从云层底部到顶部的`[0, 1]`的**线性梯度**对环境照明进行加权。这种方法假设天空是环境光的唯一贡献，并且忽略了来自地球的反弹光照。这可以用**两种不同的方法**进行近似：
+
++ 将梯度范围重置为$[a, 1]$，以考虑$\%a$的环境照明是由于**地面的**反弹造成的。
++ 对来自半球顶部和底部的`global probe`的**环境光贡献**进行采样。当`global probe`在积分来自底部半球/`earth`的亮度时，考虑到一些整体色调`overall tint`。这就是上述的改进版。
+
+这一小节中所呈现的**环境光贡献控制**并不是基于物理，而是为了到达预定的视觉效果。
+
+#### Sun shadow sampling
+
+为了产生**体积阴影**，作者对沿**视线矢量**的每个采样，向太阳进行射线行进。这里的`ray marching`是根据**当前样本的抖动位置**向太阳方向**直线行进**的（见下一节重点介绍的时域散射积分）。阴影样本根据**基本的阴影采样距离**进行`4`次取样，每次取样都要乘以一个**恒定系数**。这样做是为了逐步地从源样本中获取更远的样本。这种**渐进式阴影采样方案**与时间抖动一起导致了**平滑/柔和的阴影**。
+
+#### Temporal scattering integration
+
+作者用`single pass`渲染云层。每一帧，样本在其`sample step`/深度范围内被随机偏移。一旦当前帧的解决方案被计算出来，它就会根据一个**恒定的混合系**数与前一帧的解决方案进行**混合**。这导致了使用==指数移动平均法==实现散射解决方案的时间积分。为了使最后一帧在摄像机快速移动/旋转时不显得模糊，作者根据**以前和现在的摄像机属性**，即投影和变换，重新投射以前的结果。
+
+![image-20210511094845194](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511094845194.png)
+
+这种技术可以在保持视觉质量的同时，减少每帧的采样量。
+
+### Improved scattering
+
+当**实时积分**参与介质中的散射光时，必须使用尽可能少的样本，以提高效率。在这种情况下出现的一个问题是，单个样本将代表一个较大距离的$\delta$。**距离越大，这个样本的代表性就越差**，从而降低了积分的准确性。作者在这里描述了不同的积分方法，并提出了一个新的方法，它能提供更高的质量，而且还**能量守恒**。
+
+#### Usual scattering integration
+
+在下列代码中介绍了沿射线积分散射和透射的通常方法。散射光被初始化为$(0,0,0)$，透射率为`1`。每一步都取一个材质采样和一个光采样，用于更新散射光和透射率。
+
+![image-20210511095516967](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511095516967.png)
+
+这个表述有一个问题：`inScattTrans.rgb`是用`inScattTrans.a`（S）更新的，然后inScattTrans.a（T）被更新。但这个步骤的顺序是否正确呢？事实上，如图35所示，没有一个是正确的。如果(S)在(T)之前执行，那么散射将被添加，而不考虑采样范围$ds$的透射率，导致**非能量守恒积分**。如果(T)在(S)之前执行，那么产生的参与介质看起来太亮了，因为**散射光线**将在已确定的ds范围内被过度遮挡。
+
+![image-20210511100025550](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511100025550.png)
+
+总的来说，对于松散材料，上面提出的误差将保持非常小。然而，对于非常密集的材料，当$\sigma_S$变得很高时，则不行。
+
+#### Better numerical integrations
+
+为了用较少的样本数，更好地逼近曲线的定积分，可以使用不同的数值方法，如梯形法[Wikn]或辛普森规则[Wikm]。作者将在本节中以**梯形规则**为例。
+
+![image-20210511100258269](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511100258269.png)
+
+**梯形法则**描述了如何使用几个样本和**梯形表面积方程**来近似地计算曲线积分。在上左图中，把透射率看作是绿色曲线，散射光亮度为1。用上面的代码计算透射率，在（S）之前执行（T）（$\sum(t_{x}/(d_{x+1}-d_x))$），将导致过多的吸收：**红色方块Y轴顶盖**将总是在要积分的绿色曲线之下。然而，在(T)之前执行(S)（$\sum(t_{x+1}/(d_{x+1}-d_x))$）将导致一个**非能量守恒的积分**，因为红色方块的Y轴顶盖将总是在绿色曲线之上。
+
+使用**梯形曲线**将允许在每个区间$[d_x, d_{x+1}]$之间进行积分。梯形积分代表图36中**橙色曲线**的积分。你可以看到，橙色曲线与要积分的**绿色参考曲线**比较接近。然而，仍然可以注意到，这种积分不是能量守恒的：如图36的右图所示，橙色曲线仍然总是在绿色参考曲线之上。因此，参与的介质材料仍然会散射出比它们应有的更多的光，而且对于高$\sigma_s$值来说，差异会更大，也就是说，在这个例子中，绿色曲线会更快地收敛到`0`，但橙色曲线不会。
+
+#### Energy-conserving analytical integration
+
+为了解决这个问题，作者建议根据**消光率**$\sigma_t$和散射光采样$S = L_{scat}(xt, ω_i)$以及积分深度`d`，在一个范围内对散射光进行**分析积分**。如果考虑对散射光样本采取**单一样本**，我们只需要根据**透射率**对这块曲线上的每个点进行积分，直到范围的前深度。这可以用公式17[Hil15]实现。
+
+![image-20210511101522209](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511101522209.png)
+
+使用**公式17**是很简单的：只需要在每个`slab`上取一个$\sigma_t$和S。如list 5.6.3所示，**综合散射光**可以使用上述方程进行计算，同时应用和更新以前的**综合透射率**。你可能已经注意到，当消光率$\sigma_t=0$时，方程17的结果是不确定的。只需通过将消光率夹在一个小的ε值中，来解决这个问题。
+
+![image-20210511101828804](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511101828804.png)
+
+利用这种**积分改进**，有可能让**参与介质**看起来正确，而在增加材料密度时，无需太多的样本。下图左边显示，使用第5.6.1节中提出的采样，需要采取`512`个样本才能使结果朝着正确的结果收敛。然而，在右边，当使用散射积分方程时，只有`21`个样本就足以达到预期的结果。使用`512`个样本的图片会使**云的形状**得到更准确的表达，但至少现在的照明结果更独立于采样器的数量。
+
+![image-20210511102254266](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511102254266.png)
+
+### Cloud phase function
+
+在第2.3节中，已经描述了**相位函数**作为一种数学工具，代表了散射时的**反弹光方向分布**。这是参与介质的一个重要属性，因为它定义了一些非常重要的视觉特征：从前向散射导致的云层上**强烈的银边**，到波长相关的、几何散射导致的**彩色雾弓**`colored fogbow`。
+
+![image-20210511102541516](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511102541516.png)
+
+正如[Bou+08]中提出的，**云的相位函数可能非常复杂**。云是由相对较大的水滴组成的，可以具有**几何散射的特征**（见第2.3节）。上图可以看到这样一个云相函数的例子。可以注意到右侧强烈的**前向散射尖峰**，或者在`120`度左右的复杂雾弓`fogbow`视觉效果[Wikc]。其他的云视觉特征是伪镜面`pseudo specular`和光晕`glory halo`[Wikd]。
+
+![image-20210511102759850](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511102759850.png)
+
+在游戏这样的实时环境中，我们没有能力计算这样复杂的相位函数。因此，通常要计算一个**单一的相位函数**，（例如==Henyey-Greenstein相位函数==）。但是，当表现具有**强烈前向散射特征**的材料时，如云层，**后向散射成分**可能会消失，从与太阳方向相反的方向看云层，会显得暗淡，缺乏细节，如上左图所示。事实上，如果有一个强大的前向峰值，当太阳在相机后面时，看云时就只剩下环境照明了。为了解决这个问题，作者使用一个==双叶相位函数==`dual-lob phase function`$p_{dual}$，由两个==Henyey-Greenstein相位函数==组成，根据权重`w∈[0，1]`混合在一起，如公式18所示：
+
+![image-20210511103311815](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511103311815.png)
+
+使用**双叶相位函数**使艺术家对光线在参与云的介质中的反弹方式有了更多的控制。现在可以**更好地平衡前向和后向散射**。图39右图，显示了通过使用双叶相位函数可以实现更多的细节，既允许强大的前向散射峰值，同时也保持一定量的后向散射，在云层形状中带来更多的细节。
+
+### Multiple scattering
+
+云会散射很多光，其**明亮和白色的外观**很大一部分是由**多重散射**产生的。如果没有多重散射，云的边缘会有太阳和环境光，而其他地方就会非常暗。==多重散射也是使云看起来不像烟的一个关键因素==。由于大量的水悬浮在空气中，蓬松的云看起来非常白和明亮，即使被非常强烈的**蓝色调环境天空光**散射照亮。正如本节开头所述，云的反照率非常接近于`1`。
+
+可以使用不同的方法来计算**多重散射解**：
+
++ 路径追踪。
++ 预计算：这类似于[Bou+08]提出的基于收集器的方法。然而，**程序内容**可能很难预先计算。
++ 迭代：类似于[Ele+14] ，可以在体积中传播多散射光。虽然这是自动的，但是由于所需的**内存量**，最终可能仍然会超出预算。
+
+最后，作者决定使用 [WKL13] 等人提出的**非常简单的多次散射近似**。该方法基本上是对多个**散射倍频程**`octave of scattering`进行积分并求和。基本上，最终的积分散射是：
+
+![image-20210511104134823](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511104134823.png)
+
+进行了以下的替换：
+
+![image-20210511104300760](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511104300760.png)
+
+为了确保这项技术在计算$L_{multiscat}(x,w_i)$时**能量守恒**，必须确保$a <= b$。否则，可能会有比预期更多的光被散射，因为公式$\sigma_t=\sigma_a+\sigma_s$将不再遵守，因为$\sigma_s$最终可能大于$\sigma_t$。
+
+这种解决方案的好处是：可以在`ray marching`过程中，一次性积分每个不同八度`octaves`的散射光。缺点是它不能很好地表现==复杂的多重散射行为==：例如，侧向或后向散射，没有锥体扩散`cone spread`，等等。尽管有这些缺点，该技术在实践中效果很好，为艺术家提供了对体积云外观的细微控制。
+
+现在，可以产生高度散射，即厚重的参与介质，同时仍然确保**散射光可以冲破介质**，以揭示阴影部分的内部细节。
+
+![image-20210511104909137](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511104909137.png)
+
+### Other interactions
+
+==Frostbite体积云阴影==完全建立为引擎的一部分。云将与场景中的每个元素进行一致的互动。为了使一切看起来都一致，无论在什么星球、什么时间、什么天气下，都能做到这一点。
+
+在计算**阴影**或**大气散射**时，云层被考虑在内，这使得许多**全局效应**得以发生。
+
++ 阴影：**体积云的阴影**被烘烤成一个**存储透射率的2D纹理**，并投射到世界上。它被应用于所有不透明和透明的表面，也被发射器系统取样以正确点亮粒子。投影是非常简单的，并假设摄像机周围是一个整体平坦的星球，这对典型的行星来说是合理的。
++ GI：在更新动态全局照明系统的输入时，体积云阴影图也被采样。这导致动态全局照明受到云、天气和太阳方向的影响。
++ 影响空中透视的云层。
++ 影响云层的空中透视。
+
+> ### The Law of Aerial Perspective
+>
+> + + [明暗变化](https://blog.csdn.net/qq_41452267/article/details/104900605?utm_medium=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromBaidu~default-5.vipsorttest&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromBaidu~default-5.vipsorttest#_2)
+>   + [形体变化](https://blog.csdn.net/qq_41452267/article/details/104900605?utm_medium=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromBaidu~default-5.vipsorttest&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromBaidu~default-5.vipsorttest#_4)
+>   + [色彩变化](https://blog.csdn.net/qq_41452267/article/details/104900605?utm_medium=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromBaidu~default-5.vipsorttest&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromBaidu~default-5.vipsorttest#_7)
+>
+> 
+> 物体因空间距离不同，而发生的明暗、形体、色彩变化的视觉现象。亦称 **空气透视**。其规律如下：
+>
+> 
+>
+> ## 明暗变化
+>
+> 近处物体的明暗对比强，调子层次丰富，变化明显。反之，明暗对比变弱，层次变少，明暗色调渐变趋于接近而呈现一片灰色。且这种变化，不受光照角度的影响。
+>
+> ## 形体变化
+>
+> 近处的物体形体轮廓清晰，物体愈远，形体轮廓愈模糊。这种因空间距离而发生的形体轮廓清晰度的变化，也叫“隐形透视”。近处物体立体感强，远处的立体感弱，渐变为平面状。远处高大物体，上部清晰度大于下部，呈现上实下虚。
+>    强调减少对比度与模糊图像是不一样的。模糊是通过仅降低高空间频率的对比度来实现的。空中透视降低了所有空间频率的对比度。
+>
+> ## 色彩变化
+>
+> 色彩的明度、纯度、彩度，由于空间距离的拉大而逐渐降低和变灰。近处的色彩、色相标准、清晰，远处的模糊，暖色逐渐变冷变灰，冷色逐渐变暖变灰。因此，近处的色冷暖对比强，远处的对比弱，最远处冷暖不分而形成为一片蓝灰色。**但在某些情况下可能是某种其他颜色**（例如在日出或日落时，远处的颜色可能会转向红色）。
+
+#### Aerial perspective affecting clouds
+
+云通常在大气层中非常高，而且离摄像机很远。因此，它们的外观会受到==空中视角==的影响，也就是说，**大气中的光散射**发生在云粒子和视点之间。下图左显示，如果在渲染云时不考虑空中视角，在**云和地球之间的地平线**上会出现**视觉差异**。中间的图片显示了同样的场景，但在云中应用了**空中透视**。地平线处的问题不再可见。
+
+![image-20210511105815608](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511105815608.png)
+
+![image-20210511105929587](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511105929587.png)
+
+在云层上应用**空中透视**的==直接方法==是：在云层**射线行进**过程中，积分散射光和透射率时，对其进行采样。然而，所有这些额外的纹理采样会使云层的传递更加昂贵。作者建议分两步实现这一目标。
+
++ 用**公式21**计算云的==平均锋面深度==，并以**透射率**加权到观测点。这可以计算一个平滑的前沿深度，同时考虑到每个样本的可见度，并忽略**被遮挡的样本的深度**。如果没有云粒子被击中（例如，当透射率为1时），我们就跳过样本。这将产生一个平滑的深度缓冲区，如图42所示。
+
+  ![image-20210511110338842](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511110338842.png)
+
++ 只计算一次`the aerial perspective scattering/transmittance texture`，并将其应用于**最终的综合云散射亮度**和透射率。
+
+#### Clouds affecting aerial perspective
+
+由于**云层的覆盖**和它们散射在周围的光线，覆盖天空的云层将影响**空中的透视效果**。在云层下：
+
++ **厚厚的云层**会阻挡**天空光线**在大气中的散射。
++ **高反照率产生的明亮的云**会在大气中传播更多的光。参与的介质和密度系数将影响散射光的数量和颜色。
+
+如[Hil16]所述，见下图，对云的平均透射率$Tr_{cloud}$进行采样，并从**地面的相机视角**对半球的散射亮度$L_{cloud}$进行积分。这是通过在**黑色背景**上渲染云层，并存储每个像素的散射亮度和透射率来实现的。
+
+![image-20210511110748495](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511110748495.png)
+
+这个结果然后被用来影响第3.5节中的**空中透视纹理**，使用**公式22**。作者根据**云层的平均透射率**简单地减弱了**空中视角的散射太阳亮度**，而增加了**云层综合散射亮度**的贡献。在图41中可以看到这种改进，中间的图像的空中视角没有受到云层的影响，而右边的图像则受到影响。可以注意到大气中的散射少了很多，而且**深蓝色的散射色**也可以从**深色不透明的云层**中看到。
+
+![image-20210511111133893](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111133893.png)
+
+### Performance
+
+### Results
+
+![image-20210511111324460](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111324460.png)
+
+除了前几节显示的结果外，在此介绍一些试图匹配不同云层类型后，获得的额外视觉效果。事实上，如图44所示，云的形状、密度、高度等方面确实可以得到很大的变化。非常感谢Soren Hesse在此分享他的一些工作。
+
+![image-20210511111514215](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111514215.png)
+
+![image-20210511111528252](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111528252.png)
+
+![image-20210511111546514](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111546514.png)
+
+![image-20210511111600958](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111600958.png)
+
+![image-20210511111618030](Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite.assets/image-20210511111618030.png)
+
+
+
+## 6. Conclusion
+
+在此给出一些可以改进本文中所介绍的技术的想法和研究领域：
+
++ 空中透视来自云层的太阳体积阴影（Aerial perspective sun volumetric shadow from clouds.）。以前的论文[BN08][Yus13a]中已经提出了解决方案，但它们只针对不透明几何体的体积阴影。我们需要一个解决方案，同时考虑到不透明以及参与的介质，例如云或局部雾气体积[Hil15]。也许可以使用一个相机包裹的模糊体或一个映射在地壳上的特殊阴影投影。
++ 云层是在所有东西后的一个层中渲染的。如果想让云层与不透明的几何体相交，比如一座大山，只需要`ray marching`到最接近的深度。由于云层是以较低的分辨率渲染的，因此需要额外的合成步骤：深度降采样、从低分辨率到全分辨率的双边升采样。
++ 目前，云环境是一种单一的颜色，没有方向性也没有遮挡。我们可以通过使用Frostbite的球面谐波探头来提高质量，或者根据云层中每一帧的不同方向，将单一的环境遮挡进行时间上的整合。还可以考虑到地形的反弹颜色。
++ 实施Bruneton的模型（4D多散射LUT）或找到一种廉价的方法来接近大气层的地球阴影，这将是一个有趣的选项。在某些情况下，作者发现有这样一个视觉选项会很有趣。
+
