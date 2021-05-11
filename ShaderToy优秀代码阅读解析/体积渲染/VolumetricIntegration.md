@@ -291,7 +291,7 @@ vec3 S = evaluateLight(p) * sigmaS * phaseFunction()* volumetricShadow(p,lightPo
 
 ![image-20210510151900815](VolumetricIntegration.assets/image-20210510151900815.png)
 
-第二行是什么，暂时未看懂，但应该就是积分优化的地方。//todo
+第二行是什么，暂时未看懂，但应该就是积分优化的地方。//todo。这里是能量守恒的积分方法，具体可以见论文阅读下的`Physically Based Sky, Atmosphere and Cloud Rendering in Frostbite`。
 
 ```c++
 vec3 Sint = (S - S * exp(-sigmaE * dd)) / sigmaE; // integrate along the current step segment
@@ -378,7 +378,7 @@ float getClosestDistance(vec3 p, out float material)
 
 ### 填充变量
 
-首先，是计算`albedo`，这里我们就是分析新的函数`getSceneColor(p, material)`，结合上面的那个最近距离函数，我们可以知道：材质为`1.0`，就是场景中的红墙；`2.0`则是
+首先，是计算`albedo`，这里我们就是分析新的函数`getSceneColor(p, material)`，结合上面的那个最近距离函数，我们可以知道：材质为`1.0`，就是场景中的红墙（X方向）；`2.0`则是绿顶（Y方向），当然目前的设置看不到；`3.0`则是后面那个看着像空洞的蓝墙（Z方向）
 
 ```c++
 vec3 getSceneColor(vec3 p, float material)
@@ -400,3 +400,79 @@ vec3 getSceneColor(vec3 p, float material)
 }
 ```
 
+然后是更新最终位置，然后用这个值计算法线，也就是新的函数`calcNormal`。计算方式则是我们经常见的方法，而这里使用`getClosestDistance`，也间接证明了其就是类似`iBox`的函数。
+
+```c++
+finalPos = rO + d*rD;
+    
+normal = calcNormal(finalPos);
+```
+
+```c++
+vec3 calcNormal( in vec3 pos)
+{
+    float material = 0.0;
+    vec3 eps = vec3(0.3,0.0,0.0);
+	return normalize( vec3(
+           getClosestDistance(pos+eps.xyy, material) - getClosestDistance(pos-eps.xyy, material),
+           getClosestDistance(pos+eps.yxy, material) - getClosestDistance(pos-eps.yxy, material),
+           getClosestDistance(pos+eps.yyx, material) - getClosestDistance(pos-eps.yyx, material) ) );
+
+}
+```
+
+最后用散射光和透射率填充最后一个需要计算的变量`scatTrans`。
+
+```c++
+scatTrans = vec4(scatteredLight, transmittance);
+```
+
+
+
+## 回到主函数
+
+首先，是计算终点的贡献（在射线步进的过程中，最后一步，即到达终点，是不会继续计算的），所以我们需要：
+
+```c++
+//lighting
+vec3 color = (albedo/3.14) * evaluateLight(finalPos, normal) * volumetricShadow(finalPos, LPOS);
+// Apply scattering/transmittance
+color = color * scatTrans.w + scatTrans.xyz;
+```
+
+第一行，其实就是$albedo/\pi*light*visable$。需要注意的这里的`evaluateLight(finalPos, normal)`和之前不一样，具有新的法线参数。逻辑其实挺简单，就是之前的计算方式得到的光强，乘上一个余弦项（lightV和normal的夹角）。
+
+```c++
+vec3 evaluateLight(in vec3 pos, in vec3 normal)
+{
+    vec3 lightPos = LPOS;
+    vec3 L = lightPos-pos;
+    float distanceToL = length(L);
+    vec3 Lnorm = L/distanceToL;
+    return max(0.0,dot(normal,Lnorm)) * evaluateLight(pos);
+}
+```
+
+第二行也很简单，就是上一步的得到的终点值，再乘上最终消光率，加上之前的累积散射光。
+
+最后一步就是伽马校正：
+
+```
+color = pow(color, vec3(1.0/2.2)); // simple linear to gamma, exposure of 1.0
+```
+
+> 如果需要对比效果，则中间需要产生黑边：
+>
+> ```c++
+> #ifndef D_DEMO_FREE
+>     // Separation line
+>     if(abs(fragCoord.x-(iResolution.x*0.5))<0.6)
+>         color.r = 0.5;
+> #endif
+> ```
+
+
+
+## 结语
+
+研究生以来，很久没有如此细致的阅读这样一份`shader Toy`代码（将近400行）。但这次阅读也是获益良多，对于体积渲染有了更深一步的理解。
