@@ -108,5 +108,291 @@ The Raleigh phase function looks like this：（$\mu=dot(w_{Light},w_{V})$）
 
 ![image-20210511143842793](Simulating the Colors of the Sky.assets/image-20210511143842793.png)
 
-我们已经解释了如何计算**消光率**。现在让我们来看看术语Lsun(X)，并解释如何评估它。Lsun(X)对应于沿观察方向在样本位置X处散射的阳光量。要评估它，首先我们需要计算到达X的光量。直接取阳光强度是不够的。事实上，如果光在Ps处进入大气层，它在到达X时也会被衰减。因此，我们需要用一个类似于我们一直用来计算沿观察射线从Pa到Pc的光的衰减的方程式来计算这种衰减（方程式1）。
+现在来看看术语$L_{sun}(X)$，并解释如何计算它。$L_{sun}(X)$对应于沿**观察方向**在样本位置`X`处散射的阳光量。首先我们需要计算到达X的光量。直接取**阳光强度**是不够的。事实上，如果光在$P_S$处进入大气层，它在到达`X`时也会被衰减。因此，我们需要用一个类似于用来计算沿观察射线从$P_a$到$P_c$的**光衰减方程式**，来计算这种衰减（方程式1）：
+
+![image-20210512103829921](Simulating the Colors of the Sky.assets/image-20210512103829921.png)
+
+### Equation 1
+
+从技术上讲，对于沿**观察光线**的每个采样位置`X`，我们将需要在太阳光方向（`L`）上投射光线，并找到该光线与大气的交点（$P_s$）。 然后，我们将使用与观察光线相同的**数值积分技术**，来计算等式1中的**透射率（或光学深度）项**。光线将被切成`segment`，并且每个光段中心处的**大气密度**将被计算。
+
+ 然后需要考虑的是==相位函数==。 瑞利散射和米氏散射具有它们自己的相位函数，我们将进一步介绍。**Mie相位函数**包含一个额外项`g`，称为**平均余弦**，它定义光是主要沿向前方向（L）还是向后方向（-L）散射。 对于前向散射，g在$[0,1]$的范围内，对于后向散射，g在$[-1,0]$的范围内。 当g等于零时，光在所有方向上均等地散射，该散射是各向同性的。 对于米氏散射，我们将`g`设置为`0.76`。
+
+![image-20210512104952826](Simulating the Colors of the Sky.assets/image-20210512104952826.png)
+
+最后，我们需要考虑一个事实，主要是蓝光沿`view ray`散射。 为了反映这一点，将前面方程的结果乘以**散射系数**$\beta_s$：
+
+![image-20210512105218224](Simulating the Colors of the Sky.assets/image-20210512105218224.png)
+
+> 对于地球大气层，太阳是天空中唯一的光源，但是要写出前面方程式的**一般形式**，我们应该考虑光可能来自多个方向的事实。 在科学论文中，您通常会看到该方程写为$4\pi$上的积分。 它描述了传入方向的范围。 这个更通用的方程还将说明**地面反射的阳光**（多次散射），我们将在本章中将其忽略。
+
+
+
+## 7. Computing the Sky Color
+
+总结之前的处理，现在我们有如下（公式2和3）：
+
+![image-20210512105532999](Simulating the Colors of the Sky.assets/image-20210512105532999.png)
+
+![image-20210512105600268](Simulating the Colors of the Sky.assets/image-20210512105600268.png)
+
+提取定值：（公式4）
+
+![image-20210512105739674](Simulating the Colors of the Sky.assets/image-20210512105739674.png)
+
+这是针对特定`view ray`和`light ray`，渲染天空颜色的最终方程式。 因此，并不复杂。 由于我们计算积分并多次调用**指数函数**（通过透射率项），因此对计算的要求更高。 另外，天空颜色实际上是**瑞利散射**和**米氏散射**的共同结果。 因此，对于每种类型的散射，我们需要`2`次计算此方程式：
+
+![image-20210512110005847](Simulating the Colors of the Sky.assets/image-20210512110005847.png)
+
+而积分内的两个透射率的指数函数，我们可以通过$e^ae^b=e^{a+b}$来减少调用指数函数的次数。
+
+
+
+## 8. 实现（C++）
+
+首先，我们将创建一个==大气层类==，用于指定系统的所有参数：行星和大气的半径$(R_e,R_a)$，海平面上的瑞利和米氏散射系数，瑞利和米氏**比例高度**（$H_r,H_m$），太阳方向，太阳强度和平均余弦`g`。 所有距离均以==米==（以及散射系数）表示。
+
+```c++
+class Atmosphere 
+{ 
+public: 
+    Atmosphere( 
+        Vec3f sd = Vec3f(0, 1, 0), 
+        float er = 6360e3, float ar = 6420e3, 
+        float hr = 7994, float hm = 1200) : 
+        sunDirection(sd), 
+        earthRadius(er), 
+        atmosphereRadius(ar), 
+        Hr(hr), 
+        Hm(hm) 
+    {} 
+ 
+    Vec3f computeIncidentLight(const Vec3f& orig, const Vec3f& dir, float tmin, float tmax) const; 
+ 
+    Vec3f sunDirection;     // The sun direction (normalized) 
+    float earthRadius;      // In the paper this is usually Rg or Re (radius ground, eart) 
+    float atmosphereRadius; // In the paper this is usually R or Ra (radius atmosphere) 
+    float Hr;               // Thickness of the atmosphere if density was uniform (Hr) 
+    float Hm;               // Same as above but for Mie scattering (Hm) 
+ 
+    static const Vec3f betaR; 
+    static const Vec3f betaM; 
+}; 
+ 
+const Vec3f Atmosphere::betaR(3.8e-6f, 13.5e-6f, 33.1e-6f); 
+const Vec3f Atmosphere::betaM(21e-6f); 
+```
+
+我们将渲染天空，就像用鱼眼镜头看到的一样。 相机朝上看，可以捕捉**360度**的天空。 为了创建针对太阳的不同位置渲染的天空动画，我们将渲染一系列帧。 在第一帧，太阳在天顶（中心帧）。 在最后一帧，太阳略微在地平线以下。
+
+```c++
+void renderSkydome(const Vec3f& sunDir, const char *filename) 
+{ 
+    Atmosphere atmosphere(sunDir); 
+    auto t0 = std::chrono::high_resolution_clock::now(); 
+ 
+    const unsigned width = 512, height = 512; 
+    Vec3f *image = new Vec3f[width * height], *p = image; 
+    memset(image, 0x0, sizeof(Vec3f) * width * height); 
+    for (unsigned j = 0; j < height; ++j) { 
+        float y = 2.f * (j + 0.5f) / float(height - 1) - 1.f; 
+        for (unsigned i = 0; i < width; ++i, ++p) { 
+            float x = 2.f * (i + 0.5f) / float(width - 1) - 1.f; 
+            float z2 = x * x + y * y; 
+            if (z2 <= 1) { 
+                float phi = std::atan2(y, x); 
+                float theta = std::acos(1 - z2); 
+                Vec3f dir(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi)); 
+                // 1 meter above sea level
+                *p = atmosphere.computeIncidentLight(Vec3f(0, atmosphere.earthRadius + 1, 0), dir, 0, kInfinity); 
+            } 
+        } 
+        fprintf(stderr, "\b\b\b\b\%3d%c", (int)(100 * j / (width - 1)), '%'); 
+    } 
+ 
+    std::cout << "\b\b\b\b" << ((std::chrono::duration)(std::chrono::high_resolution_clock::now() - t0)).count() << " seconds" << std::endl; 
+    // Save result to a PPM image (keep these flags if you compile under Windows)
+    std::ofstream ofs(filename, std::ios::out | std::ios::binary); 
+    ofs << "P6\n" << width << " " << height << "\n255\n"; 
+    p = image; 
+    for (unsigned j = 0; j < height; ++j) { 
+        for (unsigned i = 0; i < width; ++i, ++p) { 
+#if 1 
+            // Apply tone mapping function
+            (*p)[0] = (*p)[0] < 1.413f ? pow((*p)[0] * 0.38317f, 1.0f / 2.2f) : 1.0f - exp(-(*p)[0]); 
+            (*p)[1] = (*p)[1] < 1.413f ? pow((*p)[1] * 0.38317f, 1.0f / 2.2f) : 1.0f - exp(-(*p)[1]); 
+            (*p)[2] = (*p)[2] < 1.413f ? pow((*p)[2] * 0.38317f, 1.0f / 2.2f) : 1.0f - exp(-(*p)[2]); 
+#endif 
+            ofs << (unsigned char)(std::min(1.f, (*p)[0]) * 255) 
+                << (unsigned char)(std::min(1.f, (*p)[1]) * 255) 
+                << (unsigned char)(std::min(1.f, (*p)[2]) * 255); 
+        } 
+    } 
+    ofs.close(); 
+    delete[] image; 
+} 
+ 
+int main() 
+{ 
+#if 1 
+    // Render a sequence of images (sunrise to sunset)
+    unsigned nangles = 128; 
+    for (unsigned i = 0; i < nangles; ++i) { 
+        char filename[1024]; 
+        sprintf(filename, "./skydome.%04d.ppm", i); 
+        float angle = i / float(nangles - 1) * M_PI * 0.6; 
+        fprintf(stderr, "Rendering image %d, angle = %0.2f\n", i, angle * 180 / M_PI); 
+        renderSkydome(Vec3f(0, cos(angle), -sin(angle)), filename); 
+    } 
+#else 
+    ... 
+#endif 
+ 
+    return 0; 
+} 
+```
+
+最后，是用于计算==方程式4==的函数。 我们要做的第一件事是找到相机光线与大气的交点（第4行）。 然后，我们计算Rayleigh和Mie相位函数的值（使用太阳和相机射线方向，第14和16行）。 第一个循环（第17行）沿摄影机射线创建样本。 请注意，样本位置（方程式中的X）是线段的中点（第19行）。 从那里，我们可以计算样本（X）的高度（第19行）。 对于瑞利散射和米氏散射（使用$H_r$和$H_m$），我们计算将$exp(-h / H)$乘以ds。 累积这些值（第23和24行）以计算X处的光学深度。我们稍后还将使用它们来缩放等式4（第42和43行）中的散射系数$\beta_s(h)$。
+
+然后，我们计算X处来自太阳的光量（第31至38行）。我们向太阳方向投射光线（光线是平行的），并找到与大气的交点。该射线被切成段，我们评估段中间的密度（第35和36行）。累积这些值将为我们提供光线的光学深度。请注意，我们测试每个**光样本**是否在地面之上或之下。如果它在地下，可以安全丢弃此射线的贡献（第34和39行）。注意，Mie消光系数约为Mie散射系数（线40）的1.1倍。最终，使用等式5的技巧，我们可以通过在一个指数调用（第40和41行）中累积光和相机光线的光学深度，来计算光和相机光线的累积透射率。在函数的最后，我们返回该特定射线的天空的最终颜色，该颜色是瑞利散射和米氏散射透射率的总和乘以它们各自的相位函数和散射系数。该总和还乘以太阳强度（第48行）。
+
+```c++
+Vec3f Atmosphere::computeIncidentLight(const Vec3f& orig, const Vec3f& dir, float tmin, float tmax) const 
+{ 
+    float t0, t1; 
+    if (!raySphereIntersect(orig, dir, atmosphereRadius, t0, t1) || t1 < 0) return 0; 
+    if (t0 > tmin && t0 > 0) tmin = t0; 
+    if (t1 < tmax) tmax = t1; 
+    uint32_t numSamples = 16; 
+    uint32_t numSamplesLight = 8; 
+    float segmentLength = (tmax - tmin) / numSamples; 
+    float tCurrent = tmin; 
+    Vec3f sumR(0), sumM(0); // mie and rayleigh contribution 
+    float opticalDepthR = 0, opticalDepthM = 0; 
+    float mu = dot(dir, sunDirection); // mu in the paper which is the cosine of the angle between the sun direction and the ray direction 
+    float phaseR = 3.f / (16.f * M_PI) * (1 + mu * mu); 
+    float g = 0.76f; 
+    float phaseM = 3.f / (8.f * M_PI) * ((1.f - g * g) * (1.f + mu * mu)) / ((2.f + g * g) * pow(1.f + g * g - 2.f * g * mu, 1.5f)); 
+    for (uint32_t i = 0; i < numSamples; ++i) { 
+        Vec3f samplePosition = orig + (tCurrent + segmentLength * 0.5f) * dir; 
+        float height = samplePosition.length() - earthRadius; 
+        // compute optical depth for light
+        float hr = exp(-height / Hr) * segmentLength; 
+        float hm = exp(-height / Hm) * segmentLength; 
+        opticalDepthR += hr; 
+        opticalDepthM += hm; 
+        // light optical depth
+        float t0Light, t1Light; 
+        raySphereIntersect(samplePosition, sunDirection, atmosphereRadius, t0Light, t1Light); 
+        float segmentLengthLight = t1Light / numSamplesLight, tCurrentLight = 0; 
+        float opticalDepthLightR = 0, opticalDepthLightM = 0; 
+        uint32_t j; 
+        for (j = 0; j < numSamplesLight; ++j) { 
+            Vec3f samplePositionLight = samplePosition + (tCurrentLight + segmentLengthLight * 0.5f) * sunDirection; 
+            float heightLight = samplePositionLight.length() - earthRadius; 
+            if (heightLight < 0) break; 
+            opticalDepthLightR += exp(-heightLight / Hr) * segmentLengthLight; 
+            opticalDepthLightM += exp(-heightLight / Hm) * segmentLengthLight; 
+            tCurrentLight += segmentLengthLight; 
+        } 
+        if (j == numSamplesLight) { 
+            Vec3f tau = betaR * (opticalDepthR + opticalDepthLightR) + betaM * 1.1f * (opticalDepthM + opticalDepthLightM); 
+            Vec3f attenuation(exp(-tau.x), exp(-tau.y), exp(-tau.z)); 
+            sumR += attenuation * hr; 
+            sumM += attenuation * hm; 
+        } 
+        tCurrent += segmentLength; 
+    } 
+ 
+    // We use a magic number here for the intensity of the sun (20). We will make it more
+    // scientific in a future revision of this lesson/code
+    return (sumR * betaR * phaseR + sumM * betaM * phaseM) * 20; 
+} 
+```
+
+![image-20210512112323039](Simulating the Colors of the Sky.assets/image-20210512112323039.png)
+
+> 优化：Nishita观察到，天空相对于太阳位置和地球中心所定义的轴是对称的。 基于这种观察，本文提出了一种在2D表中烘焙光学深度的技术，您可以使用μ（视图和光方向之间的角度的余弦值）和h（采样点的高度）进行访问。 您将需要为每个散射模型（Rayleigh和Mie）创建一个表。 这些表可以在手工保存到文件中之前进行计算，并在每次运行程序时重新使用。 对光学深度使用预先计算的值，而不是即时进行计算（这需要一些昂贵的指数调用）会大大加快渲染速度。 如果速度对您的应用程序很重要，则此优化可能是您可以实现的第一个优化（有关详细信息，请参见Nishita的论文）。
+
+## 9. Light Shafts
+
+![image-20210512112519526](Simulating the Colors of the Sky.assets/image-20210512112519526.png)
+
+大气效果有时会产生壮观的视觉效果。 `Light shafts `通常使这些效果更加显着。 如果光线自由穿过该体积，则该体积将均匀照明。 但是，如果在场景中放置一些对象，则这些对象**所遮盖的体积区域**将比未遮挡的区域更暗。 `Light shafts `是光束，其对应于被光源（太阳）照亮的体积区域。 
+
+![image-20210512112815220](Simulating the Colors of the Sky.assets/image-20210512112815220.png)
+
+
+
+## 10. Simulating Aerial Perspective
+
+计算==空中透视==实际上不需要对我们的代码进行太多更改。 从下图可以看到，山色受蓝色大气的影响。 因为**射线A**的眼睛到地面的距离比**射线B**的短，所以大气对射线A的颜色的影响比对射线B的颜色的影响要小。
+
+![image-20210512113008638](Simulating the Colors of the Sky.assets/image-20210512113008638.png)
+
+首先，应该渲染几何体（地形）的颜色。 然后，应渲染透射率（即不透明度）和大气颜色，并使用以下**alpha混合公式**将这两种颜色合成在一起：
+
+```c++
+Ray Color = Object Color * (1 - Transmittance) + Atmosphere Color
+```
+
+```c
+void renderSkydome(const Vec3f& sunDir, const char *filename) 
+{ 
+    Atmosphere atmosphere(sunDir); 
+    ... 
+#if 1 
+    // Render fisheye
+    ... 
+#else 
+    // Render from a normal camera
+    const unsigned width = 640, height = 480; 
+    Vec3f *image = new Vec3f[width * height], *p = image; 
+    memset(image, 0x0, sizeof(Vec3f) * width * height); 
+    float aspectRatio = width / float(height); 
+    float fov = 65; 
+    float angle = std::tan(fov * M_PI / 180 * 0.5f); 
+    unsigned numPixelSamples = 4; 
+    Vec3f orig(0, atmosphere.earthRadius + 1000, 30000); // camera position 
+    std::default_random_engine generator; 
+    std::uniform_real_distribution distribution(0, 1); // to generate random floats in the range [0:1] 
+    for (unsigned y = 0; y < height; ++y) { 
+        for (unsigned x = 0; x < width; ++x, ++p) { 
+            for (unsigned m = 0; m < numPixelSamples; ++m) { 
+                for (unsigned n = 0; n < numPixelSamples; ++n) { 
+                    float rayx = (2 * (x + (m + distribution(generator)) / numPixelSamples) / float(width) - 1) * aspectRatio * angle; 
+                    float rayy = (1 - (y + (n + distribution(generator)) / numPixelSamples) / float(height) * 2) * angle; 
+                    Vec3f dir(rayx, rayy, -1); 
+                    normalize(dir); 
+                    // Does the ray intersect the planetory body? (the intersection test is against the Earth here
+                    // not against the atmosphere). If the ray intersects the Earth body and that the intersection
+                    // is ahead of us, then the ray intersects the planet in 2 points, t0 and t1. But we
+                    // only want to comupute the atmosphere between t=0 and t=t0 (where the ray hits
+                    // the Earth first). If the viewing ray doesn't hit the Earth, or course the ray
+                    // is then bounded to the range [0:INF]. In the method computeIncidentLight() we then
+                    // compute where this primary ray intersects the atmosphere and we limit the max t range 
+                    // of the ray to the point where it leaves the atmosphere.
+                    float t0, t1, tMax = kInfinity; 
+                    if (raySphereIntersect(orig, dir, atmosphere.earthRadius, t0, t1) && t1 > 0) 
+                        tMax = std::max(0.f, t0); 
+                    // The *viewing or camera ray* is bounded to the range [0:tMax]
+                    *p += atmosphere.computeIncidentLight(orig, dir, 0, tMax); 
+                } 
+            } 
+            *p *= 1.f / (numPixelSamples * numPixelSamples); 
+        } 
+        fprintf(stderr, "\b\b\b\b%3d%c", (int)(100 * y / (width - 1)), '%'); 
+    } 
+#endif 
+    ... 
+} 
+```
+
+通过更改“大气层”模型的参数，可以轻松创建外观与地球天空截然不同的天空。 例如，可以想象火星星球的大气，或者创造自己的天空。 ==散射系数和大气层厚度==是可以用来改变其外观的最明显的参数。 `Mie`散射的贡献迅速增加，使大气变成雾蒙蒙的天空，再加上`light shaft`，可以创建富有表现力的图像。
+
+
+
+## 关于多重散射
+
+天空颜色是光在大气中向观察者散射一次或多次的结果。 然而，在文献中，强调**单一散射**占主导。 因此，通过忽略多重散射来渲染天空图像仍然会给出非常合理的结果。 文献中的大多数模型都忽略或不提供将**多重散射**考虑在内的技术。 但是，布鲁内顿（Bruneton）认为，地面反射的光量足够大，足以影响天空的颜色。 他提出了一个模型，其中考虑了地面散射的光（在该模型中，地球被假定为完美的球形）。
 
