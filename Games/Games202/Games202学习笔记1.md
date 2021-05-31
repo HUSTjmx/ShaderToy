@@ -390,3 +390,70 @@ high level。
 ![image-20210506114526971](Games202学习笔记1.assets/image-20210506114526971.png)
 
 ![image-20210506115808466](Games202学习笔记1.assets/image-20210506115808466.png)
+
+
+
+# Lecture 10 RealTime Physiaclly Based Material
+
+
+
+# Lecture 11 RealTime Physiaclly Based Material 2
+
+## Linearly Transformed Cosines
+
+![image-20210531111222178](Games202学习笔记1.assets\image-20210531111222178-1622430743253.png)
+
+![image-20210531111421628](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531111421628.png)
+
+![image-20210531111901296](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531111901296.png)
+
+
+
+## Disney Principled BRDF
+
+![image-20210531113132078](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531113132078.png)
+
+设计原则：
+
+![image-20210531113412414](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531113412414.png)
+
+![image-20210531113934506](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531113934506.png)
+
+
+
+## NPR
+
+![image-20210531121716380](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531121716380.png)
+
+![image-20210531141554606](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531141554606.png)
+
+![image-20210531141934863](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531141934863.png)
+
+![image-20210531142230022](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531142230022.png)
+
+![image-20210531142929844](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531142929844.png)
+
+![image-20210531143413949](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531143413949.png)
+
+![image-20210531143519981](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531143519981.png)
+
+
+
+# Lecture 12 Real-Time Ray Tracing
+
+![image-20210531151205969](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531151205969.png)
+
+![image-20210531151330118](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531151330118.png)
+
+![image-20210531151718718](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531151718718.png)
+
+为什么会有这么强的效果？
+
+![image-20210531154144803](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531154144803.png)
+
+ 
+
+![image-20210531154745912](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531154745912.png)
+
+![image-20210531154952360](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\Games\Games202\Games202学习笔记1.assets\image-20210531154952360.png)
+
