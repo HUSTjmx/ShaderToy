@@ -6,7 +6,7 @@
 
 # 1. Gameplay Ability System[GAS] （ ActionRPG/Abilities）
 
-![image-20210517140541472](C:\Users\xueyaojiang\Desktop\JMX_Update\解析ActionRPG.assets\image-20210517140541472.png)
+![image-20210517140541472](解析ActionRPG.assets\image-20210517140541472.png)
 
 ## 1. RPGAbilitySystemComponent.h/cpp & AbilitySystemComponent
 
@@ -21,21 +21,19 @@
 >
 >      * 提供复制功能：能力状态`Ability state `必须始终在`UGameplayAbility`本身上进行复制，但`UAbilitySystemComponent`提供了RPC复制功能。
 >
->         
 >  * GameplayEffects。
 >      * 提供了一个`FActiveGameplayEffectsContainer`，用于保存激活的`GameplayEffects`。
->
->      * 提供将**游戏效果**应用于目标或自身的方法。
->
->      * 提供用于查询`FActiveGameplayEffectsContainer`中的信息（持续时间、大小等）的封装器。
->
->      * 提供清除/删除游戏效果的方法。
->
->         
->  * GameplayAttributes
+> 
+>     * 提供将**游戏效果**应用于目标或自身的方法。
+> 
+>     * 提供用于查询`FActiveGameplayEffectsContainer`中的信息（持续时间、大小等）的封装器。
+> 
+>     * 提供清除/删除游戏效果的方法。
+> 
+> * GameplayAttributes
 >      * 提供分配和初始化**属性集**的方法
 >      * 提供获取**属性集**的方法
->
+> 
 
 `AbilitySystemComponent`提供了丰富的“method”来与`Ability`、`Effect`、`Attribute`交互，随着我们深入GAS，会接触到。
 

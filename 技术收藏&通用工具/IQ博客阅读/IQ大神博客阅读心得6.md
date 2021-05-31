@@ -234,7 +234,6 @@ $$
 ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/IQ%E5%A4%A7%E7%A5%9E%E5%8D%9A%E5%AE%A2%E9%98%85%E8%AF%BB/%E5%9B%BE%E7%89%87/render%20techniques/for04.png)
 
 ```c#
-vec3 calcNormal( in vec3 p ) // for function f(p)
 {
     const float eps = 0.0001; // or some other value
     const vec2 h = vec2(eps,0);
