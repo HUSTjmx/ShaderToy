@@ -309,51 +309,51 @@ PRT的基本想法：（假设场景中，只有光照条件会变）
 
 high level。
 
-![image-20210430120848514](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430120848514.png)
+![image-20210430120848514](Games202学习笔记1.assets/image-20210430120848514.png)
 
-![image-20210430120932406](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430120932406.png)
+![image-20210430120932406](Games202学习笔记1.assets/image-20210430120932406.png)
 
-![image-20210430121259571](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121259571.png)
+![image-20210430121259571](Games202学习笔记1.assets/image-20210430121259571.png)
 
-![image-20210430121614415](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121614415.png)
+![image-20210430121614415](Games202学习笔记1.assets/image-20210430121614415.png)
 
-![image-20210430121808684](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121808684.png)
+![image-20210430121808684](Games202学习笔记1.assets/image-20210430121808684.png)
 
-![image-20210430121847566](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430121847566.png)
+![image-20210430121847566](Games202学习笔记1.assets/image-20210430121847566.png)
 
 ## Voxel Global Illumination (VXGI)
 
-![image-20210430122946417](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430122946417.png)
+![image-20210430122946417](Games202学习笔记1.assets/image-20210430122946417.png)
 
-![image-20210430123055966](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430123055966.png)
+![image-20210430123055966](Games202学习笔记1.assets/image-20210430123055966.png)
 
-![image-20210430124309680](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430124309680.png)
+![image-20210430124309680](Games202学习笔记1.assets/image-20210430124309680.png)
 
 ## SSAO
 
-![image-20210430130001900](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430130001900.png)
+![image-20210430130001900](Games202学习笔记1.assets/image-20210430130001900.png)
 
 
 
-![image-20210430130550284](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430130550284.png)
+![image-20210430130550284](Games202学习笔记1.assets/image-20210430130550284.png)
 
-![image-20210430130832230](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430130832230.png)
+![image-20210430130832230](Games202学习笔记1.assets/image-20210430130832230.png)
 
 > AO就是一个平均的可见性。
 
-![image-20210430131434758](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430131434758.png)
+![image-20210430131434758](Games202学习笔记1.assets/image-20210430131434758.png)
 
-![image-20210430131618742](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430131618742.png)
+![image-20210430131618742](Games202学习笔记1.assets/image-20210430131618742.png)
 
-![image-20210430132107775](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430132107775.png)
+![image-20210430132107775](Games202学习笔记1.assets/image-20210430132107775.png)
 
-![image-20210430132255577](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430132255577.png)
+![image-20210430132255577](Games202学习笔记1.assets/image-20210430132255577.png)
 
-![image-20210430133013058](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133013058.png)
+![image-20210430133013058](Games202学习笔记1.assets/image-20210430133013058.png)
 
-![image-20210430133237861](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133237861.png)
+![image-20210430133237861](Games202学习笔记1.assets/image-20210430133237861.png)
 
-![image-20210430133800391](../../../../AppData/Roaming/Typora/typora-user-images/image-20210430133800391.png)
+![image-20210430133800391](Games202学习笔记1.assets/image-20210430133800391.png)
 
 
 
@@ -390,3 +390,70 @@ high level。
 ![image-20210506114526971](Games202学习笔记1.assets/image-20210506114526971.png)
 
 ![image-20210506115808466](Games202学习笔记1.assets/image-20210506115808466.png)
+
+
+
+# Lecture 10 RealTime Physiaclly Based Material
+
+
+
+# Lecture 11 RealTime Physiaclly Based Material 2
+
+## Linearly Transformed Cosines
+
+![image-20210531111222178](Games202学习笔记1.assets\image-20210531111222178-1622430743253.png)
+
+![image-20210531111421628](Games202学习笔记1.assets\image-20210531111421628.png)
+
+![image-20210531111901296](Games202学习笔记1.assets\image-20210531111901296.png)
+
+
+
+## Disney Principled BRDF
+
+![image-20210531113132078](Games202学习笔记1.assets\image-20210531113132078.png)
+
+设计原则：
+
+![image-20210531113412414](Games202学习笔记1.assets\image-20210531113412414.png)
+
+![image-20210531113934506](Games202学习笔记1.assets\image-20210531113934506.png)
+
+
+
+## NPR
+
+![image-20210531121716380](Games202学习笔记1.assets\image-20210531121716380.png)
+
+![image-20210531141554606](Games202学习笔记1.assets\image-20210531141554606.png)
+
+![image-20210531141934863](Games202学习笔记1.assets\image-20210531141934863.png)
+
+![image-20210531142230022](Games202学习笔记1.assets\image-20210531142230022.png)
+
+![image-20210531142929844](Games202学习笔记1.assets\image-20210531142929844.png)
+
+![image-20210531143413949](Games202学习笔记1.assets\image-20210531143413949.png)
+
+![image-20210531143519981](Games202学习笔记1.assets\image-20210531143519981.png)
+
+
+
+# Lecture 12 Real-Time Ray Tracing
+
+![image-20210531151205969](Games202学习笔记1.assets\image-20210531151205969.png)
+
+![image-20210531151330118](Games202学习笔记1.assets\image-20210531151330118.png)
+
+![image-20210531151718718](Games202学习笔记1.assets\image-20210531151718718.png)
+
+为什么会有这么强的效果？
+
+![image-20210531154144803](Games202学习笔记1.assets\image-20210531154144803.png)
+
+ 
+
+![image-20210531154745912](Games202学习笔记1.assets\image-20210531154745912.png)
+
+![image-20210531154952360](Games202学习笔记1.assets\image-20210531154952360.png)
+
