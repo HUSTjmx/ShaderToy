@@ -74,9 +74,15 @@
 
 #### Residual ratio tracking / Poisson estimator.
 
-**控制变量**在**透射率估计**中的第一个应用是Ratio tracking，以产生剩余比率跟踪（RRT）估计器。应用公式9中的转换，估计器为
+**控制变量**在**透射率估计**中的第一个应用是Ratio tracking，以产生**剩余比率跟踪（RRT）估计器**。应用公式9中的转换，估计器为
 
 ![](An unbiased ray-marching transmittance estimator.assets\image-20210607160311967.png)
 
 ### Power-series formulation
+
+另一个**无偏的透射率估计系列**来自于方程1中**指数的幂级（泰勒）扩展**。Bhanot和Kennedy提出的这种形式，用于估计粒子物理学**马尔科夫链蒙特卡洛模拟**中的**哈密尔顿指数**，可以直接应用于**透射率估计**。
+
+Georgiev等人[2019]首次将这一表述引入计算机图形学，表明它实际上可以被看作是表达和分析所有透射率估计器的一个非常通用的框架。根据他们的推导，透射率（1）可以表示为：
+
+![image-20210615145031117](An unbiased ray-marching transmittance estimator.assets/image-20210615145031117.png)
 

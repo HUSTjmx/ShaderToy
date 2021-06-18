@@ -504,3 +504,54 @@ void ABaseCharacter::OnStaminaChangedNative(const FOnAttributeChangeData& Data)
 
 > ps：还是不太熟练，以及教程出了错，**半小时的教程**，看了一下午，哎。
 
+
+
+# Pt4
+
+新建一个`GameplayAbility`类：
+
+![image-20210616101538042](GAS.assets/image-20210616101538042.png)
+
+新建一个函数`getCharacterinfo`：
+
+![image-20210616102433223](GAS.assets/image-20210616102433223.png)
+
+然后，设置之前的`GA_Melee`的基类是这个新类，还有设置上诉函数为纯函数：
+
+![image-20210616102712250](GAS.assets/image-20210616102712250.png)
+
+然后可以简化之前的蓝图：
+
+![image-20210616102853398](GAS.assets/image-20210616102853398.png)
+
+新建一个新的`GA`蓝图`GA_HealthRegen`，
+
+![image-20210616103305733](GAS.assets/image-20210616103305733.png)
+
+都是之前的节点流程，我们需要**新的能力效果**`GE`，新建：（能力、花费、冷却）
+
+![image-20210616104351593](GAS.assets/image-20210616104351593.png)
+
+![image-20210616103640962](GAS.assets/image-20210616103640962.png)
+
+对于**冷却**：
+
+![image-20210616104426561](GAS.assets/image-20210616104426561.png)
+
+![image-20210616104855776](GAS.assets/image-20210616104855776.png)
+
+回到`playCharacter`，初始化能力，以及按键触发：
+
+![image-20210616104829553](GAS.assets/image-20210616104829553.png)
+
+![image-20210616104911649](GAS.assets/image-20210616104911649.png)
+
+此时，我们还需要为这个技能分配动画，所以打开对应模型的动画文件夹，选择一个合适的动画，右键新建一个动画蒙太奇：
+
+![image-20210616105507033](GAS.assets/image-20210616105507033.png)
+
+打开这个蒙太奇，选择一个合适的插槽：
+
+![image-20210616105537143](GAS.assets/image-20210616105537143.png)
+
+被傻逼的冷却折磨了，有时间再补吧，尽管解决了。
