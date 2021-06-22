@@ -1303,11 +1303,12 @@ int main()
 }
 ```
 
-这种方式的缺点是你必须手动的一个include之后，再手动的一个个注册，当要继续添加注册的项时，只能再手动的依次序在该文件里加上一条条目，可维护性较差。
-所以根据**C++ static对象**会在main函数之前初始化的特性，可以设计出一种==static自动注册模式==，新增加注册条目的时候，只要Include进相应的类`.h` `.cpp`文件，就可以自动在程序启动main函数前自动执行一些操作。简化的代码大概如下：
+这种方式的缺点是你必须手动的一个include之后，再手动的一个个注册，当要继续添加**注册的项**时，只能再手动的依次序在该文件里加上一条条目，可维护性较差。
+
+所以根据**C++ static对象**会在**main函数之前初始化**的特性，可以设计出一种==static自动注册模式==，新增加注册条目的时候，只要Include进相应的类`.h` `.cpp`文件，就可以自动在程序启动main函数前自动执行一些操作。简化的代码大概如下：
 
 ```c++
-/StaticAutoRegister.h
+//StaticAutoRegister.h
 template<typename TClass>
 struct StaticAutoRegister
 {
@@ -1367,5 +1368,274 @@ struct FCompiledInDefer
 static FCompiledInDefer Z_CompiledInDefer_UClass_UMyClass(Z_Construct_UClass_UMyClass, &UMyClass::StaticClass, TEXT("UMyClass"), false, nullptr, nullptr, nullptr);
 ```
 
-都是对该模式的应用，把**static变量**声明再用宏包装一层，就可以实现一个简单的自动注册流程了。
+都是对该模式的应用，把**static变量**声明再用宏包装一层，就可以实现一个**简单的自动注册流程**了。
 
+## 收集
+
+在上文里，我们详细介绍了`Class`、`Struct`、`Enum`、`Interface`的**代码生成的信息**，显然的，生成的就是为了拿过来用的。但是在用之前，我们就还得辛苦一番，把散乱分布在各个`.h` `.cpp`文件里的**元数据**都收集到我们想要的**数据结构**里保存，以便下一个阶段的使用。
+
+这里回顾一下，为了让新创建的类不修改既有的代码，所以我们选择了**去中心化**的为每个新的类生成它自己的**cpp生成文件**——上文里已经分别介绍每个cpp文件的内容。但是这样我们就接着迎来了一个新问题：这些cpp文件里的元数据散乱在各个模块dll里，我们需要用一种方法重新归拢这些数据，这就是我们在一开头就提到的==C++ Static自动注册模式==了。通过这种模式，每个cpp文件里的static对象在程序一开始的时候就会全部有机会去做一些事情，包括信息的收集工作。
+
+UE4里也是如此，在程序启动的时候，**UE**利用了**Static自动注册模式**把所有类的信息都一一登记一遍。而紧接着另一个就是顺序问题了，这么多类，谁先谁后，互相若是有依赖该怎么解决。众所周知，==UE是以Module来组织引擎结构的==（关于Module的细节会在以后章节叙述），一个个Module可以通过脚本配置来选择性的编译加载。在游戏引擎众多的模块中，**玩家自己的Game模块是处于比较高级的层次的，都是依赖于引擎其他更基础底层的模块**，而这些模块中，**最最底层的就是Core模块（C++的基础库）**，接着就是==CoreUObject，正是实现Object类型系统的模块==！因此在类型系统注册的过程中，不止要注册玩家的Game模块，同时也要注册CoreUObject本身的一些支持类。
+
+很多人可能会担心这么多模块的静态初始化的顺序正确性如何保证，在c++标准里，不同编译单元的全局静态变量的初始化顺序并没有明确规定，因此实现上完全由编译器自己决定。该问题最好的解决方法是尽可能的避免这种情况，在设计上就让各个变量不互相引用依赖，同时也采用一些二次检测的方式避免重复注册，或者触发一个强制引用来保证前置对象已经被初始化完成。目前在MSVC平台上是先注册玩家的Game模块，接着是CoreUObject，接着再其他，不过这其实无所谓的，只要保证不依赖顺序而结果正确，顺序就并不重要了。
+
+## Static的收集
+
+在讲完了**收集的必要性**和**顺序问题的解决**之后，我们再来分别的看各个类别的**结构信息的收集**。依然是按照上文生成的顺序，从`Class`（Interface同理）开始，然后是`Enum`，接着`Struct`。接着请读者朋友们对照着上文的生成代码来理解。
+
+## Class的收集
+
+对照着上文里的`Hello.generated.cpp`展开，我们注意到里面有：
+
+```c++
+static TClassCompiledInDefer<UMyClass> AutoInitializeUMyClass(TEXT("UMyClass"), sizeof(UMyClass), 899540749);
+//……
+static FCompiledInDefer Z_CompiledInDefer_UClass_UMyClass(Z_Construct_UClass_UMyClass, &UMyClass::StaticClass, TEXT("UMyClass"), false, nullptr, nullptr, nullptr);
+```
+
+再一次找到其定义：
+
+```c++
+//Specialized version of the deferred class registration structure.
+template <typename TClass>
+struct TClassCompiledInDefer : public FFieldCompiledInInfo
+{
+	TClassCompiledInDefer(const TCHAR* InName, SIZE_T InClassSize, uint32 InCrc)
+	: FFieldCompiledInInfo(InClassSize, InCrc)
+	{
+		UClassCompiledInDefer(this, InName, InClassSize, InCrc);    //收集信息
+	}
+	virtual UClass* Register() const override
+	{
+		return TClass::StaticClass();
+	}
+};
+
+//Stashes the singleton function that builds a compiled in class. Later, this is executed.
+struct FCompiledInDefer
+{
+	FCompiledInDefer(class UClass *(*InRegister)(), class UClass *(*InStaticClass)(), const TCHAR* Name, bool bDynamic, const TCHAR* DynamicPackageName = nullptr, const TCHAR* DynamicPathName = nullptr, void (*InInitSearchableValues)(TMap<FName, FName>&) = nullptr)
+	{
+		if (bDynamic)
+		{
+			GetConvertedDynamicPackageNameToTypeName().Add(FName(DynamicPackageName), FName(Name));
+		}
+		UObjectCompiledInDefer(InRegister, InStaticClass, Name, bDynamic, DynamicPathName, InInitSearchableValues);//收集信息
+	}
+};
+```
+
+可以见到前者调用了`UClassCompiledInDefer`来收集**类名字，类大小，CRC信息**，并把**自己的指针**保存进来，以便后续调用`Register`方法。而`UObjectCompiledInDefer`（现在暂时不考虑动态类）==最重要的收集的信息==就是**第一个用于构造UClass*对象的函数指针回调**。
+
+再往下我们会发现这**二者**其实都只是在一个**静态Array**里添加**信息记录**：
+
+```c++
+void UClassCompiledInDefer(FFieldCompiledInInfo* ClassInfo, const TCHAR* Name, SIZE_T ClassSize, uint32 Crc)
+{
+    //...
+    // We will either create a new class or update the static class pointer of the existing one
+	GetDeferredClassRegistration().Add(ClassInfo);  //static TArray<FFieldCompiledInInfo*> DeferredClassRegistration;
+}
+void UObjectCompiledInDefer(UClass *(*InRegister)(), UClass *(*InStaticClass)(), const TCHAR* Name, bool bDynamic, const TCHAR* DynamicPathName, void (*InInitSearchableValues)(TMap<FName, FName>&))
+{
+    //...
+	GetDeferredCompiledInRegistration().Add(InRegister);    //static TArray<class UClass *(*)()> DeferredCompiledInRegistration;
+}
+```
+
+而在整个引擎里会触发**此Class的信息收集**的有`UCLASS`、`UINTERFACE`、`IMPLEMENT_INTRINSIC_CLASS`、`IMPLEMENT_CORE_INTRINSIC_CLASS`，其中UCLASS和UINTERFACE我们上文已经见识过了，而**IMPLEMENT_INTRINSIC_CLASS是用于在代码中包装UModel**，**IMPLEMENT_CORE_INTRINSIC_CLASS是用于包装UField、UClass等引擎内建的类**，**后两者内部也都调用了IMPLEMENT_CLASS来实现功能**。流程图如下：
+
+![preview](UObject.assets/v2-aca4e3da83a9c888e9b305c73c299a2d_r.jpg)
+
+❓**思考：为何需要TClassCompiledInDefer和FCompiledInDefer两个静态初始化来登记？**:star:
+
+我们也观察到了这二者是一一对应的，问题是为何需要**两个静态对象**来分别收集，为何不合二为一？关键在于我们首先要明白它们二者的不同之处，**前者的目的主要是为后续提供一个TClass::StaticClass的Register方法（其会触发GetPrivateStaticClassBody的调用，进而创建出UClass*对象）**，而**后者的目的是在其UClass*身上继续调用构造函数，初始化属性和函数等一些注册操作。**我们==可以简单理解为就像是C++中new对象的两个步骤，首先分配内存，继而在该内存上构造对象==。我们在后续的注册章节里还会继续讨论到这个问题。
+
+❓**思考：为何需要延迟注册而不是直接在static回调里执行？**
+
+很多人可能会问，为什么**static回调**里都是先**把信息注册进array结构**里，并没有什么其他操作，为何不直接把后续的操作直接在回调里调用了，这样结构反而简单些。是这样没错，但是同时我们也考虑到一个问题，**UE4里大概1500多个类，如果都在static初始化阶段进行1500多个类的收集注册操作，那么main函数必须得等好一会儿才能开始执行。表现上就是用户双击了程序，没反应，过了好一会儿，窗口才打开。**因此static初始化回调里尽量少的做事情，就是为了尽快的加快程序启动的速度。等窗口显示出来了，array结构里数据已经有了，我们就可以施展手脚，多线程也好，延迟也好，都可以大大改善程序运行的体验。
+
+## Enum的收集
+
+依旧是上文里的对照代码，`UENUM`会生成：
+
+```c++
+static FCompiledInDeferEnum Z_CompiledInDeferEnum_UEnum_EMyEnum(EMyEnum_StaticEnum, TEXT("/Script/Hello"), TEXT("EMyEnum"), false, nullptr, nullptr);
+//其定义：
+struct FCompiledInDeferEnum
+{
+	FCompiledInDeferEnum(class UEnum *(*InRegister)(), const TCHAR* PackageName, const TCHAR* Name, bool bDynamic, const TCHAR* DynamicPackageName, const TCHAR* DynamicPathName)
+	{
+		if (bDynamic)
+		{
+			GetConvertedDynamicPackageNameToTypeName().Add(FName(DynamicPackageName), FName(Name));
+		}
+		UObjectCompiledInDeferEnum(InRegister, PackageName, DynamicPathName, bDynamic);
+		//	static TArray<FPendingEnumRegistrant> DeferredCompiledInRegistration;
+
+	}
+};
+```
+
+在static阶段会向内存注册一个构造UEnum*的函数指针用于回调：
+
+![preview](UObject.assets/v2-fe3a1048b5870d2a2c49ee3c136a9c26_r.jpg)
+
+注意到这里并不需要像`UClassCompiledInDefer`一样先生成一个`UClass*`，因为`UEnum`并不是一个Class，并没有Class那么多功能集合，所以就比较简单一些。
+
+## Struct的收集
+
+对于Struct，我们先来看上篇里生成的代码：
+
+```c++
+static FCompiledInDeferStruct Z_CompiledInDeferStruct_UScriptStruct_FMyStruct(FMyStruct::StaticStruct, TEXT("/Script/Hello"), TEXT("MyStruct"), false, nullptr, nullptr);  //延迟注册
+static struct FScriptStruct_Hello_StaticRegisterNativesFMyStruct
+{
+    FScriptStruct_Hello_StaticRegisterNativesFMyStruct()
+    {
+        UScriptStruct::DeferCppStructOps(FName(TEXT("MyStruct")),new UScriptStruct::TCppStructOps<FMyStruct>);
+    }
+} ScriptStruct_Hello_StaticRegisterNativesFMyStruct;    //static注册
+```
+
+同样是**两个static对象**，前者`FCompiledInDeferStruct`继续**向array结构里登记函数指针**，后者有点特殊，在一个**结构名和对象的Map映射**里登记“**Struct相应的C++操作类**”（后续解释）。
+
+```c++
+struct FCompiledInDeferStruct
+{
+	FCompiledInDeferStruct(class UScriptStruct *(*InRegister)(), const TCHAR* PackageName, const TCHAR* Name, bool bDynamic, const TCHAR* DynamicPackageName, const TCHAR* DynamicPathName)
+	{
+		if (bDynamic)
+		{
+			GetConvertedDynamicPackageNameToTypeName().Add(FName(DynamicPackageName), FName(Name));
+		}
+		UObjectCompiledInDeferStruct(InRegister, PackageName, DynamicPathName, bDynamic);//	static TArray<FPendingStructRegistrant> DeferredCompiledInRegistration;
+	}
+};
+void UScriptStruct::DeferCppStructOps(FName Target, ICppStructOps* InCppStructOps)
+{
+	TMap<FName,UScriptStruct::ICppStructOps*>& DeferredStructOps = GetDeferredCppStructOps();
+
+	if (UScriptStruct::ICppStructOps* ExistingOps = DeferredStructOps.FindRef(Target))
+	{
+#if WITH_HOT_RELOAD
+		if (!GIsHotReload) // in hot reload, we will just leak these...they may be in use.
+#endif
+		{
+			check(ExistingOps != InCppStructOps); // if it was equal, then we would be re-adding a now stale pointer to the map
+			delete ExistingOps;
+		}
+	}
+	DeferredStructOps.Add(Target,InCppStructOps);
+}
+```
+
+另外的，搜罗引擎里的代码，我们还会发现对于UE4里内建的结构，比如说`Vector`，其`IMPLEMENT_STRUCT(Vector)`也会相应的触发`DeferCppStructOps`的调用。
+
+![preview](UObject.assets/v2-7a555be35a40cbcafbabd507ebbdb24d_r.jpg)
+
+这里的`Struct`也和`Enum`同理，因为并不是一个Class，所以并不需要比较繁琐的两步构造，凭着`FPendingStructRegistrant`就可以后续一步构造出`UScriptStruct*`对象；对于内建的类型（如Vector），因其完全不是“Script”的类型，所以就不需要UScriptStruct的构建，那么其如何像BP暴露，我们后续再详细介绍。
+
+还有一点注意的是**UStruct类型**会配套一个**ICppStructOps接口对象**来管理**C++struct对象的构造和析构工作**，其用意就在于如果对于一块已经擦除了类型的内存数据，我们怎么能在其上正确的**构造结构对象数据或者析构**。这个时候，如果我们能够得到一个统一的`ICppStructOps*`指针指向类型安全的`TCppStructOps<CPPSTRUCT>`对象，就能够通过**接口函数**动态、多态、类型安全的执行**构造和析构工作**。
+
+## Function的收集
+
+在介绍完了`Class`、`Enum`、`Struct`之后，我们还遗忘了一些引擎**内建的函数的信息收集**。我们在前文中并没有介绍到这一点是因为`UE`已经提供了我们一个`BlueprintFunctionLibrary`的类来**注册全局函数**。而一些引擎内部定义出来的函数，也是散乱分布在各处，也是需要收集起来的。
+主要有这两类：
+
+- `IMPLEMENT_CAST_FUNCTION`，定义一些**Object的转换函数**
+
+```c++
+IMPLEMENT_CAST_FUNCTION( UObject, CST_ObjectToBool, execObjectToBool );
+IMPLEMENT_CAST_FUNCTION( UObject, CST_InterfaceToBool, execInterfaceToBool );
+IMPLEMENT_CAST_FUNCTION( UObject, CST_ObjectToInterface, execObjectToInterface );
+```
+
+- `IMPLEMENT_VM_FUNCTION`，定义一些**蓝图虚拟机使用的函数**
+
+```c++
+IMPLEMENT_VM_FUNCTION(EX_CallMath, execCallMathFunction);
+IMPLEMENT_VM_FUNCTION( EX_True, execTrue );
+//……
+```
+
+而继而查其定义：
+
+```c++
+#define IMPLEMENT_FUNCTION(cls,func) \
+	static FNativeFunctionRegistrar cls##func##Registar(cls::StaticClass(),#func,(Native)&cls::func);
+
+#define IMPLEMENT_CAST_FUNCTION(cls, CastIndex, func) \
+	IMPLEMENT_FUNCTION(cls, func); \
+	static uint8 cls##func##CastTemp = GRegisterCast( CastIndex, (Native)&cls::func );
+
+#define IMPLEMENT_VM_FUNCTION(BytecodeIndex, func) \
+	IMPLEMENT_FUNCTION(UObject, func) \
+	static uint8 UObject##func##BytecodeTemp = GRegisterNative( BytecodeIndex, (Native)&UObject::func );
+	
+/** A struct that maps a string name to a native function */
+struct FNativeFunctionRegistrar
+{
+	FNativeFunctionRegistrar(class UClass* Class, const ANSICHAR* InName, Native InPointer)
+	{
+		RegisterFunction(Class, InName, InPointer);
+	}
+	static COREUOBJECT_API void RegisterFunction(class UClass* Class, const ANSICHAR* InName, Native InPointer);
+	// overload for types generated from blueprints, which can have unicode names:
+	static COREUOBJECT_API void RegisterFunction(class UClass* Class, const WIDECHAR* InName, Native InPointer);
+};
+```
+
+也可以发现有3个static对象收集到这些函数的信息并登记到相应的结构中去，==流程图==为：
+
+![preview](UObject.assets/v2-22bebf1e12cd60c66ec7b158357e02d8_r.jpg)
+
+其中`FNativeFunctionRegistra`r用于向`UClass`里添加**Native函数**（区别于蓝图里定义的函数），另一个方面，在`UClass`的`RegisterNativeFunc`相关函数里，也会把相应的Class内定义的函数添加到UClass内部的函数表里去。
+
+## UObject的收集
+
+如果读者朋友们自己剖析源码，还会有一个疑惑，作为**Object系统的根类**，它是怎么在最开始的时候触发相应`UClass*`的生成呢？答案在最开始的`IMPLEMENT_VM_FUNCTION(EX_CallMath, execCallMathFunction)`调用上，其内部会紧接着触发`UObject::StaticClass()`的调用，作为最开始的调用，检测到`UClass*`并未生成，于是接着会转发到`GetPrivateStaticClassBody`中去生成一个`UClass*`。
+
+![preview](UObject.assets/v2-c2175f862a2b19e78603fb83a59f1965_r.jpg)
+
+## 总结
+
+因篇幅有限，本文紧接着上文，讨论了代码生成的信息是如何一步步收集到内存里的数据结构里去的，==UE4利用了C++的static对象初始化模式==，**在程序最初启动的时候，main之前，就收集到了所有的类型元数据、函数指针回调、名字、CRC等信息**。到目前，思路还是很清晰的，==为每一个类代码生成自己的cpp文件（不需中心化的修改既有代码），进而在其生成的每个cpp文件里用static模式搜罗一遍信息以便后续的使用。==这也算是C++自己实现类型系统流行套路之一吧。
+在下一个阶段——**注册**，我们将讨论UE4接下来是如何消费利用这些信息的。
+
+
+
+# UObject（六）类型系统代码生成重构-UE4CodeGen_Private
+
+在之前的[《InsideUE4》UObject（四）类型系统代码生成](https://zhuanlan.zhihu.com/p/25098685)和[《InsideUE4》UObject（五）类型系统收集](https://zhuanlan.zhihu.com/p/26019216)章节里，我们介绍了UE4是**如何根据我们的代码和元标记生成反射代码**，并在Main函数调用之前，**利用静态变量的初始化来收集类型的元数据信息**。经过了我这么长时间的拖更……也经过了Epic这么长时间的版本更替，把UE从4.15.1进化到了4.18.3，自然的，CoreUObject模块也进行了一些改进。本文就先补上一个关于代码生成的改进：在UE4.17（20170722）的时候进行的`UObjectGlobals.h.cpp`重构，**优化了代码生成的内容和组织形式**。
+
+
+
+//to read
+
+
+
+# UObject（七）类型系统注册-第一个UClass
+
+在走过了引擎的**static初始化阶段**后，**类型系统的元数据信息**仍然零零散散的**分布在几个全局变量**里面，声明定义出来一些**注册构造函数也只是收集了函数指针**，却都还没有机会来好好的调用一下它们。因此注册的文章部分着重讲解的是程序启动过程中，是怎么把之前的信息和函数都串起来使用，**最终在内存中构造出类型系统的类型树的**。
+
+理所当然的注意一下：
+
+- 注册章节暂时忽略UObject如何分配存储、GC释放、蓝图动态类的相关内容，后续讲解。
+- 忽略**性能分析STATS**和**热重载WITH_HOT_RELOAD**的代码，忽略check和ensure的检测代码。
+- 示例源码里中间如果有其他主题无关代码会用`//...`表示，否则的话代码就是原本那样。
+
+## **Static初始化**
+
+在前面的文章里，讲解了在static阶段的信息收集。在[《InsideUE4》UObject（五）类型系统收集](https://zhuanlan.zhihu.com/p/26019216)最后**UObject的收集**的时候简单点了一下，`IMPLEMENT_VM_FUNCTION(EX_CallMath, execCallMathFunction)`会触发`UObject::StaticClass()`的调用，因此作为最开始的调用，会生成第一个UClass*。
+
+```cpp
+#define IMPLEMENT_FUNCTION(func) \
+static FNativeFunctionRegistrar UObject##func##Registar(UObject::StaticClass(),#func,&UObject::func);
+
+//...
+IMPLEMENT_VM_FUNCTION(EX_CallMath, execCallMathFunction);//ScriptCore.cpp里的定义
+```
+
+虽然代码里有很多个`IMPLEMENT_CAST_FUNCTION`和`IMPLEMENT_VM_FUNCTION`的调用，但第一个触发的是`execCallMathFunction`的调用，可以看到`FNativeFunctionRegistrar`对象在构造的时候，第一个参数就会触发`UObject::StaticClass()`的调用。而以前文的内容，`StaticClass()`的调用会被展开为`GetPrivateStaticClass`的调用。而`GetPrivateStaticClass`是在`IMPLEMENT_CLASS`里定义的，那么UObject的相关`IMPLEMENT_CLASS`是在哪里定义的呢？
