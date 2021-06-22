@@ -205,7 +205,7 @@ Tessellation Multipler控制`tessellation`的数量。在本教程中，不连�
 
 为了投射渲染目标，你需要计算它的**UV坐标**。为此，创建以下设置（在地形材质中）
 
-![image-20210609134053301](C:\Users\xueyaojiang\Desktop\JMX\ShaderToy\UnrealStudy\其他博客阅读\RT应用.assets\image-20210609134053301.png)
+![image-20210609134053301](RT应用.assets\image-20210609134053301.png)
 
 1. 首先，你需要得到当前顶点的XY位置。**由于你是从底部捕捉的，X坐标被翻转了**:star:，所以你需要把它翻转回来（如果你是从顶部捕捉的，你就不需要这样做
 
