@@ -50,6 +50,7 @@ Directional light没什么值得注意的。Punctal Light中的Point light的距
 $$
 C_{light})(r)=C_{light_0}(\frac{r_0}{r+\varepsilon})^2
 $$
+
 - 当然，这个公式有很多问题，第一个问题发生在离光源很近的地方（分母近似为0），解决方法很多，例如：分母加上一个常数项（虚幻的1cm）,或者分母设置成max，给光源加上一个物理半径。
 
 
@@ -58,6 +59,7 @@ $$
 $$
 f_{win}(r)=(1-(\frac{r}{r_{max}})^4)^{+2}
 $$
+
 ​		这个作为乘项和之前的inverse-square相乘即是最终解决方案。他们的曲线如下图：
 
 <img src="https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/3.PNG" style="zoom:50%;" />
@@ -233,7 +235,7 @@ Effective sampling patterns are a key element in reducing aliasing。45度角，
 
 锯齿多产生于几何、硬阴影、亮光等边界处。2009年，Reshetov提出了一种以此为根据的新算法——MLAA（morphological antialiasing ）。Rsa的研究目标在于找到MS方法的替代品，着重寻找和重建边缘。==MLAA==：“Morphological means  relating to structure or shape.” ，这个技术作为==后处理==（正常渲染，然后对此结果进行处理）来进行。大概流程如下：找到似乎是边界的地方（对周围的像素进行分析，给出边界的可能性，下图中），然后处理他（根据覆盖值处理颜色，下图右）
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\16.PNG)
+![](RTR4_C5.assets\16.PNG)
 
 近几年，利用深度、法线等额外的Buffer，发展了很多抗锯齿技术：SRAA（subpixel reconstruction antialiasing ，仅对几何边界进行抗锯齿），GBAA（geometry buffer antialiasing ），DEAA（distance-to-edge antialiasing ）
 
@@ -287,9 +289,10 @@ c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
 a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
 \end{align}
 $$
+
 注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖的面积与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\17.PNG)
+![](RTR4_C5.assets\17.PNG)
 
 
 
@@ -309,7 +312,7 @@ c_o=\sum_{i=1}^n{\alpha_ic_i}+c_d(1-\sum_{i=1}^n\alpha_i)
 $$
 这个公式的问题很明显：两个SUM都可能超过合理范围。因此权重平均（average）的方法更加适用：（但这个公式依然没有考虑物体的顺序）
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\18.PNG)
+![](RTR4_C5.assets\18.PNG)
 
 ==colored transmission== ：在本节中讨论的所有透明算法都是混合不同的颜色而不是过滤，是模仿像素覆盖。为了提供一个颜色滤镜效果，不透明的场景被像素着色器读取，每个透明表面将它在这个场景中覆盖的像素乘以它的颜色，将结果保存到第三个缓冲区。这个方法的有效性来源于其顺序无关性。
 
@@ -345,11 +348,11 @@ $$
 
 > ==个人理解==：首先对于各大相机厂商（索尼、三星等），它们为了解决CRT的问题，所以在处理拍摄的图像时，使用了光电处理方程（1/2.2次幂），进入了sRGB空间（即标准RGB颜色空间），这样的话就可以直接在CRT上呈现正确的图像（否则会偏暗）。在编程中，GPU自带的tex采样函数会自动进行解码处理，将sRGB重新转换到线性空间，所以这点在实际编程中是隐藏的，我们不用管，但在最终颜色计算完成后，我们需要重新编码：从流程角度，一个正常的图片（sRGB空间下）本来好好的，你却要解码，那么后面肯定要收尾，再次编码；从数值角度，0.5的最终颜色值，不经过伽马校正，输出近似0.25，而$((0.5)^{1/2.2})^2.2=0.5$。
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\19.PNG)
+![](RTR4_C5.assets\19.PNG)
 
 为了将线性值转换为sRGB非线性编码值，我们应用sRGB显示传递函数的逆：
 
-![](C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\20.PNG)
+![](RTR4_C5.assets\20.PNG)
 
 考虑到偏移量和比例，这个函数近似于一个更简单的公式：
 $$
@@ -357,18 +360,18 @@ y=f^{-1}_{display}(x)=x^{1/\gamma},with \quad \gamma=2,2
 $$
 下图是没有应用伽马校正的一个明显例子：
 
-<img src="C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\21.PNG" style="zoom:75%;" />
+<img src="RTR4_C5.assets\21.PNG" style="zoom:75%;" />
 
 
 
 此外，==忽略伽马校正也会影响抗锯齿的效果==。对线性值进行反走样，将编码函数应用于所有结果值。否则，像素所代表的亮度将会太暗，导致如图右侧所示的可见的边缘变形。这种错误被称为绳索（roping），因为它的边缘看起来有点像一根扭曲的绳子
 
-<img src="C:\Users\Cooler\Desktop\JMX\ShaderToy\经典阅读\RTR4\阅读笔记\RTR4_C5.assets\22.PNG" style="zoom:75%;" />
+<img src="RTR4_C5.assets\22.PNG" style="zoom:75%;" />
 
 
 
 ##  引用
 
-[^1]:Wyman, Chris, “Exploring and Expanding the Continuum of OIT Algorithms,” in Proceedings of High-Performance Graphics, Eurographics Association, pp. 1–11, June 2016. Cited on p. 156, 159, 165  
-[^2]:Maule, Marilena, Jo˜ao L. D. Comba, Rafael Torchelsen, and Rui Bastos, “A Survey of RasterBased Transparency Techniques,” Computer and Graphics, vol. 35, no. 6, pp. 1023–1034,2011. Cited on p. 159
+[^1]: Wyman, Chris, “Exploring and Expanding the Continuum of OIT Algorithms,” in Proceedings of High-Performance Graphics, Eurographics Association, pp. 1–11, June 2016. Cited on p. 156, 159, 165  
+[^2]: Maule, Marilena, Jo˜ao L. D. Comba, Rafael Torchelsen, and Rui Bastos, “A Survey of RasterBased Transparency Techniques,” Computer and Graphics, vol. 35, no. 6, pp. 1023–1034,2011. Cited on p. 159
 
