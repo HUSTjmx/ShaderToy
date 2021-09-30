@@ -14,7 +14,7 @@
 
 开发Vulkan最重要的组件是SDK，类似于OpenGL的GLEW，[下载网址](https://vulkan.lunarg.com/)，下载好之后直接点击EXE。安装完成后要做的第一件事是验证图形卡和驱动程序是否正确支持Vulkan。转到安装SDK的`Bin`目录，打开目录并运行`vkcube.exe`演示，正确结果如下：
 
-![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/Vulkan/Picture/cube_demo.png)
+![](Vulkan教程1.assets/cube_demo.png)
 
 > 目录中还有另一个程序对开发有用。`glslangValidator.exe`和`glslc.exe`程序将被用于编译从人类可读着色[GLSL](https://en.wikipedia.org/wiki/OpenGL_Shading_Language)到字节码。
 
