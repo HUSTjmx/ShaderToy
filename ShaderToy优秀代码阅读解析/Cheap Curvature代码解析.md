@@ -6,9 +6,9 @@
 
 简介：主要是对曲率的简单计算
 
-![](C:\Users\ZoroD\Desktop\IQ--master\ShaderToy优秀代码阅读解析\Cheap Curvature代码解析.assets\Cheap Curvature.png)
+![](Cheap Curvature代码解析.assets/Cheap Curvature-16328923735071.png)
 
-![](C:\Users\ZoroD\Desktop\IQ--master\ShaderToy优秀代码阅读解析\Cheap Curvature代码解析.assets\CheapCur.gif)
+![](Cheap Curvature代码解析.assets/CheapCur-16328923772742.gif)
 
 
 
