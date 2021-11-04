@@ -217,7 +217,7 @@ Effective sampling patterns are a key element in reducing aliasing。45度角，
 
   ![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/BookReading/RealTimeRending3/Chapter5/13.PNG)
 
-==亚像素网格形式的采样模式具有一些缺点==，例如：对于像素级的微小物体，进行MSAA之类的采样，会产生严重的伪影，因为这种等级的采样频率根本无法完美Capture它们。一个解决方法是==stochastic sampling==：Having a less ordered sampling pattern can break up these patterns. 。随机化倾向于用噪声代替重复的混叠现象，而人类的视觉系统对这种现象是比较宽容的。总结起来就是：每个像素使用不同德抗锯齿算法，例如2X MSAA，TXAA，2X2 RGSS，Quincunx的随机选取使用。
+==亚像素网格形式的采样模式具有一些缺点==，例如：对于像素级的微小物体，进行MSAA之类的采样，会产生严重的伪影，因为这种等级的采样频率根本无法完美Capture它们。一个解决方法是==stochastic sampling==：Having a less ordered sampling pattern can break up these patterns. 。随机化倾向于用噪声代替重复的混叠现象，而人类的视觉系统对这种现象是比较宽容的。总结起来就是：每个像素使用不同的抗锯齿算法，例如2X MSAA，TXAA，2X2 RGSS，Quincunx的随机选取使用。
 
 - ==Quincunx==（HRAA）：英伟达提出的一种实时，采样影响不只一个像素的抗锯齿思想。意思是5个物体的排列方式，其中4个在正方形角上，第五个在正方形中心。四个角的采样值被最对四个像素使用，至于权重，则是中心点为$\frac{1}{2}$，边缘采样点为$\frac{1}{8}$，平均下来，一个像素两次采样。
 
@@ -239,7 +239,7 @@ Effective sampling patterns are a key element in reducing aliasing。45度角，
 
 近几年，利用深度、法线等额外的Buffer，发展了很多抗锯齿技术：SRAA（subpixel reconstruction antialiasing ，仅对几何边界进行抗锯齿），GBAA（geometry buffer antialiasing ），DEAA（distance-to-edge antialiasing ）
 
-- ==DLAA==（directionally localized antialiasing ）：基于这样的观察：接近垂直的边缘应该在水平方向上模糊，同样接近水平方向上模糊应该在垂直方向上模糊。
+- ==DLAA==（directionally localized antialiasing ）：基于这样的观察：接近垂直的边缘应该在水平方向上模糊，同样接近水平方向上应该在垂直方向上模糊。
 
 Iourcha提出根据MSAA的采样结果来寻找边界，以此得到更好的结果。例如，一种每个像素采样四次的技术只能为一个对象的边缘提供五个层次的混合。估计边缘位置可以有更多的位置，从而提供更好的结果。这些方法统称为 image-based 算法。
 
