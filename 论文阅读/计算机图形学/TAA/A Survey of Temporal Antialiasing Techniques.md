@@ -1,4 +1,4 @@
-# A Srvey of Temporal Antialiasing Techniques
+# A Survey of Temporal Antialiasing Techniques
 
 ![image-20211025120244441](A Survey of Temporal Antialiasing Techniques.assets/image-20211025120244441.png)
 
@@ -43,7 +43,6 @@ todo.
 > TAA和Mip Map的一些关系，具体见论文。
 
 由于`TAA`本质上是一个==摊销的采样过程==，它也可以应用于其他需要积分采样的效果，如环境遮蔽、阴影、与次序无关的透明度、反射和漫反射全局照明。为这些效果提供**随机的输入**（最好是**高维低差异序列**），允许`TAA`将它们与**屏幕空间抗锯齿样本**一起积分。例如，`UE4`依靠`TAA`对许多**使用随机采样和抖动的效果**进行==去噪==。
-
 
 ### 3.2 Data reprojection between frames
 
@@ -135,7 +134,6 @@ $$
 C_{min}=\mu-\gamma \sigma,\\
 C_{max}=\mu+\gamma \sigma
 $$
- 
 
 ## 5. Temporal upsampling
 
