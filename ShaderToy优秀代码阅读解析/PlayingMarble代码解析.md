@@ -4,7 +4,7 @@
 
 标签：3D，分形，volumetric
 
-![](C:\Users\ZoroD\Desktop\PlayM.gif)
+![](PlayM.gif)
 
 ### Image
 
