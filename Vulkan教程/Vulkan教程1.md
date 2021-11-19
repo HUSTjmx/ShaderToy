@@ -145,9 +145,9 @@ void createInstance() {
 }
 ```
 
-如前所述，Vulkan中的许多结构要求在sType成员中显式地指定类型。这也是许多具有pNext成员的结构中的一个，pNext成员可以在将来指向扩展信息。我们在这里使用值初始化将其保留为nullptr。
+如前所述，`Vulkan`中的许多结构要求在`sType`成员中显式地指定类型。这也是许多具有`pNext`成员的结构中的一个，`pNext`成员可以在将来指向扩展信息。我们在这里使用**值初始化**将其保留为`nullptr`。
 
-Vulkan中有很多信息是通过结构体传递的，而不是通过函数参数传递的，==我们必须再填充一个结构体，以便为创建实例提供足够的信息==。下一个结构不是可选的，它告诉Vulkan驱动程序我们想要使用哪一个全局扩展和验证层。全局性意味着它们适用于整个程序，而不是特定的设备。
+Vulkan中有很多信息是**通过结构体传递的**，而不是通过函数参数传递的，==我们必须再填充一个结构体，以便为创建实例提供足够的信息==。下一个结构不是可选的，它告诉Vulkan驱动程序我们想要使用哪一个**全局扩展和验证层**。全局性意味着它们适用于整个程序，而不是特定的设备。
 
 ```c#
 VkInstanceCreateInfo createInfo{};
@@ -155,14 +155,13 @@ createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 createInfo.pApplicationInfo = &appInfo;
 ```
 
-==接下来的两个属性指定所需的全局扩展==。正如在概述章节中提到的，Vulkan是一个平台无关的API，这意味着您需要一个扩展来与窗口系统进行接口。GLFW有一个方便的内置函数，它返回它需要的扩展名，我们可以将这些扩展名传递给结构体
+==接下来的两个属性指定所需的全局扩展==。正如在概述章节中提到的，Vulkan是一个平台无关的API，这意味着您需要一个扩展来与窗口系统进行衔接。GLFW有一个方便的内置函数，它返回它需要的扩展名，我们可以将这些扩展名传递给结构体
 
 ```c++
 uint32_t glfwExtensionCount = 0;
 const char** glfwExtensions;
 
 glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
 createInfo.enabledExtensionCount = glfwExtensionCount;
 createInfo.ppEnabledExtensionNames = glfwExtensions;
 ```
@@ -339,7 +338,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData) {
+    void* pUserData)
+{
 
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
@@ -579,8 +579,6 @@ int rateDeviceSuitability(VkPhysicalDevice device) {
 ##### Queue Families
 
 在此之前，我们已经简单提到过，==在Vulkan中几乎所有的操作，从绘制到上传纹理，都需要将命令提交到队列中==。==不同类型的队列起源于不同的队列系列（Queue Familes），每个队列系列只允许命令的一个子集。例如，可能有一个队列系列只允许处理计算命令，或者一个队列系列只允许内存传输相关命令==。
-
-
 
 我们需要检查设备支持哪些队列家族，以及其中哪个队列家族支持我们想要使用的命令。为此，我们将添加一个新函数findQueueFamilies，用于查找我们需要的所有队列族。
 
