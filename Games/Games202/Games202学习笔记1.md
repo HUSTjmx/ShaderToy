@@ -299,6 +299,10 @@ PRT的基本想法：（假设场景中，只有光照条件会变）
 
 ![image-20210419124510879](Games202学习笔记1.assets/image-20210419124510879.png)
 
+> 按照我的想法，来分析分析上诉公式，首先$f_r=\rho/\pi$和$L_i=f_r \frac{\Phi}{dA}$是物理定义（对于diffuse的平面）。第一个问题，为什么结果是`E`而不是`L`，我来思考的话，对于diffuse像素而言，每一个方向的光（也就是$L_o$），都是一致的，而$dE=L_0\cdot dw$，所以$E=L_0*4\pi$。
+>
+> 而回到$L_o$这个积分，
+
 ![image-20210419125612947](Games202学习笔记1.assets/image-20210419125612947.png)
 
 
@@ -311,7 +315,7 @@ high level。
 
 ![image-20210430120848514](Games202学习笔记1.assets/image-20210430120848514.png)
 
-![image-20210430120932406](Games202学习笔记1.assets/image-20210430120932406.png)
+<img src="Games202学习笔记1.assets/image-20210430120932406.png" alt="image-20210430120932406" style="zoom:150%;" />
 
 ![image-20210430121259571](Games202学习笔记1.assets/image-20210430121259571.png)
 
