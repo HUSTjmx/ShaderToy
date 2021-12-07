@@ -96,33 +96,33 @@
 
 **创建轨迹**所需的第一件事是*渲染目标*。渲染目标将是一个**灰度蒙版**，其中**白色表示有轨迹**，黑色表示没有轨迹。然后，您可以将**渲染目标**投影到地面上，并使用它来**混合纹理**和**置换顶点**。
 
-![虚幻引擎雪](RT应用.assets\unreal-engine-snow-projection.gif)
+![虚幻引擎雪](https://i.loli.net/2021/12/02/IU81SzRqhctfApZ.gif)
 
 你需要的第二件事是**如何只屏蔽掉受雪影响的物体**。你可以通过首先将物体渲染为**自定义深度**来做到这一点。然后，你可以使用带有后处理材质的场景捕捉来屏蔽任何渲染为自定义深度的对象。然后，你可以将遮罩输出到渲染目标。
 
 **场景捕捉**的重要部分是你放置它的位置。下面是一个从**自顶向下视图**捕获的渲染目标的例子。在这里，第三人称角色和盒子被掩盖了。
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-01.jpg)
+![unreal engine snow](https://i.loli.net/2021/12/02/ENtM4ndcmSIs3pv.jpg)
 
 乍一看，**自上而下的捕捉**看起来是个好办法。形状似乎是精确到网格的，所以应该没有问题，对吗？并非如此。自上而下捕捉的问题是，它不能捕捉最宽点以下的东西。这里有一个例子。
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-02.gif)
+![unreal engine snow](https://i.loli.net/2021/12/02/ieR2haM6wp3yGQ7.gif)
 
 ![unreal engine snow](RT应用.assets\unreal-engine-snow-02.jpg)
 
 这个问题的延伸是**很难确定一个物体是否接触到地面**。
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-03.gif)
+![unreal engine snow](https://i.loli.net/2021/12/02/5Ns27LZkbeB8OFM.gif)
 
 ### 自顶向上方法
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-04.gif)
+![unreal engine snow](https://i.loli.net/2021/12/02/oZR7fyptuMIAaSz.gif)
 
 为了确定物体是否接触到地面，可以使用**后期处理材质**来进行深度检查。这将检查物体的深度是否**高于地面深度**和**低于指定的偏移量**。如果这两个条件都是真的，你就可以屏蔽掉这个像素。
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-03.jpg)
+![unreal engine snow](https://i.loli.net/2021/12/02/nSH2DbdIKJRoM7O.jpg)
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-05.gif)
+![unreal engine snow](https://i.loli.net/2021/12/02/5uxZUjJXLBN9O3S.gif)
 
 ## 创建深度检查材质
 
@@ -130,7 +130,7 @@
 
 首先，你需要计算每个像素到地面的距离。打开`Materials\PP DepthCheck`，然后创建以下内容
 
-![image-20210609114747731](RT应用.assets\image-20210609114747731.png)
+![image-20210609114747731](https://i.loli.net/2021/12/02/EfeS6mRpxh54ZiJ.png)
 
 现在，如果像素在地面的`25`个单位内，它就会显示在遮蔽中。遮罩的强度取决于像素离地面有多近。点击应用，然后回到主编辑器。
 
@@ -146,17 +146,17 @@
 
 首先，你需要设置捕捉的旋转，使它向上看向地面。转到细节面板，设置旋转为(0,90,90)。接下来是**投影类型**。由于遮罩`mask`是**场景的二维表示**，你需要消除**任何透视变形**。要做到这一点，将`Projection\Projection`类型设置为`Orthographic`。
 
-![image-20210609121147827](RT应用.assets\image-20210609121147827.png)
+![image-20210609121147827](https://i.loli.net/2021/12/02/rbBXvqOIHNiR24J.png)
 
 接下来，你需要告诉**场景捕捉**要写到哪个**渲染目标**上。要做到这一点，将`Scene Capture/Texture Target`设置为`RT1`（自己建的）。
 
-![image-20210609121356497](RT应用.assets\image-20210609121356497.png)
+![image-20210609121356497](https://i.loli.net/2021/12/02/LK6OFkHG2myredl.png)
 
 最后，**你需要使用深度检查材质**。将`PP_DepthCheck`添加到`Rendering Features/Post Process Materials`中。为了让**后期处理**发挥作用，你还需要把`Scene Capture\Capture Source`改为RGB中的`Final Color（LDR）`。
 
-![image-20210609121600995](RT应用.assets\image-20210609121600995.png)
+![image-20210609121600995](https://i.loli.net/2021/12/02/ZUKDcb4569qLVmR.png)
 
-![image-20210609121651104](RT应用.assets\image-20210609121651104.png)
+![image-20210609121651104](https://i.loli.net/2021/12/02/YeKhZbjJETVfC81.png)
 
 ## 设置捕捉区域大小
 
@@ -178,11 +178,11 @@
 
 接下来，创建一个新的标量参数并命名为`CaptureSize`。
 
-![image-20210609131826225](RT应用.assets\image-20210609131826225.png)
+![image-20210609131826225](https://i.loli.net/2021/12/02/9AyscTaKzOEDMoU.png)
 
 回到BP_Capture，确保将`set`设置为MPC_Capture，参数名称为`CaptureSize`。
 
-![image-20210609132117072](RT应用.assets\image-20210609132117072.png)
+![image-20210609132117072](https://i.loli.net/2021/12/02/YZxHnt1aS6X7dqj.png)
 
 ## 变形地形
 
@@ -191,7 +191,7 @@
 - 将`LandscapeTwo Sided`设置为启用。由于场景捕捉将从底部看，它将只看到地面的背面。默认情况下，引擎不会渲染背面。这意味着它不会将地面的深度存储到深度缓冲区。要解决这个问题，你需要告诉引擎渲染**网格的两面**。
 - `D3D11 Tessellation`设置为`Flat Tessellation`（也可以使用PN三角形）。这有效地提高了网格的分辨率，使你在**置换顶点**时可以得到更精细的细节。
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-13.jpg)
+![unreal engine snow](https://i.loli.net/2021/12/02/Dwrkl3XSLso5JGK.jpg)
 
 一旦你启用了镶嵌，**世界位移**和**镶嵌乘数**将被启用。
 
@@ -205,7 +205,7 @@ Tessellation Multipler控制`tessellation`的数量。在本教程中，不连�
 
 为了投射渲染目标，你需要计算它的**UV坐标**。为此，创建以下设置（在地形材质中）
 
-![image-20210609134053301](RT应用.assets\image-20210609134053301.png)
+![image-20210609134053301](https://i.loli.net/2021/12/02/PgCZbHqKxFr2dQz.png)
 
 1. 首先，你需要得到当前顶点的XY位置。**由于你是从底部捕捉的，X坐标被翻转了**:star:，所以你需要把它翻转回来（如果你是从顶部捕捉的，你就不需要这样做
 
@@ -213,11 +213,11 @@ Tessellation Multipler控制`tessellation`的数量。在本教程中，不连�
 
 确保将Texture Sample的纹理设置为RT Capture：
 
-![image-20210609135943390](RT应用.assets\image-20210609135943390.png)
+![image-20210609135943390](https://i.loli.net/2021/12/02/qfhWE3Q2oJdjBnZ.png)
 
 注意这里的位置节点是如下的**材质函数**，逻辑也很简单
 
-![image-20210609135852935](RT应用.assets\image-20210609135852935.png)
+![image-20210609135852935](https://i.loli.net/2021/12/02/AGVDlCRX9JHj7kb.png)
 
 这将把渲染目标投射到地面上。然而，捕获区域之外的任何顶点都将采样渲染目标的边缘。这是一个问题，因为**渲染目标**只用于捕获区域内的顶点。为了解决这个问题，你需要屏蔽任何落在0到1范围之外的UV。`MF MaskUV0-1`函数是为此而构建的函数。如果提供的UV在0到1范围之外，它将返回0；如果在范围内，它将返回1。将结果与渲染目标相乘将执行屏蔽。
 
@@ -225,15 +225,15 @@ Tessellation Multipler控制`tessellation`的数量。在本教程中，不连�
 
 让我们从混合颜色开始：
 
-![image-20210609140247621](RT应用.assets\image-20210609140247621.png)
+![image-20210609140247621](https://i.loli.net/2021/12/02/M2Hryu1XGniRYsQ.png)
 
 现在，当有一个踪迹，地面的颜色将是棕色。如果没有踪迹，它将是白色的。下一步是替换顶点。为此：
 
-![image-20210609141121134](RT应用.assets\image-20210609141121134.png)
+![image-20210609141121134](https://i.loli.net/2021/12/02/5bH4lXuCwEvNAnM.png)
 
 然后回到主编辑器。在关卡中创建一个`BP_Capture`的实例，并将其位置设置为`(0, 0, -2000)`，使其位于地面之下。按下Play，用W、A、S和D走动，开始对雪进行变形。
 
-![image-20210609141603473](RT应用.assets\image-20210609141603473.png)
+![image-20210609141603473](RT应用.assets/image-20210609141603473.png)
 
 ## 创造持久的痕迹
 
