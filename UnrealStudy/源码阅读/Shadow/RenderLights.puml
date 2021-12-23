@@ -1,0 +1,126 @@
+@startuml RenderLights
+
+skinparam TitleBorderRoundCorner 15
+skinparam TitleBorderColor Red
+skinparam TitleBackgroundColor Aqua-Cadetblue
+
+title 
+    <size: 22>RenderLights
+end title
+
+start
+note right #Red :<size: 18>暂时只分析阴影的部分，其他部分跳过;
+
+:渲染无阴影光;
+
+:渲染间接光;
+note right:这里使用了<color:Red>基于RSM的LPV
+
+partition 渲染阴影光 {
+    :阴影降噪器的设置;
+    note right: 默认降噪器和可覆盖的屏幕空间降噪器二选一
+
+    : 声明两个<color:Red>RDGTextureRef;
+    note right
+        <color:#9B59B6>PreprocessedShadowMaskTextures</color>：主要使用的
+        <color:#9B59B6>PreprocessedShadowMaskSubPixelTextures</color>：似乎和<color:Red>HairRender</color>有关。
+    end note
+
+    if(进行阴影批处理)then
+        note right
+            目前只支持一个视图的批处理.
+            优化：对所有阴影光线追踪去噪进行分批处理。如果整个功能被转换为渲染图（RDG）
+            ，肯定可以更聪明地避免高的VGPR压力，并希望尽可能地减少干扰性的变化。
+            因此，它以渲染目标内存压力换取去噪性能;
+        end note
+        -[#Red]->Y;
+        : 历史阴影数据的重置：<color:Red>PrevFrameViewInfo.ShadowHistories;
+
+        : 根据排序光源的数量分配<color:Red>PreprocessedShadowMaskTextures;
+        
+        : 根据排序光源的数量分配<color:Red>PreprocessedShadowMaskSubPixelTextures;
+    endif
+
+    partition 遍历所有光源，绘制<color:Red>带阴影和光照函数的光源 {
+        : 一大群阴影布尔值的设置;
+
+        : 声明两个<color:Red>RDGTextureRef;
+        note right
+            ScreenShadowMaskTexture
+            ScreenShadowMaskSubPixelTexture
+        end note
+
+        : 根据传入的场景深度纹理的extent信息创建一个描述符;
+        note right
+            描述符包含：纹理大小、RGB通道格式、Clear颜色、
+            纹理创建标志位（RT、ShaderResource、ScreenSpaceShadowMask等）
+        end note
+
+        :使用这个描述符来创建<color:Red>ScreenShadowMaskTexture;
+        note right: 如果要渲染头发，这里还会使用这个描述符来创建<color:Red>ScreenShadowMaskSubPixelTexture
+
+        #Orange:内联光线跟踪阴影批处理
+        <size:18><color:Red>Todo;
+        note right
+            在需要时启动阴影批处理 减少内存开销，同时保持阴影批处理以优化成本
+        end note
+
+        fork
+            :使<color:Red>ScreenShadowMaskTexture</color>等于一开始定义的、对应的PreXXX;
+        fork again
+            #Orange:RayTracing阴影的处理。
+            <size:18><color:Red>Todo;
+        fork again
+            partition ShadowMap阴影的处理 {
+                :遍历所有视图。
+                执行HeightfieldLightingViewInfo.ClearShadowing;
+
+                if(是否只清除光源在屏幕空间的影响范围)then
+                -[#Red]->Y;
+                    :RT参数结构体的设置;
+
+                    :调用<color:Red>GraphBuilder.AddPass;
+                    -[#Red,dotted]->
+
+                    partition <color:Red><size:18>Lambda</color>分析 {
+                        :用当前光源的信息来设置画布大小。
+                        如果失败，则用View的视口来设置;
+                        note right : FIntRect ScissorRect;
+
+                        if(ScissorRect是合法的，即 Min<Max)then
+                        -[#Red]->Y;
+                            :通过RHI设置视口大小;
+
+                            :调用清楚指令;
+                            note right: DrawClearQuad
+                        else
+                        -[#Blue]->N;
+                            :用View的视口来设置画布;
+                        endif
+
+
+                    }
+                else
+                -[#Blue]->N;
+                    :直接调用ClearRenderTarget的Pass。
+                    AddClearRenderTargetPass(GraphBuilder, ScreenShadowMaskTexture);
+                    note right
+                        实际过程和另外一个分支一致，不过是<color:Red>AddPass</color>的Lambda函数参数是空的。
+                    end note
+                endif
+
+                #Orange:渲染投射阴影;
+                note right: <color:Red><size:20>RenderDeferredShadowProjections
+            }
+        end fork
+
+        :各种光照计算;
+        note right: 这里暂时跳过。
+
+
+    }
+}
+
+
+end
+@enduml 

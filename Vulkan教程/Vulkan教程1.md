@@ -185,9 +185,9 @@ if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
 }
 ```
 
-如果您查看vkCreateInstance文档，那么您将看到其中一个可能的错误是VK_ERROR_EXTENSION_NOT_PRESENT。我们可以简单地指定我们需要的扩展，并在错误返回时终止。这对于像窗口系统接口这样的基本扩展是有意义的，但是如果我们想要检查可选功能呢
+如果您查看`vkCreateInstance`文档，那么您将看到其中一个可能的错误是`VK_ERROR_EXTENSION_NOT_PRESENT`。我们可以简单地指定我们需要的扩展，并在错误返回时终止。这对于像窗口系统接口这样的基本扩展是有意义的，但是如果我们想要检查可选功能呢
 
-要在创建实例之前检索受支持的扩展列表，可以使用vkEnumerateInstanceExtensionProperties函数。它使用一个指向存储扩展数量的变量的指针和一个VkExtensionProperties数组来存储扩展的详细信息。它还带有一个可选的first参数，该参数允许我们通过特定的验证层过滤扩展，我们现在将忽略这个验证层
+要在创建实例之前检索受支持的扩展列表，可以使用`vkEnumerateInstanceExtensionProperties`函数。它使用**一个指向存储扩展数量的变量的指针**和一个`VkExtensionProperties`数组来存储扩展的详细信息。它还带有一个可选的first参数，该参数允许我们通过特定的验证层过滤扩展，我们现在将忽略这个验证层
 
 要分配一个数组来保存扩展细节，我们首先需要知道有多少个扩展细节。您可以通过将后一个参数保留为空来请求扩展的数量
 

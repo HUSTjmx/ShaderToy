@@ -1,0 +1,127 @@
+@startuml ShadowRender
+skinparam TitleBorderRoundCorner 15
+skinparam TitleBorderColor Red
+skinparam TitleBackgroundColor Aqua-Cadetblue
+
+title 
+    RenderShadowDepthMapAtlases
+end title
+
+start
+    :获取场景渲染的上下文;
+    note right
+        FSceneRenderTargets::Get(RHICmdList);
+    end note
+
+    while(遍历所有阴影图图集)
+        :获取当前的阴影图集、对应的深度RT、图集的大小size;
+        note right
+            GetDesc: 获取创建RT所需的所有数据;
+        end note
+
+        :GVisualizeTexture.SetCheckPoint;
+        note right
+            这里的检查点应该是为了debug,
+            我们可以在编辑器中看到这个阴影图集。
+            ==============
+            GVisualizeTexture ：用于简单渲染的全局RT
+        end note
+        
+        :设置一个lambda函数 <color:#800080>BeginShadowRenderPass</color>;
+
+        partition 遍历图集的阴影{
+            :获取投影阴影信息结构体;
+            :根据是否进行并行处理，将这个结构体加入到不同的队列中;
+            note right
+                首先本身软硬件要支持并行（控制台可控）。
+                满足后，全局方向阴影自动支持，而非全局的需要用户自控制。
+            end note
+        }
+
+        partition 处理并行阴影列表{
+            :调用之前定义好的lambda函数：BeginShadowRenderPass。
+            目的是为了Clear RT.;
+
+            #Yellow:RHICmdList.EndRenderPass();
+
+            :设置阴影贴图渲染的Uniform Buffer;
+            note right
+                SetupShadowUniformBuffers(RHICmdList, Scene).
+                视图矩阵等信息;
+            end note
+
+            :设置CSM的ShaderResourceTexture的格式;
+            note right
+                TransitionCachedShadowmap(RHICmdList, Scene);
+            end note
+
+            #Orange:RenderDepth: 调用阴影实例的渲染深度接口.;
+
+
+        }
+
+        :处理非并行的阴影列表;
+        note right
+            过程和上面的并行处理基本一致。唯一的差别就是Clear Pass的位置。
+        end note
+
+        :设置RT的目标Texture的格式为ERHIAccess::SRVMask;
+        note right
+            <A mask of the two possible SRV states>
+            SRVMask = SRVCompute | SRVGraphics,
+            理解上：就是格式从输出格式变为了输入格式。
+        end note
+
+
+
+    endwhile
+end
+
+
+
+
+start
+    #Red:Start_BeginShadowRenderPass;
+    (A)
+    :获取<color:Blue>设置渲染目标时要采取的行动</color>;
+    note right
+        ERenderTargetLoadAction : Clear, Load, NoAction;
+    end note
+
+    :渲染Pass信息的设置。
+    构造函数本身就适配的Depth版本的;
+    note right
+        1. 信息这里主要包括：DepthStencilTarget、ResolveTarget
+        Action(例如：Clear)、操作（例如：DepthWirite）。
+        2. 考虑resolve：首先我们需要设置ResolveTarget，其次StoreAction
+        应该是<color:#800080>EMultisampleResolve</color>；
+    end note
+
+    if(此渲染目标不支持不带颜色的深度RT)then
+        note right
+            <size: 16>!</size> GSupportsDepthRenderTargetWithoutColorRenderTarget.
+            如果RHI可以渲染到一个仅有深度的渲染目标，而没有额外的颜色渲染目标，则为真;
+        end note
+        -[#Red]-> Y;
+        :设置渲染Pass信息结构体的对应成员;
+        
+        #Yellow:InRHICmdList.Transition;
+        note left
+            设置颜色RT的格式。
+            The term "view" is used to mean "data in the required format"
+            参考链接：https://docs.microsoft.com/en-us/windows/uwp/graphics-concepts/views
+        end note
+    endif  
+
+    :设置深度RT的格式 
+    InRHICmdList.Transition;
+
+    #Yellow:BeginRenderPass;
+    note right
+         设置当前渲染PassInfo的RT为要绘制的RT
+    end note
+
+    (B)
+    #Red:End_BeginShadowRenderPass;
+end
+@enduml
