@@ -1,0 +1,67 @@
+@startuml ShadowRender
+skinparam TitleBorderRoundCorner 15
+skinparam TitleBorderColor Red
+skinparam TitleBackgroundColor Aqua-Cadetblue
+
+
+title 
+    RenderShadowDepthMaps
+end title
+
+start
+#Orange:渲染阴影图集。
+RenderShadowDepthMapAtlases(RHICmdList);
+
+partition 渲染点光源阴影立方体图 {
+    :获取当前的cubemap、对应的深度RT、图集的大小size;
+
+    :设置解阴影pass的uniformBuffers;
+
+    :设置一个Lambda函数<color:Red>BeginShadowRenderPass</color>;
+    note right
+        内部过程和RenderShadowDepthMapAtlases的基本一致。
+        包含InRHICmdList.BeginRenderPass;
+    end note
+
+    :调用这个lambda函数 <color:Red>BeginShadowRenderPass</color>。
+    同时根据一些条件设置Clear标志;
+    note right
+    例如：其他条件通过的情况下，
+    如果这个阴影是级联的，则不Clear;
+    end note
+
+    if(进行并行处理吗？)then
+        -[#Red]->Y;
+        :执行这个Clear Pass。
+        RHICmdList.EndRenderPass();
+
+        #Orange:ProjectedShadowInfo->RenderDepth;
+
+    else
+        -[#LightBlue]->N;
+        #Orange:ProjectedShadowInfo->RenderDepth;
+
+        :执行这个Clear Pass。
+        RHICmdList.EndRenderPass();
+    endif
+
+    :设置RT的目标Texture的格式为ERHIAccess::SRVMask。
+    RHICmdList.Transition(FRHITransitionInfo(RenderTarget.TargetableTexture, ERHIAccess::Unknown, ERHIAccess::SRVMask));
+    note right
+        <A mask of the two possible SRV states>
+        SRVMask = SRVCompute | SRVGraphics,
+        理解上：就是格式从输出格式变为了输入格式。
+    end note
+
+}
+
+#Yellow:渲染预阴影;
+
+#GreenYellow:渲染半透明阴影。
+<color:Red><size:20>Todo: RenderTranslucencyDepths;
+
+#Yellow:渲染RSM阴影;
+
+end
+
+@enduml

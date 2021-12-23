@@ -1,0 +1,97 @@
+@startuml RenderDepth
+
+skinparam TitleBorderRoundCorner 15
+skinparam TitleBorderColor Red
+skinparam TitleBackgroundColor Aqua-Cadetblue
+
+title 
+    <size: 22>RenderDepth
+end title
+
+start
+note right #Red :<size: 18>实际上就是直接调用RenderDepthInner;
+
+:声明和初始化一些变量: PassUniformBuffer、bIsWholeSceneDirectionalShadow。
+其中：PassUniformBuffer = ShadowDepthPassUniformBuffer;
+
+partition 方向光全景阴影的UniformBuffer更新{
+    :利用<color:Red>缓存的Uniform Buffer</color>更新<color:Red>阴影的View Uniform Buffer。
+    <color:Orange>UpdateUniformBufferImmediate;
+    note right
+        <color: Red>CSM阴影深度缓存</color>的网格绘制命令都是引用同一个<color:Red>View Uniform Buffer。 
+        我们需要在渲染每个级联之前更新它;
+        =====
+        这里的UniformBuffer实际是UB参数，它实际上是<color:Red>XXDepthPassUniformParameters
+    end note
+
+    if(存在依赖视图)then
+    -[#Red]->Y;
+        :遍历所有持续存在的视图Uniform Buffer扩展, 执行开始渲染命令。
+        Extension->BeginRenderView(DependentView);
+    endif
+}
+
+partition 移动端平台的绘制的UniformBuffer更新{
+    :使用阴影信息等结构体来设置<color:Red>ShadowDepthPassParameters（即UB）;
+    
+    :利用<color:Red>上诉PassUniformBuffer</color>更新<color:Red>MobileCSMShadow的Uniform Buffer;
+    note right
+        这个UB位于场景渲染器中：SceneRenderer->Scene->UniformBuffers。
+        ========
+        其实也可以理解，因为移动端只允许一个平行光使用CSM，所以就直接作为
+        场景的全局UB了。
+    end note
+    
+    :使开头声明的<color:Red>PassUniformBuffer</color>等于上一步更新好的<color:Red>MobileCSMShadowDepthPassUniformBuffer;
+
+    :更新MobileShadowDepthPassUniformBuffer;
+    note right
+        这个UB则是投影信息结构体的成员
+    end note
+}
+
+partition  设置网格Pass的渲染状态{
+    :使用ShadowDepthView和PassUniformBuffer初始化一个<color:Red>DrawRenderState;
+    note right
+        实际上就是设置State的ViewUB和PassUB两个成员。
+    end note
+
+    :设置<color:Red>DrawRenderState</color>的Blend和DepthStencil;
+
+    :设置视口。
+    SetStateForView(RHICmdList);
+}
+
+if(阴影缓冲的模式是<color:Red>SDCM_MovablePrimitivesOnly<\color>吗)then
+-[#Red]->
+#LightGray:如果是并行模式，则调用传入的Lambda函数。
+BeginShadowRenderPass(RHICmdList, false);
+
+:在我们渲染可移动基元之前，复制静态基元的深度.
+使用了上一步得到的渲染状态：DrawRenderState.
+<color:Red><size:20>Todo: CopyCachedShadowMap;
+
+#LightGray:如果是并行模式，则响应之前按的Lambda函数。
+RHICmdList.EndRenderPass();
+
+endif
+
+
+if(进行并行处理吗)then
+    :一些判断Check;
+
+    :是否刷新的标志位<color:Red>Flusher</color>的计算和设置;
+
+    :封装并行指令集.
+    ParallelCommandListSet;
+
+    #Orange:提交可见网格绘制任务。
+    ShadowDepthPass.DispatchDraw(&ParallelCommandListSet, RHICmdList);
+endif
+
+
+
+
+
+end
+@enduml 

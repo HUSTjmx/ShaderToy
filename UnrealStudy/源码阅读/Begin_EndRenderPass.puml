@@ -1,0 +1,70 @@
+@startuml BeginRenderPass
+skinparam TitleBorderRoundCorner 15
+skinparam TitleBorderColor Red
+skinparam TitleBackgroundColor Aqua-Cadetblue
+
+title 
+    Begin_EndRenderPass
+end title
+
+start
+note right#Red : <size:24>BeginRenderPass
+
+
+:<color:Red>UAVs</color>数量的判断;
+note right
+    UAVs：纹理的一种采样方式，运行无序访问。
+    https://docs.microsoft.com/en-us/windows/uwp/graphics-concepts/shader-resource-view--srv-;
+end note
+
+if(ByPass)then
+    -[#Red]-> Y;
+    :以传入的渲染Pass信息用做<color:DarkBlue>当前RHI的RT信息;
+    :根据这个信息设置要渲染的RT，然后Clear。
+    <color: BlueViolet>Todo: SetRenderTargetsAndClear(RTInfo);
+    :遮挡查询的设置;
+else 
+    -[#DarkBlue]-> N;
+    :未知的宏;
+endif
+
+:设置Data.bInsideRenderPass为true;
+
+partition CacheActiveRenderTargets{
+    :貌似是将RPInfo中的数据填充到FRHICommandList中的FPSOContext中;
+}
+
+partition ResetSubpass{
+    :将RPInfo中的SubpassHint赋值给FPSOContext中的对应成员;
+    note right
+        :ESubpassHint注释：提示一些RHI的渲染通道将有特定的子通道。
+        这个枚举有三个分类：None、DepthReadSubpass、DeferredShadingSubpass。
+    end note
+}
+
+:设置Data.bInsideRenderPass为true;
+end
+
+
+
+start
+note right#Red : <size:24>EndRenderPass
+
+if(ByPass)then
+-[#Red]-> Y;
+    partition RHIEndRenderPass{
+        :对所有的ColorRT以及唯一的DepthRT进行Resolve操作;
+        note left: 调用RHICopyToResolveTarget;
+
+        :设置当前渲染的RTV以及DepthRTV为无操作的对象;
+        note left: 就是LoadAction和StoreAction都为<color:Red> ENoAction;
+    }
+else 
+-[#DarkBlue]-> N;
+    :未知的宏;
+endif
+
+:设置Data.bInsideRenderPass为false;
+:给FPSOContext中的ESubpassHint成员赋值None;
+end
+@enduml 

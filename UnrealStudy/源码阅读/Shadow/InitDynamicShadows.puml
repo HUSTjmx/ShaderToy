@@ -1,0 +1,13 @@
+@startuml InitDynamicShadows
+start
+: 根据view，场景光源，控制台变量初始化<color:#800080>**阴影相关标记**</color>;
+: 声明和定义<color:239B56 >FProjectedShadowInfo</color>的队列：PreShadows、\n ViewDependentWholeSceneShadows、ViewDependentWholeSceneShadowsThatNeedCulling;
+
+while(遍历所有光源)
+note right
+    :将不同类型的光源加入不同类型的待渲染的阴影列表中
+endnote
+
+endwhile
+end
+@enduml 
