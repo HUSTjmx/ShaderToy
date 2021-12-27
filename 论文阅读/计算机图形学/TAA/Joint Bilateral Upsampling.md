@@ -1,4 +1,4 @@
-# Joint Bilateral Upsampling 
+# Joint Bilateral Upsampling
 
 ***ACM Transactions on Graphics 2007***
 
