@@ -1,5 +1,6 @@
 @startuml RenderDeferredShadowProjections
-start
+note right: <color:Red><size:22>RenderDeferredShadowProjections
+
 
 skinparam TitleBorderRoundCorner 15
 skinparam TitleBorderColor Red
@@ -9,7 +10,86 @@ title
     <size: 22>RenderDeferredShadowProjections
 end title
 
+start
+#Orange:渲染阴影投射.
+<color:Red><size:18>RenderShadowProjections;
+
+partition 遍历所有可见光源待投射的阴影 {
+    :处理透明体积阴影.
+    <color:Red><size:18>InjectTranslucentVolumeLighting;
+}
+
+:渲染胶囊体直接阴影;
+
+:高度场阴影;
+
+:头发阴影;
+
+end
 
 
+start
+note right: <color:Red><size:22>RenderShadowProjections
+
+:使用图形分配器来分配数组，这样我们就可以在Passes中安全地引用它们;
+note right
+    DistanceFieldShadows
+    ==========
+    NormalShadows
+end note
+
+:遍历该光源的所有投射阴影，分配到距离场或普遍阴影列表中;
+
+partition 处理普通阴影 {
+    :设置列表中阴影图的格式。
+    设置<color:Red>ShaderResourceTexture</color>的格式为<color:Red>SRV;
+
+    :声明一个<color:Red>Pass信息结构体</color>，并进行填充;
+    note right
+        成员有：SceneTextures(UniformBuffer)、RenderTargets等。
+        这里主要也是设置这些成员。
+    end note
+
+    partition <color:Red>GraphBuilder.AddPass {
+        #Orange:FSceneRenderer::RenderShadowProjections;
+    }
+
+}
+
+#DarkGray:处理距离场阴影; 
+note right : 这里暂时跳过
+end
+
+start
+note right: <color:Red><size:22>FSceneRenderer::RenderShadowProjections
+
+while(遍历所有视图)
+    :根据当前视图更新UB;
+    note right : UniformBuffers.UpdateViewUniformBuffer(View)
+
+    :根据view设置视口（<color:Red>viewport</color>）和画布（<color:Red>scissorRect</color>）;
+
+    partition 遍历传入的Shadows（某一个光源的普通阴影列表）{
+        if(影子在这个特定的视图中足够大)then
+            -[#Red]->Y;
+            if(bOnePassPointLightShadow)then
+                -[#Red]->Y;
+                #Orange:RenderOnePassPointLightProjection;
+            else
+                -[#Blue]->N;
+                #Orange:RenderProjection;
+                note right
+                    这个函数里面就是实际绘制了。主要就是管道的各种State的设置，会调用
+                    BindShadowProjectionShaders来绑定着色器，内部代码例如：
+                    BindShaderShaders<FShadowProjectionNoTransformVS, TShadowProjectionPS<...>,...);
+                    ================
+                    具体这些还是去博客，那里讲的很详细了。
+                end note
+
+            endif
+        endif
+    }
+
+endwhile
 end
 @enduml 

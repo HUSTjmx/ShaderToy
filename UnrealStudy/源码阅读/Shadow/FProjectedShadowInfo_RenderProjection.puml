@@ -1,0 +1,16 @@
+@startuml FProjectedShadowInfo_RenderProjection
+
+skinparam TitleBorderRoundCorner 15
+skinparam TitleBorderColor Red
+skinparam TitleBackgroundColor Aqua-Cadetblue
+
+title 
+    <size: 22>FProjectedShadowInfo_RenderProjection
+end title
+
+start
+
+
+
+end
+@enduml 

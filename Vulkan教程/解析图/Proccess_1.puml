@@ -1,4 +1,36 @@
 @startuml
-object VkInstance
+object VkDevice
+note right
+    调用<size:20><color:Red>vkCreateDevice(physicalDevice, &createInfo, nullptr, &device)</color>
+    来实例化逻辑设备
+end note
+
+object VkQueue
+note left
+    队列是与逻辑设备一起自动创建的，所以说<color:Red>VkDeviceCreateInfo</color>需要指定
+    <color:Red>pQueueCreateInfos</color>，因此我们要获取队列的句柄，就不是<color:Red>VkCreateQueue</color>，而是
+    <size:20><color:Red>vkGetDeviceQueue(device,...)</color></size>。在逻辑设备创建好后，使用这个函数从中获得句柄。
+end note
+
+object VkPhysicalDeviceFeatures
+note right : 这个结构体在创建<color:Red>物理设备</color>时就已经获得了
+
+object VkDeviceQueueCreateInfo
+note right : 队列创建信息：归属的队列族、队列数量、优先级等
+
+map VkDeviceCreateInfo {
+    pQueueCreateInfos *-> VkDeviceQueueCreateInfo
+    pEnabledFeatures *--> VkPhysicalDeviceFeatures
+    ppEnabledLayerNames => validationLayers.data()
+}
+note left
+    验证层和扩展层也要进行设置，验证层照旧，直接使用之前的数据，但不同的是
+    扩展层这里是特定于设备的，暂时跳过，后续补充。
+end note
+
+VkDevice --> VkDeviceCreateInfo
+
+VkQueue .  VkDevice
+
 
 @enduml

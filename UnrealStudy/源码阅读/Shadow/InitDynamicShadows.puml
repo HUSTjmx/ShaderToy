@@ -1,13 +1,97 @@
 @startuml InitDynamicShadows
 start
 : 根据view，场景光源，控制台变量初始化<color:#800080>**阴影相关标记**</color>;
+note right
+    bMobile
+    bProjectEnablePointLightShadows
+    bProjectEnableMovableDirectionLightShadows
+    etc.
+end note
+
 : 声明和定义<color:239B56 >FProjectedShadowInfo</color>的队列：PreShadows、\n ViewDependentWholeSceneShadows、ViewDependentWholeSceneShadowsThatNeedCulling;
 
-while(遍历所有光源)
+while(<color:Red><size:22>遍历所有光源)
 note right
-    :将不同类型的光源加入不同类型的待渲染的阴影列表中
-endnote
+    将不同类型的光源加入不同类型的待渲染的阴影列表中
+end note
 
+:如果光源没有开启阴影或阴影质量太小，或者光源阴影类型是<color:Red>Raytraced</color>,
+或者光源在所有view都不可见，忽略之，不执行阴影投射;
+
+:一大串<color:Red>bool</color>类型的计算;
+note right
+    bPointLightShadow、bDirectionalLightShadow
+    bCreateShadowForMovableLight（移动灯）
+    bCreateShadowToPreviewStaticLight（未烘焙的静态灯）
+    etc.
+end note
+
+if(是点光源全景阴影吗：<color:Red>bPointLightWholeSceneShadow)then
+    -[#Red]->Y;
+    :将该光源组件名字加入<color:Red>Scene</color>的<color:HotPink>UsedWholeScenePointLightNames</color>列表中;
+endif
+
+#Orange:如果符合全景阴影的创建条件，调用<color:Red>CreateWholeSceneProjectedShadow;
+note right
+    1. 初始化阴影数据，计算阴影所需的分辨率、过渡因子（FadeAlpha）等。
+    2. 遍历光源的投射阴影，每次都执行分辨率计算、位置（SizeX、SizeY）计算、需创建的阴影图数量等。
+    3. 根据阴影图数量创建同等个数的FProjectedShadowInfo阴影实例
+    4. 加入<color:Red>VisibleLightInfo.MemStackProjectedShadows</color>列表
+    ...
+    X. 根据<color:Red>CacheMode</color>添加对应基元到<color:Red>ProjectedShadowInfo</color>的成员列表中。存在CPU端的<color:Pink>包围盒剔除。
+    X+1. 将需要渲染的阴影实例加入<color:Red>VisibleLightInfo.AllProjectedShadows</color>列表中
+end note
+
+#Orange:针对两类光源（移动和固定的光源、尚未构建的静态光源）创建CSM（级联阴影）。
+<color:Red>AddViewDependentWholeSceneShadowsForView</color>;
+note right
+    1. 如果不是主view，直接跳过后续步骤
+    2. 获取视图相关的全景投影数量，创建同等数量的<color:Red>FProjectedShadowInfo</color>阴影实例，
+    给每个阴影实例设置全景投影参数，最后添加到<color:Red>MemStackProjectedShadows</color>列表和<color:Red>AllProjectedShadows</color>列表中。
+end note
+
+#Orange: 处理交互阴影（指包含PerObject阴影、透明阴影、自阴影等），
+遍历光源的动态和静态图元，给每个图元调用<color:Red>SetupInteractionShadows</color>设置交互阴影;
 endwhile
+
+#Orange: 调用<color:Red>InitProjectedShadowVisibility</color>执行<color:BlueViolet>阴影可见性判定;
+note right
+    1. 遍历场景的所有光源，遍历可见光源所有的阴影实例，遍历所有view
+    2. 跳过那些不在视图视锥内
+    3. 计算主体图元的视图关联数据，断阴影是否被遮挡，设置阴影可见性标记
+    =====================================
+    主要是填充<color:Red>ProjectedShadowVisibilityMap</color>和<color:Red>ProjectedShadowViewRelevanceMap
+end note
+
+:调用<color:Red>UpdatePreshadowCache</color>清理旧的预计算阴影，尝试增加新的到缓存中;
+note right
+    1. 初始化纹理布局
+    2. 遍历所有缓存的预阴影, 删除不在此帧渲染的实例
+    3. 收集可以被缓存的PreShadow列表
+    4. 对PreShadow从大到小排序（更大的PreShadow在渲染深度时会有更多的物体）
+    5. 遍历所有未缓存的PreShadow，尝试从纹理布局中给PreShadow找空间，
+    若找到，则设置相关数据并添加到<color:Red>Scene->CachedPreshadows</color>列表中
+end note
+
+#Orange:调用<Color:Red>GatherShadowPrimitives</color>收集图元列表，以处理不同类型的阴影;
+
+#Orange:调用<color:Red>AllocateShadowDepthTargets</color>分配阴影图所需的渲染纹理; 
+note right
+    1. 初始化不同类型的指定了分配器的阴影列表
+    2. 遍历所有光源，针对每个光源
+        2.1 检测阴影是否至少在一个view中可见
+        2.2 检测阴影缓存模式为可移动图元时的条件可见性
+        2.3 如果阴影可见，根据不同类型加入到不同的阴影实例列表中
+    3. 排序级联阴影，因为在级联之间的混合要求是有序的
+    4. 调用AllocateCSMDepthTargets分配CSM深度渲染纹理
+    5. 处理PreShadow
+    6. 依次分配点光源cubemap、RSM、缓存的聚光灯、逐物体、透明阴影的渲染纹理
+    7. 更新透明阴影图的uniform buffer
+    8. 删除完全没有被使用的阴影缓存     
+end note
+
+#Orange:调用<color:Red>GatherShadowDynamicMeshElements</color>收集阴影的动态网格元素;
+
+
 end
 @enduml 

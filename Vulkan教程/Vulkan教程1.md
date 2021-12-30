@@ -266,7 +266,7 @@ const std::vector<const char*> validationLayers = {
 #endif
 ```
 
-我们将添加一个新函数checkValidationLayerSupport，它检查所有请求的层是否可用。首先使用vkEnumerateInstanceLayerProperties函数列出所有可用的层。它的用法与实例创建一章中讨论的vkEnumerateInstanceExtensionProperties相同。
+我们将添加一个新函数`checkValidationLayerSupport`，它检查所有请求的层是否可用。首先使用`vkEnumerateInstanceLayerProperties`函数列出所有可用的层。它的用法与实例创建一章中讨论的`vkEnumerateInstanceExtensionProperties`相同。
 
 ```c++
 bool checkValidationLayerSupport() {
@@ -294,7 +294,7 @@ bool checkValidationLayerSupport() {
 }
 ```
 
-最后，修改VkInstanceCreateInfo结构实例化，以包含验证层名称(如果启用了这些名称)
+最后，修改`VkInstanceCreateInfo`结构实例化，以包含验证层名称(如果启用了这些名称)
 
 ```c++
 if (enableValidationLayers) {
@@ -307,11 +307,11 @@ if (enableValidationLayers) {
 
 ##### ==信息回调==
 
-默认情况下，验证层将把调试消息打印到标准输出，但是我们也可以通过在程序中提供显式回调来自己处理它们。这还将允许您决定希望看到哪种类型的消息，因为并非所有消息都是必要的(致命的)错误。如果你现在不想这样做，那么你可以跳到本章的最后一节。
+默认情况下，验证层将把调试消息打印到标准输出，但是我们也可以通过在程序中提供**显式回调**来自己处理它们。这还将允许您决定希望看到哪种类型的消息，因为并非所有消息都是必要的。
 
-要在程序中设置一个回调来处理消息和相关细节，我们必须使用VK_EXT_DEBUG_UTILS_EXTENSION_NAME 设置一个带有回调的调试信使。
+要在程序中设置**一个回调**来处理消息和相关细节，我们必须使用`VK_EXT_DEBUG_UTILS_EXTENSION_NAME `设置一个**带有回调的调试信使**。
 
-我们将首先创建一个getRequiredExtensions函数，该==函数将返回所需的扩展列表（基于验证层是否启用）==
+我们将首先创建一个`getRequiredExtensions`函数，该==函数将返回所需的扩展列表（基于验证层是否启用）==
 
 ```c++
 std::vector<const char*> getRequiredExtensions() {
@@ -329,7 +329,7 @@ std::vector<const char*> getRequiredExtensions() {
 }
 ```
 
-==GLFW指定的扩展是固定需要的，但是有条件地添加了debug messenger扩展==。注意，在这里使用了VK_EXT_DEBUG_UTILS_EXTENSION_NAME宏。使用这个宏可以避免输入错误。然后使用这个函数代替之前的GLFW扩展获取函数。
+==GLFW指定的扩展是固定需要的，但是有条件地添加了debug messenger扩展==。注意，在这里使用了`VK_EXT_DEBUG_UTILS_EXTENSION_NAME`宏。使用这个宏可以避免输入错误。然后使用这个函数代替之前的GLFW扩展获取函数。
 
 ==现在，让我们看看调试回调函数的外观==。添加一个新的名为静态成员函数`debugCallback`，参数有`PFN_vkDebugUtilsMessengerCallbackEXT` 。`VKAPI_ATTR`和`VKAPI_CALL`确保函数具有供Vulkan调用的正确签名。
 
@@ -408,9 +408,9 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 }
 ```
 
-messageSeverity字段允许您指定希望调用回调的所有严重程度类型；类似地，messageType字段允许您筛选通知回调的消息类型。pfnUserCallback字段指定指向回调函数的指针。您可以选择传递指向pUserData字段的指针，该字段将通过pUserData参数传递给回调函数。例如，您可以使用它来传递一个指向HelloTriangleApplication类的指针。
+`messageSeverit`字段允许指定**严重程度类型**；类似地，`messageType`字段允许筛选**通知回调的消息类型**。`pfnUserCallback`字段指定**指向回调函数的指针**。
 
-==这个结构应该传递给vkCreateDebugUtilsMessengerEXT函数，以创建VkDebugUtilsMessengerEXT对象==。不幸的是，因为这个函数是一个扩展函数，所以它不会自动加载。我们必须使用vkGetInstanceProcAddr自己查找它的地址。我们将创建我们自己的代理函数在后台处理这个。我在HelloTriangleApplication类定义的正上方添加了它。
+==这个结构应该传递给vkCreateDebugUtilsMessengerEXT函数，以创建VkDebugUtilsMessengerEXT对象==。不幸的是，因为这个函数是一个扩展函数，所以它不会自动加载。我们必须使用`vkGetInstanceProcAddr`自己查找它的地址。我们将创建我们自己的代理函数在后台处理这个。
 
 ```c++
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -423,7 +423,7 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 }
 ```
 
-如果函数无法加载，vkGetInstanceProcAddr函数将返回nullptr。现在，如果扩展对象可用，我们可以调用这个函数来创建它：
+如果函数无法加载，`vkGetInstanceProcAddr`函数将返回`nullptr`。现在，如果扩展对象可用，我们可以调用这个函数来创建它：
 
 ```c++
 if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
@@ -466,11 +466,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 ####  1.4 物理设备和队列
 
-在通过VkInstance初始化Vulkan库之后，我们需要在系统中寻找并选择支持我们需要的特性的图形卡。事实上，我们可以选择任意数量的显卡并同时使用它们，但是在本教程中，我们将坚持使用第一个符合我们需要的显卡。
+在通过`VkInstance`初始化**Vulkan库**之后，我们需要在系统中选择**支持所需特性的图形卡**。事实上，我们可以选择**任意数量的显卡**并同时使用它们，但是在本教程中，我们将坚持使用第一个符合需要的显卡。
 
-我们将添加一个函数`pickPhysicalDevice`并在该`initVulkan`函数中添加对其的调用 。
-
-我们最终选择的显卡将存储在VkPhysicalDevice句柄中，该句柄作为一个新类成员添加。==当VkInstance被销毁时，这个对象将被隐式销毁，因此我们不需要在cleanup函数中执行任何新操作==。
+我们将添加一个函数`pickPhysicalDevice`并在该`initVulkan`函数中添加对其的调用 。选择的显卡将存储在`VkPhysicalDevice`句柄中。==当VkInstance被销毁时，这个对象将被隐式销毁，因此我们不需要在`cleanup`函数中执行任何新操作==。
 
 ```c++
 uint32_t deviceCount = 0;
@@ -482,7 +480,7 @@ std::vector<VkPhysicalDevice> devices(deviceCount);
 vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 ```
 
-现在我们需要评估它们中的每一个，并检查它们是否适合我们想要执行的操作，因为并非所有显卡都是相同的。为此，我们将引入一个新函数
+现在我们需要进行评估，检查它们是否适合。为此，我们将引入一个新函数：
 
 ```c++
 bool isDeviceSuitable(VkPhysicalDevice device) {
@@ -490,27 +488,25 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 }
 ```
 
-下一节将介绍我们将在isDeviceSuitable函数中检查的第一个需求。当我们在后面的章节中开始使用更多的Vulkan特性时，我们也将扩展这个功能。
-
 
 
 ##### 基本的设备适用性检查
 
-要评估设备的适用性，我们可以从查询==基本的设备属性==开始，如名称，类型和支持的Vulkan版本，可以使用vkGetPhysicalDeviceProperties查询。
+:one:要评估**设备的适用性**，我们可以从查询==基本的设备属性==开始，如名称，类型和支持的Vulkan版本，可以使用`vkGetPhysicalDeviceProperties`查询：
 
 ```c
 VkPhysicalDeviceProperties deviceProperties;
 vkGetPhysicalDeviceProperties(device, &deviceProperties);
 ```
 
-支持==可选功能，如纹理压缩，64位浮动和多viewport渲染==(对VR有用)，可以使用vkGetPhysicalDeviceFeatures查询：
+==查询功能，如纹理压缩，64位浮动和多viewport渲染==，可以使用`vkGetPhysicalDeviceFeatures`查询：
 
 ```c
 VkPhysicalDeviceFeatures deviceFeatures;
 vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 ```
 
-作为一个例子，让我们假设我们的应用程序只对支持几何着色器的专用图形卡可用。那么isDeviceSuitable函数就像这样：
+:two:例如，显卡需要支持**几何着色器**。那么`isDeviceSuitable`函数就像这样：
 
 ```c
 bool isDeviceSuitable(VkPhysicalDevice device) {
@@ -524,7 +520,7 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 }
 ```
 
-你也可以给每个设备打个分数，然后选出最高的那个，而不是只检查一个设备是否合适，然后选择第一个。这样一来，你就可以通过给专用显卡更高的分数来选择它，但如果集成显卡是唯一可用的，那么就退回到集成显卡。您可以实现如下内容：
+我们可以给设备打分，然后选出最高的：
 
 ```c
 #include <map>
@@ -572,19 +568,17 @@ int rateDeviceSuitability(VkPhysicalDevice device) {
 }
 ```
 
-在本教程中，您不需要实现所有这些，但这是为了让您了解如何设计设备选择过程。
 
 
+##### Queue Families（队列族）
 
-##### Queue Families
+在此之前，我们已经简单提到过，==在Vulkan中几乎所有的操作，从绘制到上传纹理，都需要将命令提交到**队列**`queue`中==。==不同类型的队列属于不同的**队列族**（`Queue Familes`），每个队列族只包含命令的一个子集。例如，有一个队列族只处理计算命令，另一个队列族只处理内存传输相关命令==。
 
-在此之前，我们已经简单提到过，==在Vulkan中几乎所有的操作，从绘制到上传纹理，都需要将命令提交到队列中==。==不同类型的队列起源于不同的队列系列（Queue Familes），每个队列系列只允许命令的一个子集。例如，可能有一个队列系列只允许处理计算命令，或者一个队列系列只允许内存传输相关命令==。
+我们需要检查**设备**支持哪些**队列族**，以及其中哪个**队列族**支持所需命令。为此，我们将添加一个新函数`findQueueFamilies`。
 
-我们需要检查设备支持哪些队列家族，以及其中哪个队列家族支持我们想要使用的命令。为此，我们将添加一个新函数findQueueFamilies，用于查找我们需要的所有队列族。
+但是如果**队列族**不可用呢？我们可以在`findQueueFamilies`中抛出一个异常。我们需要某种方式来指示是否找到了**特定的队列族**。
 
-但是如果队列families不可用呢？我们可以在findQueueFamilies中抛出一个异常，但是这个函数并不是决定设备是否适合的正确位置。例如，我们可能更喜欢具有专用传输队列家族的设备，但并不需要它。因此，我们需要某种方式来指示是否找到了特定的队列族。
-
-实际上不可能使用一个magic value来表示队列族的不存在，因为uint32 t的任何值在理论上都可以是一个有效的队列族索引，包括0。幸运的是，c++ 17引入了一种数据结构来区分值存在与否：
+`uint32_t`的任何值在理论上都可以是一个**有效的队列族索引**，包括`0`。幸运的是，`c++ 17`引入了一种数据结构来区分值存在与否：
 
 ```c
 #include <optional>
@@ -628,7 +622,7 @@ std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 ```
 
-VkQueueFamilyProperties结构体包含关于队列家族的一些细节，包括受支持的操作类型和基于该家族可以创建的队列数量。我们需要找到至少一个支持`VK_QUEUE_GRAPHICS_BIT`的队列族。
+`VkQueueFamilyProperties`结构体包含**关于队列族的信息**，包括受支持的**操作类型**和基于该家族可以创建的**队列数量**。我们需要找到至少一个支持`VK_QUEUE_GRAPHICS_BIT`的队列族。
 
 ```c
 int i = 0;
@@ -641,7 +635,7 @@ for (const auto& queueFamily : queueFamilies) {
 }
 ```
 
-现在我们有了这个奇特的队列族查找函数，我们可以在isDeviceSuitable函数中使用它，以确保设备能够处理我们想要使用的命令:
+现在我们有了队列族查找函数，我们可以在`isDeviceSuitable`函数中使用它，以确保设备能够处理我们想要使用的命令:
 
 ```
 bool isDeviceSuitable(VkPhysicalDevice device) {
@@ -651,7 +645,7 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 }
 ```
 
-为了方便起见，我们还将向结构本身添加一个通用检查：
+为了方便起见，我们还将向结构本身添加一个**通用检查**：
 
 ```c
 struct QueueFamilyIndices {
@@ -671,7 +665,7 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 }
 ```
 
-很好，这就是我们现在所需要的找到正确的物理设备!==下一步是创建一个与之接口的逻辑设备==。
+==下一步是创建一个与之接口的逻辑设备==。
 
 ------
 
@@ -679,9 +673,9 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 
 ####  1.5 逻辑设备和队列
 
-在选择要使用的物理设备之后，我们需要设置一个逻辑设备与之接口。逻辑设备创建过程类似于实例创建过程，并描述了我们想要使用的特性。在查询了哪些队列家族可用之后，我们还需要指定要创建哪些队列。如果您有不同的需求，甚至可以从同一物理设备创建多个逻辑设备。
+在选择**物理设备**之后，我们需要设置一个**逻辑设备**与之对应。逻辑设备创建过程类似于`Instance`创建过程，需要描述了想要使用的特性。在查询了哪些**队列族**可用之后，我们还需要指定创建哪些队列。如果有不同的需求，==可以从同一物理设备创建多个逻辑设备==。
 
-基础代码添加
+基础代码：
 
 ```
 VkDevice device;
@@ -693,9 +687,9 @@ void createLogicalDevice() {
 
 
 
-##### Specifying the queues to be created
+##### 指定要创建的队列`queue`
 
-​	创建逻辑设备需要再次在struct中指定一堆细节，其中第一个是VkDeviceQueueCreateInfo。这个结构描述了一个队列族所需的队列数量。现在我们只对具有图形功能的队列感兴趣。
+创建**逻辑设备**需要在`struct`中指定一堆信息，其中第一个是`VkDeviceQueueCreateInfo`。这个结构描述了队列族**该包含的队列数量**（取决于我们）。现在我们只对**具有图形功能的队列**感兴趣：
 
 ```c
 QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -706,9 +700,10 @@ queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
 queueCreateInfo.queueCount = 1;
 ```
 
-​	当前可用的驱动程序只允许为每个队列家族创建少量的队列，实际上不需要多个队列。这是因为您可以在多个线程上创建所有的Command Buffer，然后通过一个低开销的调用在主线程上一次性提交它们
+> 当前可用的驱动程序只允许为每个队列家族创建少量的队列，实际上不需要多个队列。这是因为您可以在多个线程上创建所有的`Command Buffer`，然后通过一个低开销的`call`在主线程上一次性提交它们。
+>
 
-​	Vulkan允许您使用0.0到1.0之间的浮点数为队列分配优先级，以影响命令缓冲区执行的调度。即使只有一个队列，这也是必需的：
+`Vulkan`允许使用`0.0`到`1.0`之间的浮点数为**队列**分配**优先级**，以决定**命令缓冲区**执行的调度。即使只有一个队列，这也是必需的：
 
 ```
 float queuePriority = 1.0f;
@@ -717,9 +712,9 @@ queueCreateInfo.pQueuePriorities = &queuePriority;
 
 
 
-##### Specifying used device features
+##### 指定设备特性
 
-​	接下来要指定的信息是我们将使用的一组设备特性。这些是我们在前一章中查询过的支持vkGetPhysicalDeviceFeatures的特性，比如几何着色器。现在我们不需要任何特殊的东西，所以我们可以简单地定义它，然后把所有东西都置为假。当我们要开始用Vulkan做更多有趣的事情时，我们会回到这个结构。
+接下来要指定的信息是**设备特性**。实际就是上一节的`vkGetPhysicalDeviceFeatures`，比如几何着色器。暂时只简单声明：
 
 ```
 VkPhysicalDeviceFeatures deviceFeatures{};
@@ -727,9 +722,9 @@ VkPhysicalDeviceFeatures deviceFeatures{};
 
 
 
-##### Creating the logical device
+##### 创建逻辑设备
 
-​	有了前两个结构，我们可以开始==填充主VkDeviceCreateInfo结构==。首先添加指向队列创建信息和设备特性结构体的指针
+有了前两个结构，我们可以开始==填充主`VkDeviceCreateInfo`结构==。首先添加指向队列创建信息和设备特性结构体的指针
 
 ```
 VkDeviceCreateInfo createInfo{};
@@ -741,7 +736,7 @@ createInfo.queueCreateInfoCount = 1;
 createInfo.pEnabledFeatures = &deviceFeatures;
 ```
 
-​	其余的信息与VkInstanceCreateInfo结构类似，需要您指定扩展和验证层。不同的是，这一次这些是特定于设备的。特定于设备的扩展的一个示例是VK KHR swapchain，它允许您将设备中呈现的图像显示到窗口中。系统中可能有一些Vulkan设备缺乏这种能力，例如，因为它们只支持计算操作。我们将在交换链一章中回到这个扩展。
+​	其余的信息与`VkInstanceCreateInfo`结构类似，需要指定**扩展和验证层**。不同的是，这里是特定于设备的。一个示例是`VK_KHR_swapchain`，它允许我们将**设备中呈现的图像**显示到窗口中。系统中可能有**一些Vulkan设备**缺乏这种能力，例如，因为它们只支持**计算操作**。我们将在==交换链==一章中回到这个扩展。
 
 ```c
 createInfo.enabledExtensionCount = 0;
@@ -754,9 +749,7 @@ if (enableValidationLayers) {
 }
 ```
 
-​	我们现在不需要任何特定于设备的扩展。
-
-​	好了，现在我们准备通过调用适当命名的``vkCreateDevice``函数==实例化逻辑设备==。
+​	**我们现在不需要任何特定于设备的扩展**。通过调用`vkCreateDevice`函数==实例化逻辑设备==。
 
 ```c
 if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
@@ -764,25 +757,23 @@ if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
 }
 ```
 
-​	参数是要接口的物理设备、我们刚才指定的队列和使用信息、可选的分配回调指针和一个指向存储逻辑设备句柄的变量的指针。与实例创建函数类似，此调用可以基于启用不存在的扩展或指定不支持的特性的期望用法而返回错误
 
 
+##### 保存队列句柄
 
-##### Retrieving queue handles
-
-​	队列是与逻辑设备一起自动创建的，但是我们还没有一个句柄来与它们进行接口。首先添加一个类成员来存储图形队列的句柄
+**队列**是与**逻辑设备**一起自动创建的，但是我们还没有**一个句柄**来链接它：
 
 ```c
 VkQueue graphicsQueue;
 ```
 
-​	设备被销毁时，设备队列被隐式清除，因此我们不需要在清理中做任何事情。我们可以使用vkGetDeviceQueue函数来检索每个队列族的队列句柄。参数包括逻辑设备、队列家族、队列索引和一个指向用于存储队列句柄的变量的指针。因为我们只从这个系列中创建一个队列，所以我们只使用索引0。
+设备销毁时，**队列被隐式清除**，因此不需要在`CleanUp`中做任何事情。我们可以使用`vkGetDeviceQueue`函数来检索**每个队列族的队列句柄**。参数包括逻辑设备、队列族、队列索引和句柄指针。因为我们只从这个队列族中创建一个队列，所以使用索引`0`：
 
 ```c
 vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 ```
 
-​	有了逻辑设备和队列句柄，我们现在就可以开始使用显卡来做事情了!在接下来的几章中，我们将设置资源以将结果呈现给窗口系统。
+
 
 ------
 
