@@ -62,22 +62,23 @@ partition  设置网格Pass的渲染状态{
     SetStateForView(RHICmdList);
 }
 
-if(阴影缓冲的模式是<color:Red>SDCM_MovablePrimitivesOnly<\color>吗)then
--[#Red]->
-#LightGray:如果是并行模式，则调用传入的Lambda函数。
-BeginShadowRenderPass(RHICmdList, false);
+if(阴影缓冲的模式是<color:Red>SDCM_MovablePrimitivesOnly</color>吗)then
+    -[#Red]->Y;
+    #LightGray:如果是并行模式，则调用传入的Lambda函数。
+    BeginShadowRenderPass(RHICmdList, false);
 
-:在我们渲染可移动基元之前，复制静态基元的深度.
-使用了上一步得到的渲染状态：DrawRenderState.
-<color:Red><size:20>Todo: CopyCachedShadowMap;
+    :在我们渲染可移动基元之前，复制静态基元的深度.
+    使用了上一步得到的渲染状态：DrawRenderState.
+    <color:Red><size:20>Todo: CopyCachedShadowMap;
 
-#LightGray:如果是并行模式，则响应之前按的Lambda函数。
-RHICmdList.EndRenderPass();
+    #LightGray:如果是并行模式，则响应之前按的Lambda函数。
+    RHICmdList.EndRenderPass();
 
 endif
 
 
 if(进行并行处理吗)then
+    -[#Red]->Y;
     :一些判断Check;
 
     :是否刷新的标志位<color:Red>Flusher</color>的计算和设置;
