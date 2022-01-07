@@ -1,0 +1,86 @@
+@startuml
+package Window_Surface_0 #DDDDDD{
+    object VkSurfaceKHR
+    note top
+        KHR后缀，这表示它属于Vulkan扩展
+        ================================
+        由于Vulkan是一个平台无关的API，它不能自己直接与窗口系统交互，我们需要使用WSI（窗口系统集成）扩展。
+        glfwGetRequiredInstanceExtensions得到的列表已经包含了
+        =================================
+        使用vkCreateWin32SurfaceKHR创建。
+        实际使用中，我们使用glfwCreateWindowSurface
+    end note
+
+    object VkWin32SurfaceCreateInfoKHR{
+        sType = XXX
+        hwnd = glfwGetWin32Window(window)
+        hinstance = GetModuleHandle(nullptr)
+    }
+    note right
+        VkSurfaceKHR的填充信息结构体。
+        ======================================
+        它有两个重要的参数：hwnd和hinstance。这是window和process的句柄
+    end note
+
+    object SomeChange_物理设备 #DarkGray {
+        QueueFamilyIndices -> std::optional<uint32_t> presentFamily
+
+    }
+    note right
+        虽然Vulkan可能支持WSI，但这并不意味着系统中的每个设备都支持它。
+        由于Presentation是一个特定于队列的特性，因此问题实际上是：找到一个队列族来支持创建的surface。
+        =====================
+        vkGetPhysicalDeviceSurfaceSupportKHR
+    end note
+
+    object SomeChange_逻辑设备 #DarkGray
+    note left
+        因为多了一个队列族，所以我们要创建多个QueueCreateInfo来填充DeviceCreateInfo.
+    end note
+
+    VkSurfaceKHR --> VkWin32SurfaceCreateInfoKHR
+    VkSurfaceKHR .[#Blue,dotted]> SomeChange_物理设备
+    VkSurfaceKHR -[#Blue,dotted]left-> SomeChange_逻辑设备
+}
+
+package Swap_Chain_1 #DDDDDD{
+    class SwapChainSupportDetails{
+        + VkSurfaceCapabilitiesKHR capabilities
+        ==
+        + std::vector<VkSurfaceFormatKHR> formats
+        ==
+        + std::vector<VkPresentModeKHR> presentModes
+    }
+    note top of SwapChainSupportDetails
+        交换链可能和之前创建的<color:Red>Surface</color>不兼容，所以在创建之前需要查询更多信息。
+        ==============================
+        这个Struct是我们自定义的，包含所需要查询的三个信息，也就是三个成员变量，我们要做的就是填充这个结构体。
+        ===============================
+        填充好后，确保至少支持一种图像格式和一种表示模式。
+    end note
+    note right of SwapChainSupportDetails::capabilities
+        基本Surface属性，包括：交换链中image的最大和最小数量、最大/小长宽。
+        <color:#Red>vkGetPhysicalDeviceSurfaceCapabilitiesKHR</color>(device, surface, &details.capabilities)
+    end note
+    note right of SwapChainSupportDetails::formats
+        Surface格式：pixel format、颜色空间
+        <color:#Red>vkGetPhysicalDeviceSurfaceFormatsKHR</color>(device, surface, &formatCount, details.formats.data());
+    end note
+    note right of SwapChainSupportDetails::presentModes
+        <color:#Red>vkGetPhysicalDeviceSurfacePresentModesKHR</color>(device, surface, &presentModeCount, details.presentModes.data());
+    end note
+
+    
+
+}
+note top of Swap_Chain_1
+    Vulkan没有<color:#Red>默认framebuffer</color>的概念，因此它需要一个基础结构——
+    在屏幕上显示之前，它将拥有要呈现的缓冲区。这个基础结构称为<size:20><color:Red>交换链（Swap Chain）
+    ==============
+    ==交换链本质上是等待显示在屏幕上的图像队列
+    =================
+    不是所有显卡都支持，之前GLFW提供的扩展获取函数不包含VK_KHR_swapchain扩展，
+    所以我们要确认显卡是否支持。
+end note
+
+@enduml

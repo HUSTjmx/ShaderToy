@@ -22,14 +22,19 @@ map VkDeviceCreateInfo {
     pQueueCreateInfos *-> VkDeviceQueueCreateInfo
     pEnabledFeatures *--> VkPhysicalDeviceFeatures
     ppEnabledLayerNames => validationLayers.data()
+    ppEnabledExtensionNames => deviceExtensions.data()
 }
 note left
+    注意，这里是<size:20><color:Red>pQueueCreateInfos</color></size>，意味着我们需要创建多个队列，例如：graphicsFamily的队列、presentFamily的队列
+    ========================
     验证层和扩展层也要进行设置，验证层照旧，直接使用之前的数据，但不同的是
-    扩展层这里是特定于设备的，暂时跳过，后续补充。
+    扩展层这里是特定于设备的。
+    ========================
+    注意，填充验证层和扩展的数据，都是我们自定义的数组（符合我们需要的验证层和扩展）。
 end note
 
-VkDevice --> VkDeviceCreateInfo
 
+VkDevice --> VkDeviceCreateInfo
 VkQueue .  VkDevice
 
 

@@ -155,7 +155,7 @@ createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 createInfo.pApplicationInfo = &appInfo;
 ```
 
-==接下来的两个属性指定所需的全局扩展==。正如在概述章节中提到的，Vulkan是一个平台无关的API，这意味着您需要一个扩展来与窗口系统进行衔接。GLFW有一个方便的内置函数，它返回它需要的扩展名，我们可以将这些扩展名传递给结构体
+==接下来的两个属性指定所需的全局扩展==。正如在概述章节中提到的，**Vulkan是一个平台无关的API**，这意味着您需要一个扩展来与窗口系统进行衔接。`GLFW`有一个方便的内置函数，它返回它需要的扩展名，我们可以将这些扩展名传递给结构体
 
 ```c++
 uint32_t glfwExtensionCount = 0;
@@ -166,7 +166,7 @@ createInfo.enabledExtensionCount = glfwExtensionCount;
 createInfo.ppEnabledExtensionNames = glfwExtensions;
 ```
 
-结构的最后两个成员决定要启用的全局验证层。我们将在下一章更深入地讨论这些，所以现在先把这些空着。
+结构的最后两个成员决定要启用的**全局验证层**。我们将在下一章更深入地讨论这些，所以现在先把这些空着。
 
 ```c++
 createInfo.enabledLayerCount = 0;
@@ -781,34 +781,34 @@ vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 
 ###  2 展示(presentation)
 
-​	==由于Vulkan是一个平台无关的API，它不能自己直接与窗口系统交互==。为了在Vulkan和窗口系统之间建立连接，以便将结果显示在屏幕上，我们需要使用WSI(窗口系统集成)扩展。在本章中，我们将讨论第一个扩展，即`VK_KHR_surface`。 It exposes a `VkSurfaceKHR` object that represents an abstract type of surface to present rendered images to. The surface in our program will be backed by the window that we've already opened with GLFW.
+==由于Vulkan是一个平台无关的API，它不能自己直接与窗口系统交互==。为了在`Vulkan`和**窗口系统**之间建立连接，将结果显示在屏幕上，我们需要使用**`WSI`（窗口系统集成）扩展**。在本章中，我们将讨论第一个扩展，即`VK_KHR_surface`。 It exposes a `VkSurfaceKHR` object that represents an abstract type of surface to present rendered images to. The surface in our program will be backed by the window that we've already opened with GLFW.
 
-`VK_KHR_surface`扩展是一个实例级扩展，我们实际上已经启用了它，因为它包含在由glfwGetRequiredInstanceExtensions返回的列表中。该列表还包括一些其他的WSI扩展，我们将在接下来的几章中使用。
+`VK_KHR_surface`扩展是一个实例级扩展，我们实际上已经启用了它，因为它包含在`glfwGetRequiredInstanceExtensions`返回的列表中。该列表还包括一些**其他的WSI扩展**，我们将在接下来的几章中使用。
 
-​	==在实例创建之后立即创建窗口表面，因为它实际上会影响物理设备的选择==。我们推迟的原因是窗口表面是渲染目标和表现的大主题的一部分，对于它的解释会使基本设置混乱。还需要注意的是，==如果你只需要在屏幕外渲染，那么在Vulkan中窗口表面是一个完全可选的组件。Vulkan允许你这样做，而不需要像创建一个不可见的窗口(这是OpenGL所必需的)==。
+==在实例创建之后立即创建**窗口表面**，因为它实际上会影响物理设备的选择==。我们推迟的原因是窗口表面是渲染目标和表现的大主题的一部分，对于它的解释会使基本设置混乱。还需要注意的是，==如果你只需要在屏幕外渲染，那么在Vulkan中窗口表面是一个**完全可选的组件**。Vulkan允许你这样做，而不需要像创建一个不可见的窗口==。
 
 
 
 #### 2.1 Window surface
 
-​	首先在调试回调的正下方添加一个surface类成员
+首先添加一个`surface`类成员：
 
 ```
 VkSurfaceKHR surface;
 ```
 
-​	尽管VkSurfaceKHR对象及其使用与平台无关，但它的创建并不是因为它依赖于窗口系统细节。例如，它需要Windows上的HWND和HMODULE句柄。因此，在扩展中有一个特定于平台的附加项，在Windows中称为VK KHR win32 surface，它也自动包含在来自glfwGetRequiredInstanceExtensions的列表中。
+尽管**`VkSurfaceKHR`对象及其使用**与平台无关，但==它的创建并不是==，因为它依赖于**窗口系统细节**。因此，在扩展中有一个**特定于平台的附加项**，在`Windows`中称为`VK_KHR_win32_surface`，自动包含在`glfwGetRequiredInstanceExtensions`得到的列表中。
 
-​	因为窗口表面是一个Vulkan对象，它带有一个需要填充的VkWin32SurfaceCreateInfoKHR结构。它有两个重要的参数:hwnd和hinstance。这是窗口和流程的句柄。
+因为**窗口表面**是一个`Vulkan`对象，它带有一个需要填充的`VkWin32SurfaceCreateInfoKHR`结构。它有两个重要的参数：`hwnd`和`hinstance`。这是`window`和`process`的句柄：
 
-```c
+```c++
 VkWin32SurfaceCreateInfoKHR createInfo{};
 createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 createInfo.hwnd = glfwGetWin32Window(window);
 createInfo.hinstance = GetModuleHandle(nullptr);
 ```
 
-然后可以使用vkCreateWin32SurfaceKHR创建surface，其中包括实例的参数、surface创建细节、自定义分配器和存储在其中的surface句柄的变量。从技术上讲，这是一个WSI扩展函数，但它是如此常用，以至于标准的Vulkan加载程序包含了它，所以不像其他扩展，你不需要显式地加载它。
+然后可以使用`vkCreateWin32SurfaceKHR`创建`surface`，参数包括：实例、surface创建信息、自定义分配器、`surface`句柄。从技术上讲，这是一个**WSI扩展函数**，但它是如此常用，以至于**标准的Vulkan加载程序**包含了它，所以不需要显式加载：
 
 ```c
 if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
@@ -816,7 +816,7 @@ if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCC
 }
 ```
 
-但是根据教程，实际使用中，我们使用的是下面这个GLFW函数
+实际使用中，我们使用的是下面这个**GLFW函数**
 
 ```c
 void createSurface() {
@@ -836,9 +836,9 @@ void createSurface() {
 
 ##### Querying for presentation support
 
-虽然`Vulkan`实现可能支持窗口系统集成，但这并不意味着系统中的每个设备都支持它。因此，我们需要`isDeviceSuitable`以确保设备能够将图像显示到我们创建的表面上。==由于Presentation是一个特定于队列的特性，因此问题实际上是关于找到一个队列家族来支持我们创建的表面表示==。
+虽然`Vulkan`实现可能支持**`WSI`**，但这并不意味着**系统中的每个设备**都支持它。因此，我们需要`isDeviceSuitable`以确保设备能够将图像显示到我们创建的表面上。==由于`Presentation`是一个**特定于队列的特性**，因此问题实际上是：找到一个队列族来支持创建的`surface`==。
 
-实际上，==支持绘制命令的队列族和支持表示的队列族可能没有重叠==。因此，我们必须考虑到，通过修改QueueFamilyIndices结构，可能会有一个不同的表示队列：
+实际上，==支持绘制命令的队列族和支持表示的队列族可能没有重叠==。因此，修改`QueueFamilyIndices`结构：
 
 ```c
 struct QueueFamilyIndices {
@@ -851,7 +851,7 @@ struct QueueFamilyIndices {
 };
 ```
 
-接下来，我们将修改`findQueueFamilies`函数，以查找能够显示到窗口表面的队列族。检查这一点的函数是`vkGetPhysicalDeviceSurfaceSupportKHR`，它将物理设备、队列家族索引和表面作为参数。在`VK_QUEUE_GRAPHICS_BIT`的循环中添加对它的调用：
+接下来，我们将修改`findQueueFamilies`函数，以查找能够显示到窗口表面的队列族。检查这一点的函数是`vkGetPhysicalDeviceSurfaceSupportKHR`，它将物理设备、队列族索引和`surface`作为参数。在`VK_QUEUE_GRAPHICS_BIT`的循环中添加对它的调用：
 
 ```c
 VkBool32 presentSupport = false;
@@ -861,11 +861,9 @@ if (presentSupport) {
 }
 ```
 
-请注意，这些很可能最终成为相同的队列族，但在整个程序中，我们将把它们看作是不同的队列，以统一的方式处理。不过，您可以添加逻辑来显式地选择在同一队列中支持绘图和表示的物理设备，以提高性能。
-
 ##### Creating the presentation queue
 
-剩下的一件事就是修改逻辑设备创建过程，以创建表示队列并检索`VkQueue句柄`。为句柄添加一个成员变量。接下来，我们需要有多个		`VkDeviceQueueCreateInfo`结构体来创建来自两个家族的队列。An elegant way to do that is to create a set of all unique queue families that are necessary for the required queues：
+剩下的一件事就是：**修改逻辑设备创建过程**，以创建**表示队列**并检索`VkQueue`句柄。为句柄添加一个成员变量。接下来，我们需要有多个`VkDeviceQueueCreateInfo`结构体来创建来自两个家族的队列。An elegant way to do that is to create a set of all unique queue families that are necessary for the required queues：
 
 ```c
 #include <set>
@@ -901,15 +899,17 @@ createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 ####  2.2 Swap Chain
 
-Vulkan没有”默认framebuffer“的概念，因此它需要一个基础结构——在屏幕上显示之前，它将拥有我们要呈现的缓冲区。这个基础结构称为==交换链（Swap Chain）==，必须在Vulkan中显式地创建。==交换链本质上是等待显示在屏幕上的图像队列==，我们的应用程序获得一个Image显示后，然后将图片返回到队列中。队列的具体工作方式以及从队列中显示图像的条件取决于交换链的设置方式，但是==交换链的一般目的是同步图像的表示和屏幕的刷新速率。==
+`Vulkan`没有”==默认framebuffer==“的概念，因此它需要一个**基础结构**——在屏幕上显示之前，它将拥有**要呈现的缓冲区**。
+
+这个基础结构称为==交换链（Swap Chain）==，必须在`Vulkan`中显式创建。==交换链本质上是**等待显示在屏幕上的图像队列**==。应用程序获得一个`Image`并显示后，将图片返回到**图像队列**中。**交换链的一般目的**是同步图像的表示和屏幕的刷新速率。
 
 
 
 #####  Checking for swap chain support
 
-由于各种原因，并不是所有的图形卡都能够将图像直接显示到屏幕上，例如：它们是为服务器设计的，没有任何显示输出。其次，since image presentation is heavily tied into the window system and the surfaces associated with windows，它实际上不是Vulkan核心的一部分。必须在确定可用之后启用`VK_KHR_swapchain`
+不是所有的显卡都能够将图像直接显示到屏幕上，例如：为服务器设计的显卡，没有任何显示输出。其次，since image presentation is heavily tied into the window system and the surfaces associated with windows，它实际上不是**Vulkan核心**的一部分。必须在确定可用之后启用`VK_KHR_swapchain`
 
-为此，==我们将首先扩展isDeviceSuitable函数==，检查是否支持该扩展。我们之前已经看到了如何列出VkPhysicalDevice支持的扩展，注意，Vulkan头文件提供了一个很好的宏`VK_KHR_SWAPCHAIN_EXTENSION_NAME`，它被定义为`VK_KHR_swapchain`。==使用这个宏的好处是编译器可以捕捉拼写错误。==首先声明所需设备扩展的列表，类似于要启用的验证层列表
+为此，==我们将首先扩展isDeviceSuitable函数==，检查是否支持该扩展。`Vulkan`头文件提供了一个很好的宏`VK_KHR_SWAPCHAIN_EXTENSION_NAME`，它被定义为`VK_KHR_swapchain`。==使用这个宏的好处是编译器可以捕捉拼写错误。==首先声明**所需设备扩展的列表**，类似于**要启用的验证层列表**：
 
 ```c
 const std::vector<const char*> deviceExtensions = {
@@ -917,7 +917,7 @@ const std::vector<const char*> deviceExtensions = {
 };
 ```
 
-接下来，创建一个新的函数`checkDeviceExtensionSupport`，从isDeviceSuitable调用该函数作为附加检查：
+接下来，创建一个新的函数`checkDeviceExtensionSupport`，从`isDeviceSuitable`调用该函数作为**附加检查**：
 
 ```c
 bool isDeviceSuitable(VkPhysicalDevice device) {
@@ -933,7 +933,7 @@ bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
 }
 ```
 
-修改函数体以枚举扩展并检查所有必需的扩展是否在其中：
+使用**枚举扩展**并检查所有**必需的扩展**是否在其中：
 
 ```c
 bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
@@ -957,7 +957,7 @@ bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
 ##### Enabling device extensions
 
-使用交换链需要首先启用`VK_KHR_swapchain`。启用扩展只需要对逻辑设备创建结构做一点小小的更改
+使用交换链需要首先启用`VK_KHR_swapchain`。启用扩展只需要对**逻辑设备创建结构**做一点小小的更改
 
 ```c
 createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
@@ -968,13 +968,13 @@ createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 ##### Querying details of swap chain support
 
-仅仅检查交换链是否可用是不够的，因为它实际上可能与我们的窗口表面不兼容。创建交换链还涉及到比创建实例和设备多得多的设置，因此在继续操作之前，我们需要查询更多细节。==我们基本上需要检查如下种属性：==
+仅仅检查**交换链是否可用**是不够的，因为它实际上可能与我们的`window surface`不兼容。**创建交换链**还涉及到比创建**实例**和**设备**多得多的设置，因此在继续操作之前，我们需要查询**更多信息**。==我们基本上需要检查如下种属性：==
 
-- 基本Surface属性，包括：交换链中image的最大和最小数量，Image的最大/小 高度和宽度
-- Surface格式：pixel format、颜色空间、
-- 可用的表现模式
+- 基本`Surface`属性，包括：交换链中`image`的最大和最小数量，`Image`的最`大/小 `高度和宽度
+- `Surface`格式：pixel format、颜色空间
+- 可用的`presentation`模式
 
-与`findQueueFamilies`类似，在查询完这些细节后，我们将使用一个结构体来传递这些细节。上述三种类型的属性以下面的结构和结构列表的形式出现
+与`findQueueFamilies`类似，在查询完这些信息后，我们将使用**一个结构体**来传递这些信息：
 
 ```c
 struct SwapChainSupportDetails {
@@ -994,13 +994,15 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
 }
 ```
 
-让我们从基本的surface功能开始。这些属性查询起来很简单，并且返回到一个`VkSurfaceCapabilitiesKHR`结构中。
+让我们从**基本的surface属性**开始。这些属性查询起来很简单，并且返回到一个`VkSurfaceCapabilitiesKHR`结构中。
 
 ```
 vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 ```
 
-在确定所支持的功能时，此函数将指定的VkPhysicalDevice和VkSurfaceKHR窗口表面考虑在内。所有支持查询函数都将这两个参数作为第一个参数，因为它们是交换链的核心组件。下一步是查询所支持的表面格式。因为这是一个struct列表，所以它遵循熟悉的2个函数调用的惯例：
+在确定所支持的功能时，此函数将指定的`VkPhysicalDevice`和`VkSurfaceKHR`窗口表面考虑在内（所以是前两个参数）。
+
+下一步是查询**所支持的表面格式**：
 
 ```c
 uint32_t formatCount;
@@ -1024,7 +1026,7 @@ if (presentModeCount != 0) {
 }
 ```
 
-所有的细节现在都在结构体中，所以让我们再次扩展isDeviceSuitable，以利用这个函数来验证交换链支持是否足够。==交换链支持对于本教程来说就足够了，前提是我们所拥有的窗口表面至少支持一种图像格式和一种表示模式。==
+让我们再次扩展`isDeviceSuitable`，以利用这个函数来验证**交换链支持是否足够**。==交换链支持对于本教程来说就足够了，前提是我们所拥有的`window surface`至少支持一种图像格式和一种表示模式。==
 
 ```c
 bool swapChainAdequate = false;
@@ -1034,7 +1036,7 @@ if (extensionsSupported) {
 }
 ```
 
-重要的是，我们只在验证扩展可用之后才尝试查询交换链支持。函数的最后一行更改为：
+函数的最后一行更改为：
 
 ```c
 return indices.isComplete() && extensionsSupported && swapChainAdequate;

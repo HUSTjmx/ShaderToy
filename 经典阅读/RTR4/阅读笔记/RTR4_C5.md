@@ -377,3 +377,4 @@ $$
 [^1]: Wyman, Chris, “Exploring and Expanding the Continuum of OIT Algorithms,” in Proceedings of High-Performance Graphics, Eurographics Association, pp. 1–11, June 2016. Cited on p. 156, 159, 165  
 [^2]: Maule, Marilena, Jo˜ao L. D. Comba, Rafael Torchelsen, and Rui Bastos, “A Survey of RasterBased Transparency Techniques,” Computer and Graphics, vol. 35, no. 6, pp. 1023–1034,2011. Cited on p. 159
 
+ 
