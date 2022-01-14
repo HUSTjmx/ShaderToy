@@ -1067,20 +1067,20 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>
 }
 ```
 
-每个`VkSurfaceFormatKHR`条目都包含一个格式和一个色彩空间成员。format成员指定颜色通道和类型。例如，`VK_FORMAT_B8G8R8A8_SRG`意味着以8位无符号整数存储B、G、R和alpha通道，每像素总共32位。colorSpace成员指示是否支持SRGB颜色空间，或者不使用`VK_COLOR_SPACE_SRGB_NONLINEAR_KHR`。对于颜色空间，我们将使用SRGB，因为它产生更准确的感知颜色。它也是图像的标准颜色空间，就像我们后面会用到的纹理一样。
+`VkSurfaceFormatKHR`都包含**一个格式**和**一个色彩空间成员**。`format`成员指定**颜色通道**和**类型**。例如，`VK_FORMAT_B8G8R8A8_SRG`。`colorSpace`成员指示是否支持SRGB颜色空间。对于颜色空间，我们将使用`SRGB`。
 
 
 
  ***Presentation mode***
 
-presentation mode可以说是交换链中最重要的设置，因为它表示在屏幕上显示图像的实际条件。Vulkan有四种模式可供选择：
+presentation mode可以说是**交换链中最重要的设置**，因为它表示在屏幕上显示图像的实际条件。Vulkan有四种模式可供选择：
 
-- `VK_PRESENT_MODE_IMMEDIATE_KHR`：应用程序提交的图像会立即传输到屏幕上，这可能会导致撕裂（tearing）
-- `VK_PRESENT_MODE_FIFO_KHR`：交换链是这样一个队列，当刷新显示时，显示器从队列前端获取图像，并且程序将呈现的图像插入到队列的后部。如果队列已满，则程序必须等待。这与现代游戏中的垂直同步（vertical sync ）非常相似。刷新显示的时刻称为`vertical blank`。
-- `VK_PRESENT_MODE_FIFO_RELAXED_KHR`：与上一个基本一样，但是当队列已满时，立即显示而不是等待，所以这也可能导致tearing。
-- `VK_PRESENT_MODE_MAILBOX_KHR`：这是第二种模式的另一种变化。当队列已满时，不会阻塞应用程序，只是将已经排队的映像替换为较新的映像。此模式可用于实现三重缓冲，与使用双重缓冲的标准垂直同步相比，三重缓冲允许您避免撕裂，显著减少延迟问题。
+- `VK_PRESENT_MODE_IMMEDIATE_KHR`：应用程序提交的图像会立即传输到屏幕上，这可能会导致**撕裂**（`tearing`）
+- `VK_PRESENT_MODE_FIFO_KHR`：交换链是一个队列，当刷新显示时，显示器从**队列前端**获取图像，并且程序**将呈现的图像插入到队列的后部**。如果队列已满，则程序必须==等待==。这与现代游戏中的**垂直同步**（vertical sync ）非常相似。刷新显示的时刻称为`vertical blank`。
+- `VK_PRESENT_MODE_FIFO_RELAXED_KHR`：与上一个基本一样，但是当队列已满时，==立即显示==而不是等待，所以这也可能导致`tearing`。
+- `VK_PRESENT_MODE_MAILBOX_KHR`：这是第二种模式的一种变化。当队列已满时，不会阻塞应用程序，只是将已经排队的`Image`替换为较新的`Image`。此模式可用于实现==三重缓冲==，与**使用双重缓冲的标准垂直同步**相比，==三重缓冲避免撕裂，显著减少延迟问题==。
 
-只有`VK_PRESENT_MODE_FIFO_KHR`被保证可用，但就效果而言肯定是第四种模式最好，因此我们将再次编写一个函数来寻找可用的最佳模式：
+再次编写一个函数来寻找**可用的最佳模式**：
 
 ```c
 VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
@@ -1101,15 +1101,17 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 #include <cstdint> // Necessary for UINT32_MAX
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
     if (capabilities.currentExtent.width != UINT32_MAX) {
-            return capabilities.currentExtent;
-        } else {
-            VkExtent2D actualExtent = {WIDTH, HEIGHT};
+        return capabilities.currentExtent;
+    } 
+    else 
+    {
+        VkExtent2D actualExtent = {WIDTH, HEIGHT};
 
-            actualExtent.width = std::max(capabilities.minImageExtent.width, 			                                                            std::min(capabilities.maxImageExtent.width, actualExtent.width));
-            actualExtent.height = std::max(capabilities.minImageExtent.height,                                                              std::min(capabilities.maxImageExtent.height, actualExtent.height));
+        actualExtent.width = std::max(capabilities.minImageExtent.width, 			                                                            				std::min(capabilities.maxImageExtent.width, actualExtent.width));
+        actualExtent.height = std::max(capabilities.minImageExtent.height,                                                              					std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
-            return actualExtent;
-        }
+        return actualExtent;
+    }
 }
 ```
 
@@ -1119,7 +1121,7 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
 
 ##### Creating the Swap Chain
 
-现在我们有了所有这些辅助函数来帮助我们在运行时做出选择，我们终于有了创建一个工作交换链所需的所有信息。创建一个createSwapChain函数，它从这些调用的结果开始，并确保在逻辑设备创建之后从initVulkan调用它。
+创建一个`createSwapChain`函数，在**逻辑设备**创建之后从`initVulkan`调用它。
 
 ```c
 void createSwapChain() {
@@ -1131,13 +1133,13 @@ void createSwapChain() {
 }
 ```
 
-除了这些属性之外，我们还必须决定交换链中应该有多少Image，建议请求至少比最小值多一个：
+除了这些属性之外，还必须决定**交换链**中应该有多少`Image`，建议请求至少比**最小值**多一个：
 
 ```c
 uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 ```
 
-在执行此操作时，我们还应该确保不超过图像的最大数量，其中0是一个特殊值，表示不存在最大值：
+在执行此操作时，我们还应该确保不超过**`Image`的最大数量**：
 
 ```c
 if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
@@ -1145,7 +1147,7 @@ if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSup
 }
 ```
 
-老生常谈，建立对应的`CreateInfo`结构体：
+建立对应的`CreateInfo`结构体：
 
 ```c
 VkSwapchainCreateInfoKHR createInfo{};
@@ -1160,7 +1162,9 @@ createInfo.imageArrayLayers = 1;
 createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 ```
 
-`imageArrayLayers`指定每个图像所包含的层的数量。这总是1，除非你正在开发一个立体的3D应用程序。` imageUsage`位字段指定我们将在交换链中使用图像进行的操作类型。在本教程中，我们将直接渲染它们，这意味着它们被用作`color attachment.`。也有可能首先将图像呈现为单独的图像，以执行诸如后处理之类的操作。在这种情况下，您可以使用像`VK_IMAGE_USAGE_TRANSFER_DST_BIT`这样的值，并使用内存操作将渲染的图像传输到交换链图像。
+`imageArrayLayers`指定每个图像所包含的层的数量——总是1，除非你正在开发一个**立体的3D应用程序**
+
+` imageUsage`位字段指定在**交换链**中使用图像**进行的操作类型**。在这里将直接渲染它们，这意味着它们被用作`color attachment.`。也有可能首先将`Image`呈现为**单独的图像**，以执行诸如**后处理**之类的操作——在这种情况下，可以使用像`VK_IMAGE_USAGE_TRANSFER_DST_BIT`这样的值，并使用内存操作将**渲染的图像**转换为**交换链图像**。
 
 ```c
 QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -1177,7 +1181,7 @@ if (indices.graphicsFamily != indices.presentFamily) {
 }
 ```
 
-接下来，我们需要指定如何处理将跨多个队列族使用的交换链Image。在我们的应用程序中，如果图形队列族与表示队列不同，就会出现这种情况。我们将在交换链中，从图形队列绘制图像，然后将它们提交到演示队列中。有两种方法可以处理从多个队列访问的Iamge：
+接下来，我们需要指定如何处理**将跨多个队列族使用的交换链Images**。在应用程序中，如果**图形队列族**与表示队列不同，就会出现这种情况。我们将在交换链中，从图形队列绘制图像，然后将它们提交到演示队列中。有两种方法可以处理从多个队列访问的Iamge：
 
 - `VK_SHARING_MODE_EXCLUSIVE`：一个Image一次由一个队列家族所有，在另一个队列家族中使用它之前，必须显式地转移它的所有权。此选项提供了最佳性能。
 - `VK_SHARING_MODE_CONCURRENT`：图像可以跨多个队列族使用，而无需显式的所有权转移。
