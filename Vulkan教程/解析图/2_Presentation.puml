@@ -44,6 +44,28 @@ package Window_Surface_0 #DDDDDD{
 }
 
 package Swap_Chain_1 #DDDDDD{
+
+    class VkSurfaceCapabilitiesKHR{
+        + minImageExtent : VkExtent2D
+        + maxImageExtent : VkExtent2D
+        + minImageCount : uint
+        + maxImageCount : uint
+    }
+
+    class VkSurfaceFormatKHR{
+        + format : VK_FORMAT_B8G8R8A8_SRG
+        + colorSpace : 是否支持SRGB空间
+    }
+
+    class VkPresentModeKHR
+    {
+        有四种模式可供选择：
+            1. VK_PRESENT_MODE_IMMEDIATE_KHR : 提交的图像会立即传输到屏幕上
+            2. VK_PRESENT_MODE_FIFO_KHR : 交换链是一个队列。满则等待。
+            3. VK_PRESENT_MODE_FIFO_RELAXED_KHR : 交换链是一个队列。满则立即显示。
+            4. VK_PRESENT_MODE_MAILBOX_KHR : 具体见笔记。最优。三重缓冲。
+    }
+
     class SwapChainSupportDetails{
         + VkSurfaceCapabilitiesKHR capabilities
         ==
@@ -58,19 +80,32 @@ package Swap_Chain_1 #DDDDDD{
         ===============================
         填充好后，确保至少支持一种图像格式和一种表示模式。
     end note
-    note right of SwapChainSupportDetails::capabilities
+    note left of SwapChainSupportDetails::capabilities
         基本Surface属性，包括：交换链中image的最大和最小数量、最大/小长宽。
         <color:#Red>vkGetPhysicalDeviceSurfaceCapabilitiesKHR</color>(device, surface, &details.capabilities)
     end note
-    note right of SwapChainSupportDetails::formats
+    note left of SwapChainSupportDetails::formats
         Surface格式：pixel format、颜色空间
         <color:#Red>vkGetPhysicalDeviceSurfaceFormatsKHR</color>(device, surface, &formatCount, details.formats.data());
     end note
-    note right of SwapChainSupportDetails::presentModes
+    note left of SwapChainSupportDetails::presentModes
+        交换链中最重要的设置
         <color:#Red>vkGetPhysicalDeviceSurfacePresentModesKHR</color>(device, surface, &presentModeCount, details.presentModes.data());
     end note
 
-    
+    class VkSwapchainCreateInfoKHR{
+        +surface : VkSurfaceKHR，上一步以及生成了
+        +minImageCount : 通过swapChainSupport.capabilities的成员进行设置
+        +imageFormat :  VkSurfaceFormatKHR::format
+        +imageColorSpace : VkSurfaceFormatKHR::colorSpace
+        +imageExtent : 通过swapChainSupport.capabilities的成员进行设置
+        +imageArrayLayers
+        +imageUsage : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT。链中Image要进行的操作。
+    }
+
+    SwapChainSupportDetails::formats -> VkSurfaceFormatKHR
+    SwapChainSupportDetails::presentModes --> VkPresentModeKHR
+    SwapChainSupportDetails::capabilities --> VkSurfaceCapabilitiesKHR
 
 }
 note top of Swap_Chain_1
