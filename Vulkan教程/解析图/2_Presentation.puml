@@ -99,9 +99,12 @@ package Swap_Chain_1 #DDDDDD{
         +imageFormat :  VkSurfaceFormatKHR::format
         +imageColorSpace : VkSurfaceFormatKHR::colorSpace
         +imageExtent : 通过swapChainSupport.capabilities的成员进行设置
-        +imageArrayLayers
+        +imageArrayLayers : 指定每个图像所包含的层的数量——总是1
         +imageUsage : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT。链中Image要进行的操作。
     }
+    note right of VkSwapchainCreateInfoKHR::imageUsage
+
+    end note
 
     SwapChainSupportDetails::formats -> VkSurfaceFormatKHR
     SwapChainSupportDetails::presentModes --> VkPresentModeKHR
