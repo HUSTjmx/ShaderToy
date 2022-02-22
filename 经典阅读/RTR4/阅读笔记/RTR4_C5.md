@@ -255,7 +255,7 @@ Iourcha提出根据MSAA的采样结果来寻找边界，以此得到更好的结
 
 一个产生透明错觉的方法是==screen-door transparency==，The idea is to render the transparent triangle with a pixel-aligned checkerboard fill pattern.  也就是说，三角形的每一个其他像素都被渲染，从而使后面的对象部分可见。通常，屏幕上的像素非常接近，以至于棋盘图案本身是不可见的。*：*这种方法的主要缺点是，通常只能在屏幕的一个区域上渲染一个透明对象。
 
-大多数透明算法混合透明对象的颜色和它背后的对象的颜色。Alpha是一个值，用于描述给定像素的物体碎片的不透明度和覆盖度。
+大多数透明算法混合透明对象的颜色和它背后的对象的颜色。Alpha是一个值，用于描述**给定像素的不透明度和覆盖度**。
 
 
 
@@ -263,9 +263,11 @@ Iourcha提出根据MSAA的采样结果来寻找边界，以此得到更好的结
 
 被对象覆盖的每个像素都会从pixel shader得到一个RGBA结果。通常使用==over==操作将这个片段的值与原始像素颜色混合，如下所示：
 $$
-c_o=\alpha c_s+(1-\alpha_s)c_d\quad[over \quad operator]
+c_o=\alpha_s c_s+(1-\alpha_s)c_d\quad[over \quad operator]
 $$
-在模拟其他透明效果时，over操作不太令人信服，最明显的是通过彩色玻璃或塑料观察。例如，正常世界中，通过红色透明物体观看蓝色物体，蓝色物体应该呈现黑色（几乎没有光会通过红色物体，特别是足够的蓝光），但over操作则是红蓝的部分相加。
+> 下标`s`是“前景”，下标`d`是"后景"
+
+在模拟其他透明效果时，over操作不太令人信服，最明显的是通过彩色玻璃或塑料观察。例如，正常世界中，通过红色透明物体观看蓝色物体，蓝色物体应该呈现黑色（几乎没有光会通过红色物体，特别是足够的蓝光），但**over操作**则是红蓝的部分相加。
 
 另一个使用的操作是添加混合（==additive blending== ），即简单地将像素值相加:
 
@@ -275,24 +277,17 @@ c_o=\alpha_s c_s+c_d
 $$
 ==这种混合模式可以很好地用于发光效果==，如闪电或火花，它们不会使后面的像素衰减，而只是使它们变亮。然而， this mode does not look correct for transparency，因为不透明表面没有被过滤。
 
-为了正确地渲染透明对象，我们需要在不透明对象之后绘制它们。而在绘制半透明物体时，也要按照从远到近的顺序，否则视觉上会不正确。一个简单的方法是根据它们到视点的距离进行排序。Objects that interpenetrate are impossible to resolve on a per-mesh basis for all view angles，short of breaking each mesh into separate pieces.  尽管如此，由于它的简单性和速度，以及不需要额外的内存或特殊的GPU的支持，仍是常用的。
+为了正确地渲染透明对象，我们需要在不透明对象之后绘制它们。而在绘制半透明物体时，也要按照从远到近的顺序，否则视觉上会不正确。**一个简单的方法**是根据它们到视点的距离**进行排序**。Objects that interpenetrate are impossible to resolve on a per-mesh basis for all view angles，short of breaking each mesh into separate pieces.  尽管如此，由于它的简单性和速度，以及不需要额外的内存或特殊的GPU的支持，仍是常用的。
 
 ==其他技术也可以帮助改善外观，比如每一个透明网格绘制两次==，先渲染背面，然后渲染正面。The over equation can also be modified so that blending front to back gives thesame result. This blending mode is called the ==under operator==  ：
 $$
 \begin{align}
-c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
+c_o&=\alpha_dc_d+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
 a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
 \end{align}
 $$
 
-$$
-\begin{align}
-c_o&=\alpha_dc+(1-\alpha_d)\alpha_sc_s\quad [under \quad operator]\\
-a_o&=\alpha_s(1-\alpha_d)+\alpha_d=\alpha_s-\alpha_s\alpha_d+\alpha_d
-\end{align}
-$$
-
-注意，under要求目标保持一个alpha值，而over则不需要。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖的面积与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
+注意，`under`要求目标保持一个alpha值，而`over`则不需要（所以上面我们需要计算$\alpha_o$）。由于我们不知道任何一个片段的覆盖区域的形状，我们假设每个片段相互覆盖的面积与它的alpha成比例。（==个人觉得under的重点在于Alpha值的更新，这个允许我们从前往后进行渲染，另外一个角度来说，需要一个额外的Buffer来存储Alpha==）
 
 ![](RTR4_C5.assets\17.PNG)
 
@@ -300,9 +295,9 @@ $$
 
 ### 5.2 Order-Independent Transparency
 
-under操作的另一个用途是==Order-Independent Transparency（OIT），known as depth peeling==  。这意味着程序不用多物体进行排序，背后的思想是使用两个Z-Buffers和multiple passes  。首先，正常渲染一次，所有物体的深度值被填入了Z-Buffer，然后第二次Render，所有透明物体被渲染，然后比较透明物体的深度和Z-buffer的深度，如果一致，说明这个透明物体离屏幕最近，然后将它的RGBA填入一个单独的Color_Buffer。（具体见书，我的理解是重复这个过程，可以依次知道第二近，第三近、、的透明物体，每次进行under计算）
+==under操作==的另一个用途是==Order-Independent Transparency（OIT），known as **depth peeling**==  。这意味着程序不用多物体进行排序，背后的思想是使用两个`Z-Buffers`和`multiple passes` 。首先，正常渲染一次，所有物体的深度值（包括**半透明物体**）被填入了Z-Buffer，然后第二次Render，所有透明物体被渲染，然后比较**透明物体的深度**和**Z-buffer的深度**，如果一致，说明这个透明物体离屏幕最近，然后将它的颜色填入一个**单独的Color_Buffer**。（具体见书，我的理解是重复这个过程，可以依次知道第二近，第三近、、的透明物体，每次进行**under计算**）
 
-**depth peeling**的一个问题是知道有多少pass才足以捕获所有的透明层。一个硬件解决方案是提供一个像素绘制计数器，它记录了像素在渲染期间被写的次数。Under操作的一个优点是：离人眼最近的透明物体，最早被渲染。另外一个问题是它的运行速度相对比较慢，因为每个layer peeled都需要一个Render Pass。文中接着给出了一些优化方案。
+**depth peeling**的一个问题是：**不知道有多少pass才足以捕获所有的透明层**。一个硬件解决方案是提供一个**像素绘制计数器**，它记录了像素在渲染期间被写的次数。**Under操作**的一个优点是：==离人眼最近的透明物体，最早被渲染==。另外一个问题是它的运行速度相对比较慢，因为**每个layer peeled**都需要一个`Render Pass`。文中接着给出了一些优化方案。
 
 ==A-Buffer 和 inked lists of fragments on the GPU==  ，详见书P155
 
