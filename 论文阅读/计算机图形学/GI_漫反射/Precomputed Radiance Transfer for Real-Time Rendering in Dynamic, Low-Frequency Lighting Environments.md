@@ -46,7 +46,7 @@
 
 ### 3. Review of Spherical Harmonics
 
-球谐函数在球$S$上定义了一个正交基。使用如下参数化：:arrow_down:
+==球谐函数==在球$S$上定义了一个**正交基**。使用如下参数化：:arrow_down:
 $$
 s=(x,y,z)=(\sin{\theta}\cos(\phi),\sin{\theta}\cos{\phi},\cos{\phi})
 $$
@@ -66,7 +66,7 @@ $l$的低值（称为<u>频带指数</u>`band index`）表示球上的低频基�
 
 
 
-**Projection and Reconstruction**：因为SH基是正交的，所以定义在S上的标量函数$f$可以通过如下积分:arrow_down:，**投影**`Projection`得到系数：:arrow_down:
+**Projection and Reconstruction**：因为**SH基**是正交的，所以**定义在S上的标量函数**$f$可以通过如下积分:arrow_down:，**投影**`Projection`得到系数：:arrow_down:
 $$
 f_l^m=\int{f(s)y_l^m(s)\mathrm{d}s}
 $$
@@ -74,13 +74,15 @@ $$
 $$
 \overline{f}(s)=\sum_{l=0}^{n-1}\sum_{m=-l}^{l}{f_l^my_l^m(s)}
 $$
-低频信号（低频光）可以仅用少数几个SH系数进行重建，而高频光则是频带无限。
+==低频信号（低频光）可以仅用少数几个SH系数进行重建，而高频光则是频带无限==。
 
-Properties**： SH投影的一个重要性质是它的旋转不变性，例如：给定$g(s)=f(Q(s))$，$Q$是S上的一个任意的旋转函数，则：:arrow_down:（这类似于一维傅里叶变换的位移不变性）
+**Properties**： SH投影的一个重要性质是它的旋转不变性，例如：给定$g(s)=f(Q(s))$，$Q$是S上的一个任意的旋转函数，则：:arrow_down:（这类似于一维傅里叶变换的位移不变性）
 $$
 \overline{g}(s)=\overline{f}(Q(s))
 $$
-这个不变性意味着，当在一组旋转的样本处采样f时，SH投影不会产生任何锯齿。**SH基的正交性**提供了一个**有用的性质**，即给定任意两个球上的函数$a$和$b$，它们的投影满足：:star:
+这个不变性意味着，当在一组旋转的样本处采样f时，SH投影不会产生任何锯齿。
+
+**SH基的正交性**提供了一个**有用的性质**，即给定任意两个球上的函数$a$和$b$，它们的投影满足：:star:
 
 ![image-20201130222225081](Precomputed Radiance Transfer for Real-Time Rendering in Dynamic, Low-Frequency Lighting Environments.assets/image-20201130222225081.png)
 
@@ -88,7 +90,7 @@ $$
 
 
 
-**Convolution**：我们将一个圆对称核函数$h(z)$（$z$是z坐标），与函数$f$的卷积表示为：h*f。请注意，h必须是圆对称的（因此可以定义为z的简单函数，而不是s的简单函数），以便将结果定义在S，而不是定义在高维旋转群`higher-dimensional rotation group`**SO(3)**上。==卷积的投影满足==：
+**Convolution**：我们将一个圆对称核函数 $h(z)$（$z$是z坐标），与函数 $f$ 的卷积表示为：$h*f$。请注意，h必须是圆对称的（因此可以定义为**z的简单函数**，而不是s的简单函数），以便将结果定义在`S`，而不是定义在**高维旋转群**`higher-dimensional rotation group`**SO(3)**上。==卷积的投影满足==：
 
 ![image-20201130223316181](Precomputed Radiance Transfer for Real-Time Rendering in Dynamic, Low-Frequency Lighting Environments.assets/image-20201130223316181.png)
 

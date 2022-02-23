@@ -50,6 +50,7 @@ package Swap_Chain_1 #DDDDDD{
         + maxImageExtent : VkExtent2D
         + minImageCount : uint
         + maxImageCount : uint
+        + currentTransform
     }
 
     class VkSurfaceFormatKHR{
@@ -81,7 +82,7 @@ package Swap_Chain_1 #DDDDDD{
         填充好后，确保至少支持一种图像格式和一种表示模式。
     end note
     note left of SwapChainSupportDetails::capabilities
-        基本Surface属性，包括：交换链中image的最大和最小数量、最大/小长宽。
+        基本Surface属性，包括：交换链中image的最大和最小数量、最大/小长宽、对Image进行的变换（默认、水平翻转等）。
         <color:#Red>vkGetPhysicalDeviceSurfaceCapabilitiesKHR</color>(device, surface, &details.capabilities)
     end note
     note left of SwapChainSupportDetails::formats
@@ -101,24 +102,120 @@ package Swap_Chain_1 #DDDDDD{
         +imageExtent : 通过swapChainSupport.capabilities的成员进行设置
         +imageArrayLayers : 指定每个图像所包含的层的数量——总是1
         +imageUsage : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT。链中Image要进行的操作。
+        +imageSharingMode : 指定如何处理**将跨多个队列族使用的交换链Images**。
+        +preTransform :  VkSurfaceCapabilitiesKHR.currentTransform。
+        +compositeAlpha : 指定了**alpha通道**是否**用于与其他窗口混合**。这个一般不考虑。
+        +presentMode : SwapChainSupportDetails::presentModes。
+        +clipped : 是否裁剪掉被遮挡的像素。
+        +oldSwapchain : 指定对旧交换链的引用。
     }
+    note top of VkSwapchainCreateInfoKHR
+        句柄：VkSwapchainKHR swapChain;
+        创建：vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
+        销毁：vkDestroySwapchainKHR(device, swapChain, nullptr);
+    end note
     note right of VkSwapchainCreateInfoKHR::imageUsage
+        在**交换链**中图像的操作类型。
+        将Image呈现为单独的图像，以执行诸如**后处理**之类的操作: 
+        在这种情况下，可以使用像`VK_IMAGE_USAGE_TRANSFER_DST_BIT`这样的值;
+    end note
+    note right of VkSwapchainCreateInfoKHR::imageSharingMode
+        在应用程序中，如果**图形队列族**与**表示队列族**不同，就会出现这种情况。
+        在交换链中，从**图形队列**绘制图像，然后将它们提交到**演示队列**中。
+        1.  <color:#Red>VK_SHARING_MODE_EXCLUSIVE</color>：一个Image一次由一个队列家族所有，在另一个队列家族中使用它之前，必须显式地转移它的所有权。
+            此选项提供了最佳性能。
+        2.  <color:#Red>VK_SHARING_MODE_CONCURRENT</color>：图像可以跨多个队列族使用，而无需显式的所有权转移。
+    end note
+    note right of VkSwapchainCreateInfoKHR::oldSwapchain
+        **交换链可能会在应用程序运行时失效**，例如，窗口调整了大小。
+        在这种情况下，**交换链实际上需要重新创建**
+    end note
 
+    class VkSwapchainKHR{
+        实际的SwapChain句柄
+    }
+
+    class VkImage{
+        SwapChain中Image的句柄
+    }
+    note right of VkImage
+        交换链中实际存在的Image的句柄。
+        Images是在**<color:#Red>SwapChain</color>的创建过程中**创建的。
+        =======
+        std::vector<VkImage> swapChainImages;
+        ...
+        vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+        swapChainImages.resize(imageCount);
+        vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
     end note
 
     SwapChainSupportDetails::formats -> VkSurfaceFormatKHR
     SwapChainSupportDetails::presentModes --> VkPresentModeKHR
     SwapChainSupportDetails::capabilities --> VkSurfaceCapabilitiesKHR
 
+    SwapChainSupportDetails <... VkSwapchainCreateInfoKHR
+    VkSwapchainKHR o-- VkImage
+    VkSwapchainCreateInfoKHR --> VkSwapchainKHR
+
 }
 note top of Swap_Chain_1
     Vulkan没有<color:#Red>默认framebuffer</color>的概念，因此它需要一个基础结构——
     在屏幕上显示之前，它将拥有要呈现的缓冲区。这个基础结构称为<size:20><color:Red>交换链（Swap Chain）
     ==============
-    ==交换链本质上是等待显示在屏幕上的图像队列
+    交换链本质上是等待显示在屏幕上的图像队列
     =================
     不是所有显卡都支持，之前GLFW提供的扩展获取函数不包含VK_KHR_swapchain扩展，
     所以我们要确认显卡是否支持。
 end note
 
+class VkImageView{
+}
+note top of VkImageView
+    要在渲染管道中使用任何<color:#Red>VkImage</color>，包括交换链中的<color:#Red>VkImage</color>，我们必须为其创建一个<size:20><color:#Red>VkImageView对象</color></size>。
+    ===================
+    ImageView实际上是一个图像的视图——**它描述了如何访问图像以及访问图像的哪一部分**。
+    ===================
+    同样，我们需要填充<color:#Red>VkImageViewCreateInfo结构体</color>。
+    ===================
+    vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i])
+    ===================
+    vkDestroyImageView(device, &swapChainImageViews[i], nullptr);
+end note
+note bottom of VkImageView
+    图像视图就足以让我们使用图像纹理，但作为渲染目标还没完全准备好。
+    这需要另外一个间接步骤，即所谓的<size:20><color:#Red>framebuffer</color>。
+end note
+
+class VkImageViewCreateInfo{
+    +sType : VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO
+    +image : swapChainImages[i]（VkImage）
+    +viewType : VK_IMAGE_VIEW_TYPE_2D
+    +format : VkSurfaceFormatKHR（为了创建swapChain，而已经获得了）
+    +components.r/g/b/a : 对颜色通道进行<color:#Red>swizzle</color>。默认映射 : VK_COMPONENT_SWIZZLE_IDENTITY
+    +subresourceRange
+}
+note right of VkImageViewCreateInfo::viewType
+    *如何解释图像数据**
+    可以将图像处理为**1D纹理、2D纹理、3D纹理和立方体映射**。
+end note
+note right of VkImageViewCreateInfo::components.r/g/b/a
+    例如，可以把所有的通道都映射到红色通道上，形成一个**单色纹理**
+end note
+
+class VksubresourceRange{
+    +aspectMask : VK_IMAGE_ASPECT_COLOR_BIT
+    +baseMipLevel : 0
+    +levelCount : 1
+    +baseArrayLayer : 0
+    +layerCount : 1
+}
+note right of VksubresourceRange
+    描述了图像的用途以及应该访问图像的哪一部分
+    =============
+    例子中：将被用作没有mipmapping，单层的颜色目标
+end note
+
+VkImageView .. VkImage
+VkImageViewCreateInfo -[dotted]left-> VkImageView
+VkImageViewCreateInfo::subresourceRange --> VksubresourceRange
 @enduml

@@ -1,0 +1,36 @@
+@startuml
+
+class VkShaderModule{
+}
+note top of VkShaderModule
+    **Vulkan中的着色器代码**必须以**字节码格式**<<color:#Red>SPIR-V</color>>指定。
+    ================
+    1. 使用<color:#Red>glslc.exe</color>将着色器文件翻译成字节码文件（已经包含在Vulkan SDK中）
+    2. 读取字节码文件，存放在<color:#Red>std::vector<char></color>中。
+    3. 在将代码传递给管道之前，必须将其封装在<color:#Red>VkShaderModule</color>对象中
+    =============
+    NOTE : 一旦管道创建好，就可以立马删除此对象。
+end note
+
+class VkShaderModuleCreateInfo{
+    +sType : 
+    +codeSize : std::vector::size()
+    +pCode : reinterpret_cast<const uint32_t*>(code.data()); 指向存放字节码的缓冲区。
+}
+
+class VkPipelineShaderStageCreateInfo{
+    +sType : VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO
+    +stage : 告诉Vulkan将在哪个管道阶段使用着色器。例如：顶点着色器阶段VK_SHADER_STAGE_VERTEX_BIT。
+    +module : 代码的着色器模块。VkShaderModule。
+    +pName : 要调用的函数，称为入口点。 "main"。
+    +pSpecializationInfo : 为**着色器常量**指定值。优化选项，具体见笔记。
+}
+note right of VkPipelineShaderStageCreateInfo
+    为了**实际使用着色器**，需要通过此结构体将<color:#Red>ShaderModule</color>分配到管道的<color:#Red>一个特定阶段</color>。
+    =============
+    例如，我们需要为顶点着色模块和像素着色模块都创建一个这样的结构体。
+end note
+
+VkShaderModuleCreateInfo --> VkShaderModule : vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule)
+VkShaderModule .. VkPipelineShaderStageCreateInfo
+@enduml
