@@ -43,7 +43,7 @@
 
 Shader是在GPU侧执行的逻辑指令，根据执行单元的不同，可分为顶点着色器（Vertex Shader）、像素着色器（Pixel Shader）、计算着色器（Compute Shader），以及几何着色器、网格着色器等等。
 
-UE的Shader为了跨平台、跨图形API，做了很多封装和抽象，由此阐述的类型和概念非常多，另外，为了优化，提升代码复用率，又增加了排列、PSO、DDC等概念和类型。
+**UE的Shader**为了跨平台、跨图形API，做了很多封装和抽象，由此阐述的类型和概念非常多，另外，为了优化，提升代码复用率，又增加了**排列**、==PSO==、**DDC**等概念和类型。
 
 前面很多篇章都有涉及Shader的概念、类型和代码，本篇将更加深入且广泛低阐述它的体系。主要阐述UE的以下内容：
 
@@ -64,7 +64,7 @@ UE的Shader为了跨平台、跨图形API，做了很多封装和抽象，由此
 
 ## **8.2.1 FShader**
 
-**FShader**是一个已经编译好的着色器代码和它的参数绑定的类型，是我们在渲染代码中最基础、核心、常见的一个类型。它的定义如下：
+**FShader**是一个**已经编译好的着色器代码**和它的参数绑定的类型，是我们在渲染代码中最基础、核心、常见的一个类型。它的定义如下：
 
 ```c++
 // Engine\Source\Runtime\RenderCore\Public\Shader.h
@@ -158,11 +158,11 @@ private:
 };
 ```
 
-以上可知，FShader存储着Shader关联的绑定参数、顶点工厂、编译后的各类资源等数据，并提供了编译器修改和检测接口，还有各类数据获取接口。
+以上可知，==FShader==存储着Shader关联的**绑定参数**、**顶点工厂**、编译后的各类资源等数据，并提供了编译器修改和检测接口，还有各类数据获取接口。
 
 FShader实际上是个基础父类，它的子类有：
 
-- **FGlobalShader**：全局着色器，它的子类在内存中只有唯一的实例，常用于屏幕方块绘制、后处理等。它的定义如下：
+- **FGlobalShader**：**全局着色器**，它的子类在内存中只有**唯一的实例**，常用于屏幕方块绘制、**后处理**等。它的定义如下：
 
   ```c++
   // Engine\Source\Runtime\RenderCore\Public\GlobalShader.h
@@ -181,9 +181,9 @@ FShader实际上是个基础父类，它的子类有：
   };
   ```
 
-  相比父类FShader，增加了SetParameters设置视图统一缓冲的接口。
+  相比父类FShader，增加了`SetParameters`设置视图统一缓冲的接口。
 
-- **FMaterialShader**：材质着色器，由FMaterialShaderType指定的材质引用的着色器，是材质蓝图在实例化后的一个shader子集。它的定义如下：
+- **FMaterialShader**：**材质着色器**，由`FMaterialShaderType`指定的材质引用的着色器，是材质蓝图在实例化后的一个shader子集。它的定义如下：
 
   ```c++
   // Engine\Source\Runtime\Renderer\Public\MaterialShader.h
@@ -359,11 +359,11 @@ FShader
         (......)
 ```
 
-上述只是列出了FShader的部分继承体系，包含了部分之前已经解析过的Shader类型，比如FDeferredLightPS、FFXAAPS、FTonemapPS、FUpscalePS、TBasePassPS、TDepthOnlyPS等等。
+上述只是列出了**FShader的部分继承体系**，包含了部分之前已经解析过的Shader类型，比如FDeferredLightPS、FFXAAPS、FTonemapPS、FUpscalePS、TBasePassPS、TDepthOnlyPS等等。
 
 FGlobalShader包含了后处理、光照、工具类、可视化、地形、虚拟纹理等方面的Shader代码，可以是VS、PS、CS，但CS必然是FGlobalShader的子类；FMaterialShader主要包含了模型、专用Pass、体素化等方面的Shader代码，可以是VS、PS、GS等，但不会有CS。
 
-如果新定义了FShader的子类，需要借助下面的宏声明和实现对应的代码（部分常见的宏）：
+==如果新定义了FShader的子类，需要借助下面的宏声明和实现对应的代码（部分常见的宏）：==
 
 ```c++
 // ------ Shader声明和实现宏 ------
@@ -410,7 +410,7 @@ IMPLEMENT_MATERIAL_SHADER_TYPE(,FDeferredDecalPS,TEXT("/Engine/Private/DeferredD
 
 ## **8.2.2 Shader Parameter**
 
-着色器参数是一组由CPU的C++层传入GPU Shader并存储于GPU寄存器或显存的数据。下面是着色器参数常见类型的定义：
+**着色器参数**是一组由CPU的C++层传入`GPU Shader`，并存储于**GPU寄存器或显存**的数据。下面是**着色器参数常见类型**的定义：
 
 ```c++
 // Engine\Source\Runtime\RenderCore\Public\ShaderParameters.h
@@ -512,9 +512,9 @@ public:
 };
 ```
 
-由此可见，着色器参数可以绑定任何GPU类型的资源或数据，但不同的类只能绑定特定的着色器类型，不能够混用，比如FRWShaderParameter只能绑定UAV或SRV。有了以上类型，就可以在C++层的Shader类配合LAYOUT_FIELD的相关宏声明具体的Shader参数了。
+由此可见，着色器参数可以绑定**任何GPU类型的资源或数据**，但不同的类只能绑定特定的着色器类型，不能够混用，比如：`FRWShaderParameter`只能绑定`UAV`或`SRV`。有了以上类型，就可以在**C++层的Shader类**配合**LAYOUT_FIELD的相关宏**声明**具体的Shader参数了**。
 
-LAYOUT_FIELD是可以声明指定着色器参数的类型、名字、初始值、位域、写入函数等数据的宏，其相关定义如下：
+`LAYOUT_FIELD`是可以声明指定着色器参数的类型、名字、初始值、位域、写入函数等数据的宏，其相关定义如下：
 
 ```c++
 // Engine\Source\Runtime\Core\Public\Serialization\MemoryLayout.h
@@ -537,7 +537,7 @@ LAYOUT_FIELD是可以声明指定着色器参数的类型、名字、初始值�
 #define LAYOUT_TOSTRING(Func)
 ```
 
-借助LAYOUT_FIELD等宏，就可以在C++类中声明指定类型的着色器参数，示例：
+借助LAYOUT_FIELD等宏，就可以在C++类中声明**指定类型的着色器参数**，示例：
 
 ```c++
 struct FMyExampleParam
