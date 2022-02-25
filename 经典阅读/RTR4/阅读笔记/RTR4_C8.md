@@ -36,7 +36,7 @@ Radiance is what sensors, such as eyes or cameras, measure, so it is of prime im
 
 
 
-### 1.2 Photometry
+### 1.2 Photometr
 
 ==辐射测量法只处理物理量，而不考虑人类的感知。==与之相关的一个领域，`photometry`，就像辐射测量法一样，只不过它是以人眼的灵敏度来衡量一切。通过乘以`CIE  photometric curve`曲线（如下图），==辐射计算的结果可以转换为photometric的结果==。这个曲线代表眼睛对不同波长光线的反应。
 

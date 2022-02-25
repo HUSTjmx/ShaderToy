@@ -1,0 +1,30 @@
+@startmindmap
+* FShader
+++[#lightgreen] FGlobalShader \n 在内存中只有**唯一的实例**。
+
+++[#lightgreen] FMaterialShader \n 由FMaterialShaderType指定的材质引用的着色器
+
+
+**:Shader声明和实现宏
+<code>
+// 声明指定类型（FShader子类）的Shader, 可以是Global, Material, MeshMaterial, ...
+#define DECLARE_SHADER_TYPE(ShaderClass,ShaderMetaTypeShortcut,...)
+// 实现指定类型的Shader, 可以是Global, Material, MeshMaterial, ...
+#define IMPLEMENT_SHADER_TYPE(TemplatePrefix,ShaderClass,SourceFilename,FunctionName,Frequency)
+</code>;
+
+**:Example 1
+<code>
+class FDeferredLightPS : public FGlobalShader
+{
+    // 在FDeferredLightPS类内声明全局着色器
+    DECLARE_SHADER_TYPE(FDeferredLightPS, Global)
+    (......)
+}
+// 实现FDeferredLightPS着色器, 让它和代码文件, 主入口及着色频率关联起来.
+IMPLEMENT_GLOBAL_SHADER(FDeferredLightPS, "/Engine/Private/DeferredLightPixelShaders.usf", "DeferredLightPixelMain", SF_Pixel)
+</code>;
+
+* FShaderParameter
+
+@endmindmap

@@ -458,7 +458,7 @@ H神引入了`H-Basis`**[627]**。
 
 ## 5. Specular Image-Based Lighting
 
-当光源无限远时，环境映射也被称为`specular light probes`。之所以使用这个术语，是因为它们捕捉了场景中给定点的，各个方向上的亮度，并使用该信息来计算一般的BRDFs，但不仅限于pure mirrors or Lambertian surfaces。而`specular cube maps`则是使用环境映射技术来模拟光滑表面的反射。
+当光源无限远时，==环境映射也被称为`specular light probes`==。之所以使用这个术语，是因为它们捕捉了场景中给定点的，各个方向上的亮度，并使用该信息来计算一般的BRDFs，但不仅限于pure mirrors or Lambertian surfaces。而`specular cube maps`则是使用环境映射技术来模拟光滑表面的反射。
 
 为了体现表面的粗糙度，环境贴图需要进行预过滤`prefiltered`。而这种模糊应该是非线性的，不同的纹理部分应该以不同的方式进行过滤。
 
