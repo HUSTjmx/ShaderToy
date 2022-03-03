@@ -54,7 +54,7 @@ $$
 $$
 Y_l^m(\theta,\phi)=K_l^me^{im\phi}P_l^{|m|}(\cos{\theta}),l\in N，-l\leq m\leq l
 $$
-其中，$P_l^m$是相关的勒让德多项式，$K_l^m$是归一化常数：:arrow_down:
+其中，$P_l^{|m|}$是相关的勒让德多项式，$K_l^m$是归一化常数：:arrow_down:
 $$
 K_l^m=\sqrt{\frac{(2l+1)}{4\pi}\frac{(l-|m|)!}{(l+|m|)!}}
 $$

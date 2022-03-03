@@ -1,0 +1,36 @@
+@startuml
+
+start
+partition GTAO {
+    :最大地平线角搜索;
+    note right : 在像素x的领域进行搜索，得到两个角度
+
+    :使用论文的解析式，求解内积分A;
+    note right : 积分域就是上诉的两个角度，而解析式则是使用它们作为输入
+
+    :求解外积分;
+    note right : 蒙特卡洛积分或者重要性采样
+
+    :间接照明修正;
+    note right: 以上一步的AO和像素的albedo作为输入，传入一个拟合好的三次多项式。
+
+    :计算Indirect diffuse;
+    note right: (1 - F) * L * fr_lambert * AO. \n AO : 上一步的结果 \n L : lightMap 或者 投影到SH上的光照
+}
+
+partition GTSO {
+    fork
+        : light部分L的积分;
+        note left : 类似于Specular IBL的处理，预卷积CubeMap;
+    fork again
+        : 镜面遮挡S的计算;
+        note right : 也是预计算，存入一张4维LUT中。
+    end fork
+
+    :计算Indirect Specular;
+    note right : S * L * F;
+
+}
+
+end
+@enduml 

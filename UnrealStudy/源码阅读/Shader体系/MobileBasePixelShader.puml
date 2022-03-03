@@ -1,0 +1,55 @@
+@startmindmap
+
+* 光照计算
+**[#Orange] 计算间接光 \n ComputeIndirect
+*** 间接光颜色
+****[#lightgreen] 这个应该就是Indirect diffuse的结果，直接加到Color上
+*** 间接光辐照度
+****[#lightgreen] 这个应该是在Indirect diffuse的基础上提取到亮度，\n 用于Indirect Specular的缩放校正
+*** LightMap方法
+****[#lightgreen] LightMap分为两部分 \n 上半部分存的是线性空间的光照颜色和亮度的预乘信息，下半部分存储入射光照的最大贡献方向
+****[#lightgreen] 实际计算过程：就是light Map生成的逆过程，最后加了个法线和光线的余弦
+*** CACHED_POINT_INDIRECT_LIGHTING \n SH基方法
+**** GPU
+*****[#lightgreen] 1. 读取已经缓存好的光源投影数据（3 band SH） \n 2. 将世界空间法线投影到SH上，并缩放 \n 3. 重建光照 \n 4. 光照 * albedo * ScaleTerm
+**** CPU
+*****[#lightgreen] 前三步都在CPU端完成。
+** 阴影项计算
+*** 预计算的阴影图
+*** 方向光的CSM阴影
+*** CustomShadowMap
+**[#Orange] 方向光的直接光照计算，使用阴影项 \n MobileIntegrateBxDF
+***[#lightgreen] 在FULLY_ROUGH宏定义下，直接使用Lambert渲染模型，都不考虑Phong Specular
+*** 清漆模型
+*** Hair模型（ToDo）
+*** 默认光照模型
+**** Diffuse \n Lambert Diffuse
+**** Specular
+***** Specular * (NoL * CalSpecular(Roughness, NoH))
+***** CalSpecular : (Roughness * 0.25 + 0.25) * GGX_Mobile(Roughness, NoH);
+***** GGX_Mobile : Walter et al. 2007, "Microfacet Models for Refraction through Rough Surfaces"
+** Environment map \n 应该是计算Indirect Specular
+***[#Orange] Specular IBL \n GetImageBasedReflectionLighting
+**** BlendReflectionCaptures（高质量）
+*****[#lightgreen] 实际就是调用3个GatherSpecularIBL，进行混合
+*****[#lightgreen] 使用under操作，进行混合和alpha的更新。
+*****[#lightgreen] 计算DistanceAlpha进行淡化
+*****[#lightgreen] SKyIBL必然占据第三个ReflectionCubemap
+**** GatherSpecularIBL（低质量）
+*****[#lightgreen] cube Map 和 Sphere Map \n 实际只有高反射质量才会区分，低质量模式只能使用Sphere Map
+***** sky IBL
+******[#lightgreen] 需要考虑天空的颜色 : SpecularIBLSample.rgb * ResolvedView.SkyLightColor.rgb; 
+***** Normal IBL
+******[#lightgreen] IBL的颜色是经过编码的，需要解码
+******[#lightgreen] 似乎是存放在sRGB空间，需要转换到线性空间
+****[#lightgreen] 低质量和高质量模式的Mip划分不同
+****[#lightgreen] 都需要进行缩放，以实现diffuse和Specular的合理比例，保证能量守恒
+*** PlanarForwardReflections
+**[#Orange] 计算动态点光源
+*** 点光源阴影
+*** 点光源光照
+** 自发光
+** 添加顶点雾
+** 曝光
+** 伽马校正
+@endmindmap

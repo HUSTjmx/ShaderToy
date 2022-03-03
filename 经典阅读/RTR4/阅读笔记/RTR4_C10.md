@@ -398,15 +398,15 @@ H神引入了`H-Basis`**[627]**。
 
 <img src="RTR4_C10.assets/image-20201115164827904.png" alt="image-20201115164827904" style="zoom:80%;" />
 
-此技术的纹理生成过程：在一个完美反射球体中，<span style="color:red;font-size:1.2rem">正投影</span>观察环境。得到的圆形图像也被称为`light probe`。
+此技术的纹理生成过程：在一个完美反射球体中，使用<span style="color:red;font-size:1.2rem">正投影</span>观察环境——得到的图像也被称为`light probe`。
 
-球体的法线N是反射View向量r和原始View向量v之间的半角向量，v在` sphere map`的空间中为(0,0,1)
+**球体的法线**`N`是反射View向量r和原始View向量v之间的**半角向量**，`v`在` sphere map`的空间中为(0,0,1)
 
 ![image-20201115165616997](RTR4_C10.assets/image-20201115165616997.png)
 
 <img src="RTR4_C10.assets/image-20201115165411682.png" alt="image-20201115165411682" style="zoom:80%;" />
 
-当这个球在原点，且半径为1时，法线和位置相等，我们舍弃z坐标，可以计算u，v如下：
+当这个球在原点，且半径为`1`时，我们舍弃z坐标，可以计算`u，v`如下：
 
 ![image-20201115170021082](RTR4_C10.assets/image-20201115170021082.png)
 
