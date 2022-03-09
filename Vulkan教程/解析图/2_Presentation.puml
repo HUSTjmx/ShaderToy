@@ -162,7 +162,7 @@ note top of Swap_Chain_1
     Vulkan没有<color:#Red>默认framebuffer</color>的概念，因此它需要一个基础结构——
     在屏幕上显示之前，它将拥有要呈现的缓冲区。这个基础结构称为<size:20><color:Red>交换链（Swap Chain）
     ==============
-    交换链本质上是等待显示在屏幕上的图像队列
+    <size:20><color:#Red> 交换链本质上是等待显示在屏幕上的图像队列</color>
     =================
     不是所有显卡都支持，之前GLFW提供的扩展获取函数不包含VK_KHR_swapchain扩展，
     所以我们要确认显卡是否支持。

@@ -1,0 +1,90 @@
+@startuml
+
+class VkImageView #Black/White{
+
+}
+note right of VkImageView
+    swapChainFramebuffers.resize(swapChainImageViews.size());
+end note
+
+class VkFramebufferCreateInfo{
+    +renderPass : VkRenderPass。
+    +attachmentCount。
+    +pAttachments : VkImageView。
+    +width.
+    +height.
+    +layers.
+}
+note right of VkFramebufferCreateInfo::pAttachments
+    应该绑定到renderPass的<color:#Red>pAttachmentDescription数组</color>中的元素上。
+end note
+
+class VkFramebuffer{
+
+}
+note right of VkFramebuffer
+    vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i])。
+    ==================
+    必须为交换链中的所有<color:#Red>VkImage</color>都创建一个帧缓冲区
+    ==================
+    <color:#Red>frameBuffer</color>应该和<color:#Red>RenderPass</color>兼容，这大致意味着：使用相同数量和类型的附件。
+end note
+
+VkFramebuffer --> VkFramebufferCreateInfo
+VkFramebufferCreateInfo::pAttachments --> VkImageView
+
+package Command_buffers {
+    class VkCommandPool{
+    }
+    note right of VkCommandPool
+        vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool)。
+        <size:20><color:#Red>命令池</color></size>管理内存，从中分配Command buffers。
+        有多少个需要使用的队列族，我们就应该创建多少个对应的CommandPool。
+    end note    
+
+    class VkCommandPoolCreateInfo{
+        +queueFamilyIndex ：queueFamilyIndices.graphicsFamily.value()。
+        +flags.
+    }
+    note right of VkCommandPoolCreateInfo::flags
+        命令池有两种可能的标志**flags**：
+            1. VK_COMMAND_POOL_CREATE_TRANSIENT_BIT：**命令缓冲区**经常用**新命令**重新记录（可能会改变**内存分配行为**）。
+            2. VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT：**命令缓冲区**单独被**重新记录**，如果没有这个标志，它们就必须一起被重置。
+    end note
+    note right of VkCommandPoolCreateInfo::queueFamilyIndex
+        每个命令池只能分配**在单一类型队列上提交的命令缓冲区**。
+        这里则是只能分配在<color:#Red>Graphics queue</color>上提交的Command buffers。
+    end note
+
+    VkCommandPool --> VkCommandPoolCreateInfo
+
+    class VkCommandBuffer{
+
+    }
+    note right of VkCommandBuffer
+        我们必须为交换链中的每个<color:#Red>Image</color>记录一个**命令缓冲区**。
+        所以：commandBuffers.size() == swapChainFramebuffers.size()。
+        ==============
+        vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data())。
+        同时分配多个命令缓冲区（数量等于交换链中的Image数量）
+    end note
+
+    class VkCommandBufferAllocateInfo{
+        +commandPool : VkCommandPool。
+        +level : 分配的命令缓冲区是主命令缓冲区，还是辅助命令缓冲区。
+        +commandBufferCount : commandBuffers.size()。
+    }
+    note right of VkCommandBufferAllocateInfo::level
+        1. VK_COMMAND_BUFFER_LEVEL_PRIMARY : 可以提交到队列执行，但不能从**其他命令缓冲区**调用。
+        2. VK_COMMAND_BUFFER_LEVEL_SECONDARY : 不能直接提交，但可以被**主命令缓冲区**调用。
+    end note
+    note right of VkCommandBufferAllocateInfo::commandBufferCount
+        commandBuffers.resize(swapChainFramebuffers.size());
+    end note
+
+    VkCommandBuffer --> VkCommandBufferAllocateInfo
+    VkCommandBufferAllocateInfo::commandPool --> VkCommandPool
+
+}
+
+@enduml

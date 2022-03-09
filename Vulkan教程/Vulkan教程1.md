@@ -1581,16 +1581,16 @@ VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShade
 
 #### 3.2 Fixed Functions
 
-旧的图形API为图形管道的大多数阶段提供了默认状态。==在Vulkan中，你必须对所有事情都很明确，从视口大小到颜色混合功能==。在本章中，我们将填充所有结构来配置这些固定功能的操作。
+旧的图形API为图形管道的大多数阶段提供了默认状态。==在Vulkan中，你必须对所有事情都很明确，从视口大小到颜色混合功能==。在本章中，我们将填充所有结构，来配置这些固定功能的操作。
 
 #####  Vertex input
 
-`VkPipelineVertexInputStateCreateInfo`结构描述了将被传递到顶点着色器的顶点数据的格式。它大致从两方面描述了这一点：
+`VkPipelineVertexInputStateCreateInfo`结构描述了**将被传递到顶点着色器的顶点数据的格式**。它大致从两方面描述：
 
 - Binding：数据间距，以及数据的形式（顶点还是索引instance）
-- Attribute descriptions：传递给顶点着色器的属性的类型，Binding从哪个位置加载它们以及在哪个偏移位置加载它们
+- Attribute descriptions：传递给顶点着色器的属性的类型。
 
-因为我们在顶点着色器中直接对顶点数据进行了硬编码，所以我们将表示目前没有要加载的顶点数据。我们会在vertex buffer那一章回到它。将下面这个结构添加到createGraphicsPipeline函数中，就在shaderStages数组的后面。
+因为我们在顶点着色器中直接对顶点数据进行了硬编码，所以我们将表示目前没有要加载的顶点数据。我们会在`vertex buffer`那一章回到它。将下面这个结构添加到`createGraphicsPipeline`函数中，就在`shaderStages`数组的后面。
 
 ```c
 VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -1613,9 +1613,9 @@ vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
 - `VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST`: triangle from every 3 vertices without reuse（重用）
 - `VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP`: the second and third vertex of every triangle are used as first two vertices of the next triangle
 
-通常，顶点是从顶点缓冲区按索引顺序加载的，但使用元素缓冲区，您可以指定自己使用的索引。这允许您执行诸如重用顶点之类的优化。如果您将`primitiveRestartEnable`成员设置为VK TRUE，那么就可以使用==0xFFFF或0xFFFFFFFF==的特殊索引来分割`_STRIP` topology模式中的线和三角形。
+通常，顶点是从**顶点缓冲区**按**索引顺序**加载的，但使用`element buffer`，可以指定使用的索引。这可以让我们进行诸如**重用顶点之类的优化**。如果将`primitiveRestartEnable`成员设置为`VK_TRUE`，那么就可以使用==0xFFFF或0xFFFFFFFF==的特殊索引，来分割`_STRIP` 模式中的**线和三角形**。
 
-我们打算在整个教程中绘制三角形，所以我们将坚持以下数据的结构：
+在整个教程中都是**绘制三角形**，所以将坚持使用以下数据结构：
 
 ```c
 VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -1628,7 +1628,7 @@ inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 ##### Viewports and scissors
 
-==视窗主要描述与输出相关的framebuffer区域==。这几乎总是(0,0)到(宽度，高度)，在本教程中也将是这种情况。
+==视窗主要描述**与输出相关的framebuffer区域**==：
 
 ```c
 VkViewport viewport{};
@@ -1640,11 +1640,11 @@ viewport.minDepth = 0.0f;
 viewport.maxDepth = 1.0f;
 ```
 
-请记住，交换链及其图像的大小可能与窗口的宽度和高度不同。交换链Image稍后将用作framebuffer，因此我们应该坚持它们的大小。
+**交换链及其图像的大小**可能与**窗口的宽度和高度**不同。==交换链Image稍后将用作framebuffer==，因此这里保持一致。
 
-当视图定义从Image到framebuffer的转换时，`scissor rectangles`定义像素将实际存储在哪个区域，之外的像素在光栅化过程中会被丢弃。它的功能像一个过滤器，而不是一个转换。区别如下所示。请注意，左侧剪切矩形只是生成该图像的多种可能性之一，只要它大于视口即可。
+当视图定义从`Image`到`framebuffer`的转换时，`scissor rectangles`定义像素将实际存储在哪个区域，之外的像素在**光栅化过程**中会被丢弃。==它的功能像一个过滤器，而不是一个转换==。区别如下所示：
 
-![image-20201006143411121](C:\Users\Cooler\Desktop\JMX\ShaderToy\Vulkan教程\Vulkan教程1.assets\image-20201006143411121.png)
+![image-20201006143411121](Vulkan教程1.assets\image-20201006143411121.png)
 
 ```c
 VkRect2D scissor{};
@@ -1652,7 +1652,7 @@ scissor.offset = {0, 0};
 scissor.extent = swapChainExtent;
 ```
 
-现在需要使用`VkPipelineViewportStateCreateInfo`结构体将`Viewport`和`scissor rectangles`组合成一个视口状态。可以在一些图形卡上使用多个，因此它的成员引用它们的数组。==使用多个需要启用GPU功能(见逻辑设备创建)==。
+现在需要使用`VkPipelineViewportStateCreateInfo`结构体将`Viewport`和`scissor rectangles`组合成一个**视口状态**。==使用多个需要启用GPU feature(见逻辑设备创建)==。
 
 ```c
 VkPipelineViewportStateCreateInfo viewportState{};
@@ -1667,7 +1667,7 @@ viewportState.pScissors = &scissor;
 
 ##### Rasterizer
 
-==光栅化从顶点着色器获得由顶点组成的几何图形，并将其转换为片段，由片段着色器着色==。它还可以执行==深度测试、面剔除和剪刀测试==，还可以配置为输出填充整个多边形或仅填充边缘的片段(线框渲染)。所有这些都是使用`VkPipelineRasterizationStateCreateInfo`结构配置的。
+**光栅化**从顶点着色器获得**由顶点组成的几何图形**，并将其转换为`fragments`，由**片段着色器**着色。它可以执行==深度测试、面剔除和scissor test==，还可以配置：是填充整个多边形，还是仅填充边缘（**线框渲染**）。所有这些都是使用`VkPipelineRasterizationStateCreateInfo`结构配置的。
 
 ```c
 VkPipelineRasterizationStateCreateInfo rasterizer{};
@@ -1675,13 +1675,13 @@ rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 rasterizer.depthClampEnable = VK_FALSE;
 ```
 
-如果`depthClampEnable`被置为 `VK_TRUE`，超出远、近裁剪平面的fragment会被约束到它们而不是丢弃，这在某些场合是有用的，比如`shadow map`，使用这个需要启动某个GPU Feature
+如果`depthClampEnable`被置为 `VK_TRUE`：超出远、近裁剪平面的fragment会被钳制到裁剪平面，这在某些情况是有用的，比如`shadow map`，使用这个需要启动**某个GPU Feature**。
 
 ```c
 rasterizer.rasterizerDiscardEnable = VK_FALSE;
 ```
 
-如果`rasterizerDiscardEnable`设置为VK_TRUE，那么几何体永远不会通过光栅化阶段。这基本上禁用了对framebuffer的任何输出
+如果`rasterizerDiscardEnable`设置为`VK_TRUE`，那么几何体永远不会通过光栅化阶段：
 
 ```c
 rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
@@ -1701,7 +1701,7 @@ rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 ```
 
-`cullMode`变量确定要使用的面剔除的类型。您可以禁用剔除，剔除正面，剔除背面，或两者兼用。`frontFace`变量指定被认为是正面的面(顺时针或逆时针)的顶点顺序。
+`cullMode`变量确定**要使用的面剔除的类型**：禁用剔除，剔除正面，剔除背面，或两者兼用。`frontFace`变量指定**被认为是正面的顶点顺序**：逆时针、顺时针。
 
 ```c
 rasterizer.depthBiasEnable = VK_FALSE;
@@ -1710,13 +1710,13 @@ rasterizer.depthBiasClamp = 0.0f; // Optional
 rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
 ```
 
-光栅化器可以通过添加一个恒定值或基于片段的斜率对其进行偏置来改变深度值。这是有时用于阴影映射，但我们不会使用它。只需将depthBiasEnable设置为VK FALSE。
+**光栅化器**可以通过添加**一个恒定值或基于片段的斜率**进行偏置，来改变**深度值**。
 
 
 
 ##### Multisampling
 
-`VkPipelineMultisampleStateCreateInfo`结构体配置了多重采样，这是执行反锯齿的一种方法。它的工作是通过合并多个多边形的碎片着色结果，光栅化到相同的像素。这主要发生在边缘，这也是最明显的混叠现象发生的地方。因为如果只有一个多边形映射到一个像素，它不需要运行片段着色器多次，这比简单地渲染到一个更高分辨率然后缩小比例要便宜得多。启用它需要启用GPU功能。
+`VkPipelineMultisampleStateCreateInfo`结构体配置了`MSAA`。启用它需要启用GPU功能。
 
 ```c
 VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -1741,12 +1741,17 @@ multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
 ##### Color blending
 
-在片元着色器返回一个颜色后，它需要与framebuffer中已经存在的颜色相结合。这种转换被称为颜色混合，有两种方法来做：
+在**片元着色器**返回一个颜色后，它需要与`framebuffer`中已经存在的颜色进行混合。有两种方法来做：
 
 - Mix the old and new value to produce a final color
 - Combine the old and new value using a bitwise operation
 
-有两种类型的结构来配置颜色混合。第一个结构体`VkPipelineColorBlendAttachmentState`包含每个附加的framebuffer的配置，第二个结构体`VkPipelineColorBlendStateCreateInfo`包含全局颜色混合设置。在我们的例子中，我们只有一个framebuffer
+有两种类型的结构来配置颜色混合：
+
+- 第一个结构体`VkPipelineColorBlendAttachmentState`：每个附加的framebuffer的配置。
+- 第二个结构体`VkPipelineColorBlendStateCreateInfo`：全局颜色混合设置。
+
+在例子中，只有一个`framebuffer`：
 
 ```c
 VkPipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -1760,7 +1765,7 @@ colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
 colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 ```
 
-这个逐帧缓冲区结构允许您配置第一种颜色混合方式。==下面的伪代码可以很好地演示将要执行的操作==：
+==下面的伪代码可以很好地演示**要执行的操作**==：
 
 ```c
 if (blendEnable) {
@@ -1773,14 +1778,9 @@ if (blendEnable) {
 finalColor = finalColor & colorWriteMask;
 ```
 
-如果blendEnable被设置为VK FALSE，那么来自fragment着色器的新颜色是通过未修改的。否则，这两个混合操作将被执行来计算一个新的颜色。产生的颜色是和与colorWriteMask确定哪些通道实际上通过。使用颜色混合最常见的方法是实现alpha混合，我们想要基于不透明度将新颜色与旧颜色混合。最后的颜色应该计算如下：
+如果`blendEnable`被设置为`VK FALSE`，那么直接输出**像素着色器的结果**；否则，进行混合。**结果**和`colorWriteMask`进行`AND`操作，确定哪些通道通过。
 
-```c
-finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
-finalColor.a = newAlpha.a;
-```
-
-第二个结构引用所有framebuffer的结构数组，并允许您设置混合常量，在上述计算中用作混合因子。
+**第二个结构**引用`ColorBlendAttachment`结构数组，并允许设置**混合常量**，在上述计算中用作**混合因子**。
 
 ```c
 VkPipelineColorBlendStateCreateInfo colorBlending{};
@@ -1799,7 +1799,7 @@ colorBlending.blendConstants[3] = 0.0f; // Optional
 
 ##### Dynamic state
 
-实际上，我们在前面的struct中指定的有限数量的状态可以在不重新创建管道的情况下更改。例如视口的大小、线宽和混合常量。如果您想这样做，那么您必须像这样填充一个`VkPipelineDynamicStateCreateInfo`结构
+实际上，前面指定的**有限数量的状态**可以在不重新创建管道的情况下更改。例如视口的大小、线宽和混合常量。当然，首先必须填充`VkPipelineDynamicStateCreateInfo`结构
 
 ```c
 VkDynamicState dynamicStates[] = {
@@ -1817,7 +1817,7 @@ dynamicState.pDynamicStates = dynamicStates;
 
 ##### Pipeline layout
 
-你可以在着色器中使用统一的值，它是全局的，类似于动态状态变量，可以在绘图时改变，改变你的着色器的行为，而不必重新创建它们。它们通常被用来传递转换矩阵到顶点着色器，或者在片段着色器中创建纹理采样器。这些统一的值需要指定在创建管道的过程中通过创建一个`VkPipelineLayout`对象。即使我们在以后的章节中才会使用它们，我们仍然需要创建一个空的管道布局。
+可以在着色器中使用`uniform value`，它是**全局的**，类似于**动态状态变量**。通常的使用情景：传递**转换矩阵**到顶点着色器，或者在片段着色器中创建**纹理采样器**。这些`uniform value`需要在**创建管道的过程**中，创建一个`VkPipelineLayout`对象。
 
 ```c
 VkPipelineLayout pipelineLayout;
@@ -1847,11 +1847,11 @@ void cleanup() {
 
 ####  3.3 Render passes
 
-==在完成创建管道之前，我们需要告诉Vulkan在渲染时将使用的framebuffer附件==。==我们需要指定：有多少个颜色和深度缓冲区，每个缓冲区要使用多少个样本，以及在整个渲染操作中如何处理它们的内容==。所有这些信息都被封装在一个`Render Pass`对象中，我们将为其创建一个新的createRenderPass函数。在创建GraphicsPipeline之前，从initVulkan调用这个函数。
+==在完成管道之前，我们需要告诉`Vulkan`在渲染时**将使用的framebuffer附件**==。==我们需要指定：有多少个**颜色和深度缓冲区**，每个缓冲区要使用**多少个样本**，以及在整个渲染操作中如何处理其内容==。所有这些信息都被封装在一个**`Render Pass`对象**中，我们将为其创建一个`createRenderPass`函数。
 
 ##### Attachment description
 
-In our case we'll have just a single color buffer attachment represented by one of the images from the swap chain.
+本教程中，我们将只有**一个颜色缓冲区附件**，代表**交换链中的一个图像**。
 
 ```c
 void createRenderPass() {
@@ -1861,23 +1861,23 @@ void createRenderPass() {
 }
 ```
 
-color attachment的格式应该与交换链图像的格式一致，我们还没有做过多次采样，所以我们采样一次。
+`color attachment`的格式应该与交换链图像的格式一致。我们还不需要**多次采样**，所以我们采样一次。
 
 ```c
 colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 ```
 
-loadOp和storeOp决定在Render前后如何处理附件中的数据。对于loadOp，我们有以下选择：
+`loadOp`和`storeOp`决定在Render前后**如何处理附件中的数据**。对于`loadOp`，我们有以下选择：
 
 - `VK_ATTACHMENT_LOAD_OP_LOAD`: 保留附件现有内容
 - `VK_ATTACHMENT_LOAD_OP_CLEAR`：在开始时将值清除为常量
 - `VK_ATTACHMENT_LOAD_OP_DONT_CARE`：现有内容未定义;我们不关心他们
 
-在本例中，我们将在绘制新帧之前使用clear操作将framebuffer清除为黑色。StoreOp只有两种选择：
+在本例中，将在绘制新帧之前，使用**clear操作**将`framebuffer`清除为黑色。`StoreOp`只有两种选择：
 
 - `VK_ATTACHMENT_STORE_OP_STORE`：渲染的内容将存储在内存中，以后可以读取
-- `VK_ATTACHMENT_STORE_OP_DONT_CARE`: 在render操作之后，framebuffer的内容将未定义
+- `VK_ATTACHMENT_STORE_OP_DONT_CARE`: 在**render操作**之后，==framebuffer的内容将未定义==。
 
 我们感兴趣的是在屏幕上看到呈现的三角形，所以我们在这里进行store操作。
 
@@ -1886,30 +1886,30 @@ colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 ```
 
- `loadOp` and `storeOp` 针对的是颜色和深度缓冲，而 `stencilLoadOp` / `stencilStoreOp` 设置的是stencil，这里我们没有用到，所以都设置为不关心
+ `loadOp` and `storeOp` 针对的是**颜色和深度缓冲**，而 `stencilLoadOp` / `stencilStoreOp` 设置的是`stencil`。
 
 ```c
 colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 ```
 
-在Vulkan中，纹理和帧缓冲由具有特定像素格式的VkImage对象表示，但是内存中像素的布局可以根据您试图对图像进行的操作而改变。Some of the most common layouts are：
+在`Vulkan`中，==纹理和帧缓冲==由**具有特定像素格式的VkImage对象**表示，但是内存中**像素的布局**可以改变。Some of the most common layouts are：
 
 - `VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL`: Images used as color attachment
 - `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`: 要在交换链中显示的映像
 - `VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL`：用作内存复制操作目标的映像
 
-我们将在纹理章节中更深入地讨论这个话题，但是==现在最重要的是：知道图像需要转换到特定的布局==，这适合于它们接下来将要涉及到的操作。
+我们将在**纹理章节**中更深入地讨论这个话题，==现在重要的是：知道图像需要转换到**哪一种布局**==，来匹配**接下来的操作**。
 
-initialLayout指定在渲染过程开始之前图像将具有哪种布局。finalLayout指定渲染结束时自动转换到的布局。对initialLayout使用 `VK_IMAGE_LAYOUT_UNDEFINED`意味着我们不关心图像之前的布局。这种特殊值的缺点是图像的内容不能保证被保留下来。我们希望图像在呈现后可以使用交换链来表示，所以后者我们赋值为`VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`
+`initialLayout`指定在渲染过程开始之前图像将具有哪种布局。`finalLayout`指定渲染结束时自动转换到的布局。对`initialLayout`使用 `VK_IMAGE_LAYOUT_UNDEFINED`意味着我们不关心图像之前的布局——缺点是图像的内容不能保证被保留下来。我们希望图像在渲染后可以使用**交换链**来`presentation`，所以后者我们赋值为`VK_IMAGE_LAYOUT_PRESENT_SRC_KHR`
 
 
 
 ##### Subpasses and attachment references
 
-==一个渲染通道可以由多个次通道组成==。subpass是subsequent rendering operations ，它依赖于之前传递的framebuffer的内容，例如一个接一个应用的后处理效果序列。如果您将这些渲染操作分组到一个渲染通道中，那么Vulkan就能够重新排序这些操作并节省内存带宽以获得更好的性能。然而，对于我们的第一个三角形，我们将坚持使用一个subpass。
+==一个**渲染pass**可以由多个**subpass**组成==。`subpass`是subsequent rendering operations ，它依赖于**之前传递的framebuffer的内容**，例如：后处理效果序列。如果将这些渲染操作分组到一个**渲染pass**中，那么`Vulkan`就能够**重新排序这些操作**，并节省内存带宽，以获得更好的性能。这个教程中，我们使用一个`subpass`。
 
-每个子传递引用一个或多个附件：
+每个`subpass`引用一个或多个附件：
 
 ```c
 VkAttachmentReference colorAttachmentRef{};
@@ -1917,7 +1917,7 @@ colorAttachmentRef.attachment = 0;
 colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 ```
 
-`attachment `参数通过==附件描述数组==中的索引指定要引用的附件。我们的数组由单个` VkAttachmentDescription`组成，因此它的索引为0。`layout`指定在使用此引用的子传递期间，我们希望附件具有哪种布局。当subpass启动时，Vulkan将自动将附件转换到此布局。我们打算使用附件作为颜色缓冲区，而`VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL`将给我们最好的性能
+`attachment `参数通过==附件描述数组（`attachment descriptions array`）中的索引==指定**要引用的附件**。这里的数组由单个` VkAttachmentDescription`组成，因此它的索引为`0`。`layout`指定**附件具有哪种布局**。当`subpass`启动时，`Vulkan`将自动将附件转换到此布局。我们打算使用附件作为**颜色缓冲区**，而`VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL`将给我们最好的性能
 
 使用`VkSubpassDescription`结构描述`subpass`
 
@@ -1926,14 +1926,14 @@ VkSubpassDescription subpass{};
 subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 ```
 
-Vulkan将来也可能支持计算子通道，所以我们必须明确这是一个图形子通道。接下来，我们指定对颜色附件的引用
+`Vulkan`将来也可能支持`Computer Subpass`，所以必须明确这是一个**图形子通道**。接下来，指定**对颜色附件的引用**：
 
 ```c
 subpass.colorAttachmentCount = 1;
 subpass.pColorAttachments = &colorAttachmentRef;
 ```
 
-这个数组中附件的索引是直接从片段着色器中引用的——(location=0)out vec4 outColor。以下其他类型的附件可以由子传递引用：
+`pColorAttachments`中**附件的索引**直接被片段着色器的`layout(location = 0) out vec4 outColor`指令引用。以下类型的`Attachment`也可以由子传递引用：
 
 - `pInputAttachments`: Attachments that are read from a shader
 - `pResolveAttachments`: Attachments used for multisampling color attachments
@@ -1944,7 +1944,7 @@ subpass.pColorAttachments = &colorAttachmentRef;
 
 ##### Render pass
 
-现在已经描述了附件和引用它的基本子通道，我们可以创建渲染通道本身了。创建一个新的类成员变量来保存`VkRenderPass`对象
+现在已经描述了**附件**和**引用它的Subpass**，我们可以创建渲染通道本身了。创建一个新的类成员变量来保存`VkRenderPass`对象
 
 ```c
 VkRenderPass renderPass;
@@ -1984,14 +1984,14 @@ void cleanup() {
 
 #### 3.4 Conclusion
 
-我们现在可以结合前面章节中的所有结构和对象来创建图形管道！下面是我们现在拥有的对象类型，作为一个快速回顾：
+现在可以结合前面章节中的所有结构和对象，来创建==图形管道==！快速回顾：
 
 - `Shader stages`：定义图形管道可编程阶段功能的着色器模块
 - `Fixed-function state`: 定义管道固定功能阶段的所有结构，如input assembly, rasterizer, viewport and color blending
 - `Pipeline layout`: the uniform and push values referenced by the shader that can be updated at draw time
 - `Render pass`: 管道阶段引用的附件及其用法
 
-==所有这些组合在一起完全定义了图形管道的功能==，因此我们现在可以开始在createGraphicsPipeline函数的末尾填充`VkGraphicsPipelineCreateInfo`结构。但要在调用vkDestroyShaderModule之前，因为这些在创建过程中仍然要使用。
+==这些组合在一起定义了图形管道的功能==，我们现在可以开始填充`VkGraphicsPipelineCreateInfo`结构：
 
 ```c
 VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -2011,22 +2011,20 @@ pipelineInfo.pColorBlendState = &colorBlending;
 pipelineInfo.pDynamicState = nullptr; // Optional
 ```
 
-然后我们引用了所有固定功能阶段的结构。
-
 ```c
 pipelineInfo.layout = pipelineLayout;
 pipelineInfo.renderPass = renderPass;
 pipelineInfo.subpass = 0;
 ```
 
-最后我们引用了管道将会使用的Render Pass和SubPass的索引。 It is also possible to use other render passes with this pipeline instead of this specific instance, but they have to be *compatible* with `renderPass`. The requirements for compatibility are described [here](https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#renderpass-compatibility), but we won't be using that feature in this tutorial.
+最后我们引用了：管道将会使用的`Render Pass`和**SubPass的索引**。 It is also possible to use other render passes with this pipeline instead of this specific instance, but they have to be *compatible* with `renderPass`. The requirements for compatibility are described [here](https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#renderpass-compatibility), but we won't be using that feature in this tutorial.
 
 ```c
 pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 pipelineInfo.basePipelineIndex = -1; // Optional
 ```
 
-实际上还有两个参数:basePipelineHandle和basePipelineIndex。==Vulkan允许您通过从现有管道派生创建一个新的图形管道==。想法来自：当管道与现有管道有许多相同的功能时，设置管道的成本更低，并且在同一父管道之间切换也更快。您可以使用`basePipelineHandle`指定现有管道的句柄，也可以使用`basePipelineIndex`引用另一个将要由索引创建的管道。现在只有一个管道，所以我们只指定一个空句柄和一个无效的索引。只有在`VkGraphicsPipelineCreateInfo`的flags字段中也指定了`VK_PIPELINE_CREATE_DERIVATIVE_BIT`时，才使用这些值。
+实际上还有两个参数：`basePipelineHandle`和`basePipelineIndex`。==Vulkan允许您通过从**现有管道**派生创建一个**新的图形管道**==：当管道与现有管道有许多相同的功能时，设置管道的成本更低，并且在同一父管道之间切换也更快。你可以用`basePipelineHandle`指定一个**现有管道的句柄**，或者用`basePipelineIndex`引用另一个**即将创建的管道的索引**。。现在只有一个管道，所以我们只指定一个空句柄和一个无效的索引。只有在`VkGraphicsPipelineCreateInfo`的**flags字段**中也指定了`VK_PIPELINE_CREATE_DERIVATIVE_BIT`时，才使用这些值。
 
 ```
 VkPipeline graphicsPipeline;
@@ -2036,9 +2034,9 @@ if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
 }
 ```
 
-vkCreateGraphicsPipelines函数实际上比Vulkan中通常的对象创建函数具有更多的参数。它被设计成接受多个VkGraphicsPipelineCreateInfo对象，并在单个调用中创建多个VkPipeline对象。
+`vkCreateGraphicsPipelines`函数实际上比**Vulkan中通常的对象创建函数**具有更多的参数。它被设计成接受多个`VkGraphicsPipelineCreateInfo`对象，并在单个调用中**创建多个VkPipeline对象**。
 
-第二个参数，我们已经为其传递了VK_NULL_HANDLE参数，引用一个可选的VkPipelineCache对象。管道缓存可用于在多次调用vkCreateGraphicsPipelines的过程中==存储和重用与管道创建相关的数据==，如果缓存存储到文件中，甚至可以在程序执行过程中使用。这样就可以在以后的时间里大大加快管道创建的速度。我们将在管道缓存一章中讨论这个问题。
+第二个参数，传递了`VK_NULL_HANDLE`参数，引用一个**可选的VkPipelineCache对象**。==管道缓存==（`VkPipelineCache`）可用于：在多次调用vkCreateGraphicsPipelines的过程中==存储和重用**与管道创建相关的数据**==，如果缓存存储到文件中，甚至可以在程序执行过程中使用。这样就可以在以后的时间里==大大加快管道创建的速度==。我们将在**管道缓存一章**中讨论这个问题。
 
 图形管道对于所有常见的绘图操作都是必需的，所以也应该只在程序结束时销毁它
 
@@ -2050,7 +2048,7 @@ void cleanup() {
 }
 ```
 
-在接下来的几章中，我们将从交换链图像中设置实际的framebuffer，并准备绘图命令。
+在接下来的几章中，我们将从**交换链图像**中设置**实际的framebuffer**，并准备**绘制命令**。
 
 
 
@@ -2058,9 +2056,9 @@ void cleanup() {
 
 #### 4.1 FrameBuffers
 
-在过去的几章中，我们已经讨论了很多关于framebuffer的内容，并且我们已经设置了渲染通道，来期望一个与交换链图像相同格式的单一framebuffer，但是我们实际上还没有创建任何东西。
+在过去的几章中，我们已经讨论了很多**关于framebuffer的内容**，并且已经设置了**渲染pass**，期望使用**与交换链图像格式一致的framebuffer**，但实际上还没有创建任何东西。
 
-在创建渲染通道时，指定的附件通过将它们封装到一个`VkFramebuffer`对象中进行绑定。一个framebuffer对象会引用所有代表附件的VkImageView对象。在我们的例子中，这将是只有一个：颜色附件。然而，==我们必须为附件使用的图像==取决于当我们检索一个图像进行展示时，交换链返回的图像。这意味着我们必须为交换链中的所有图像创建一个帧缓冲区，并在绘制时使用与检索到的图像相对应的图像。
+在创建` render pass `时，**指定的附件**通过将它们封装到**一个`VkFramebuffer`对象**中进行**绑定**。一个**framebuffer对象**会引用所有**代表附件的VkImageView对象**。在例子中，只有一个：颜色附件。然而，**为附件使用的`Image`**取决于**为`presentation`检索一个图像时==交换链返回的图像==**。这意味着我们==必须为交换链中的所有图像创建一个帧缓冲区==，并在绘制时，使用与检索到的图像相对应的那个。
 
 为此，创建另一个`std::vector`类成员来保存framebuffer
 
@@ -2068,7 +2066,7 @@ void cleanup() {
 std::vector<VkFramebuffer> swapChainFramebuffers;
 ```
 
-我们将在一个新函数createFramebuffers中为这个数组创建对象，这个函数在创建图形管道之后调用
+我们将在一个新函数`createFramebuffers`中为这个数组创建对象，这个函数在创建图形管道之后调用
 
 ```c
 void initVulkan() {
@@ -2091,7 +2089,7 @@ void createFramebuffers() {
 }
 ```
 
-首先调整容器的大小以容纳所有的framebuffer
+首先调整容器的大小，以容纳所有的`framebuffer`。
 
 ```c
 void createFramebuffers() {
@@ -2099,7 +2097,7 @@ void createFramebuffers() {
 }
 ```
 
-然后我们将遍历图像视图并从中创建framebuffer：
+然后遍历`VkImageView`数组，并从中创建`framebuffer`：
 
 ```c
 for (size_t i = 0; i < swapChainImageViews.size(); i++) {
@@ -2122,11 +2120,11 @@ for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 }
 ```
 
-可以看到，framebuffer的创建非常简单。我们首先需要指定renderPass需要与framebuffer兼容。只能将framebuffer与它兼容的呈现通道一起使用，这大致意味着它们使用相同数量和类型的附件。
+**framebuffer的创建**非常简单。我们首先需要指定：`framebuffer`需要与哪个渲染通道兼容。只能将**一个framebuffer**与它**所兼容的渲染通道**一起使用，这大致上意味着：==它们使用相同数量和类型的附件==。
 
-The `attachmentCount` and `pAttachments` parameters specify the [`VkImageView`](https://www.khronos.org/registry/vulkan/specs/1.0/man/html/VkImageView.html) objects that should be bound to the respective attachment descriptions in the render pass `pAttachment` array.
+`attachmentCount`和`pAttachments`参数指定了**`VkImageView`对象**，这些对象应该被绑定到`render passd`的**pAttachment数组**中的**各自的附件描述**。
 
-宽度和高度参数是不言而喻的，层数指的是图像阵列的层数。我们的交换链图像是单幅图像，所以层数是1。我们应该在图像视图和它们所基于的渲染传递之前删除framebuffer。
+在图像视图和`Render pass`之前，**删除framebuffer**。
 
 ```c
 void cleanup() {
@@ -2138,17 +2136,17 @@ void cleanup() {
 }
 ```
 
-==我们拥有了渲染所需的所有对象。在下一章中，我们将编写第一个实际的绘图命令。==
+==我们拥有了**渲染所需的所有对象**。在下一章中，我们将编写**第一个实际的绘图命令**。==
 
 
 
 #### 4.2 Command buffers
 
-在Vulkan中，像绘制和内存传输这样的命令不是通过函数调用直接执行的。你必须要在命令缓冲区`Command Buffer`中记录要执行的所有操作。好处是，设置绘图命令可以在多个线程中提前完成（the hard work of setting up the drawing commands can be done in advance and in multiple threads.）。在此之后，只需告诉Vulkan在主循环中执行这些命令。
+在`Vulkan`中，像**绘制**和**内存传输**这样的命令不是通过**函数调用**直接执行的。我们必须要在**命令缓冲区**`Command Buffer`中记录**要执行的所有操作**。这样做的好处是，当我们准备告诉`Vulkan`想要做什么的时候，**所有的命令都会一起提交**，`Vulkan`可以更有效地处理这些命令。
 
 ##### Command pools
 
-在创建命令缓冲区之前，我们必须先创建一个命令池。命令池管理内存（用于存储缓冲区的），分配`Command buffers`。添加一个新的类成员VkCommandPool。
+在创建**命令缓冲区**之前，我们必须先创建**一个命令池**。==命令池==管理内存（用于存储`buffer`），从中分配`Command buffers`。添加一个新的类成员`VkCommandPool`。
 
 ```c
 VkCommandPool commandPool;
@@ -2166,7 +2164,7 @@ void createCommandPool() {
 }
 ```
 
-命令池创建只需要两个参数
+**命令池创建**只需要两个参数：
 
 ```c
 QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
@@ -2174,15 +2172,17 @@ QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 VkCommandPoolCreateInfo poolInfo{};
 poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-poolInfo.flags = 0; // Optional
+poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 ```
 
-命令缓冲区通过在设备队列上提交命令，来执行它（比如我们检索到的图形和演示队列）。由命令池分配的命令缓冲区，只能在一个类型的队列上提交。 We're going to record commands for drawing, which is why we've chosen the graphics queue family。==命令池有两种可能的标志==`flags`：
+==命令池有两种可能的标志==`flags`：
 
-- `VK_COMMAND_POOL_CREATE_TRANSIENT_BIT`: 命令缓冲区经常使用新命令重新编译（可能会改变内存分配行为）
-- `VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT`: 允许命令缓冲区单独绘制，如果没有这个标志，它们必须一起重新设置。
+- `VK_COMMAND_POOL_CREATE_TRANSIENT_BIT`: 提示**命令缓冲区**经常用**新命令**重新记录（可能会改变**内存分配行为**）。
+- `VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT`： 允许**命令缓冲区**单独被**重新记录**，如果没有这个标志，它们就必须一起被重置。
 
-由于我们只在程序开始的时候设置`Command Buffers`，所以我们将Flag置为0。
+我们将在每一帧记录**一个命令缓冲区**，所以希望能够**重置**和**重新记录**。因此，我们需要为`command pool`设置`VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT`标志位。
+
+**命令缓冲区**（`Command buffers`）是通过在一个**设备队列**（`device queues`）中提交来执行的，就像我们检索到的**图形和演示队列**一样。每个命令池只能分配**在单一类型队列上提交的命令缓冲区**。我们要记录绘制命令，这就是我们选择`graphics queue family`的原因。
 
 ```c
 if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
@@ -2200,7 +2200,9 @@ void cleanup() {
 
 ##### Command buffer allocation
 
-==开始分配命令缓冲区，并记录绘图命令==。因为其中一个绘图命令涉及到绑定正确的VkFramebuffer，所以我们必须为交换链中的每个`Image`记录一个命令缓冲区。为此，创建一个作为类成员的VkCommandBuffer对象列表。（命令缓冲区将在其命令池被销毁时自动释放，因此我们不需要显式的清理）
+==开始分配命令缓冲区==。
+
+> 我们必须为交换链中的每个`Image`记录一个**命令缓冲区**。为此，创建一个作为类成员的`VkCommandBuffer`对象列表。（**命令缓冲区**将在其命令池被销毁时**自动释放**，因此我们不需要**显式的清理**）
 
 ```
 std::vector<VkCommandBuffer> commandBuffers;
@@ -2219,7 +2221,7 @@ void createCommandBuffers() {
 }
 ```
 
-命令缓冲区是由`vkAllocateCommandBuffers`函数分配的，该函数以`VkCommandBufferAllocateInfo`结构体作为参数，指定命令池和要分配的缓冲区数量
+命令缓冲区是由`vkAllocateCommandBuffers`函数分配的，该函数以`VkCommandBufferAllocateInfo`结构体作为参数，指定**命令池**和**要分配的缓冲区数量**：
 
 ```c
 VkCommandBufferAllocateInfo allocInfo{};
@@ -2233,14 +2235,12 @@ if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SU
 }
 ```
 
-`level`参数指定分配的命令缓冲区是主命令缓冲区还是辅助命令缓冲区` secondary command buffers`：
+`level`参数指定分配的命令缓冲区是**主命令缓冲区**，还是**辅助命令缓冲区**` secondary command buffers`：
 
-- `VK_COMMAND_BUFFER_LEVEL_PRIMARY`: 可以提交到队列执行，但不能调用其他命令缓冲区。
-- `VK_COMMAND_BUFFER_LEVEL_SECONDARY`: 不能直接提交，但可以被主命令缓冲区调用。
+- `VK_COMMAND_BUFFER_LEVEL_PRIMARY`：可以提交到队列执行，但不能从**其他命令缓冲区**调用。
+- `VK_COMMAND_BUFFER_LEVEL_SECONDARY`：不能直接提交，但可以被**主命令缓冲区**调用。
 
-这里我们不使用辅助命令缓冲区的功能，但是您可以想象重用主命令缓冲区中的常见操作是有帮助的。
-
-
+这里，我们不使用**辅助命令缓冲区**的功能。
 
 ##### Starting command buffer recording
 

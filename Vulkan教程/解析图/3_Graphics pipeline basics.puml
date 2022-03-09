@@ -1,36 +1,296 @@
 @startuml
+together {
+    class VkShaderModule{
+    }
+    note right of VkShaderModule
+        **Vulkan中的着色器代码**必须以**字节码格式**<<color:#Red>SPIR-V</color>>指定。
+        ================
+        1. 使用<color:#Red>glslc.exe</color>将着色器文件翻译成字节码文件（已经包含在Vulkan SDK中）
+        2. 读取字节码文件，存放在<color:#Red>std::vector<char></color>中。
+        3. 在将代码传递给管道之前，必须将其封装在<color:#Red>VkShaderModule</color>对象中
+        =============
+        NOTE : 一旦管道创建好，就可以立马删除此对象。
+    end note
 
-class VkShaderModule{
+    class VkShaderModuleCreateInfo{
+        +sType : 
+        +codeSize : std::vector::size()
+        +pCode : reinterpret_cast<const uint32_t*>(code.data()); 指向存放字节码的缓冲区。
+    }
+
+    class VkPipelineShaderStageCreateInfo #GreenYellow/LightGoldenRodYellow{
+        +sType : VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO
+        +stage : 告诉Vulkan将在哪个管道阶段使用着色器。例如：顶点着色器阶段VK_SHADER_STAGE_VERTEX_BIT。
+        +module : 代码的着色器模块。VkShaderModule。
+        +pName : 要调用的函数，称为入口点。 "main"。
+        +pSpecializationInfo : 为**着色器常量**指定值。优化选项，具体见笔记。
+    }
+    note top of VkPipelineShaderStageCreateInfo
+        为了**实际使用着色器**，需要通过此结构体将<color:#Red>ShaderModule</color>分配到管道的<color:#Red>一个特定阶段</color>。
+        =============
+        例如，我们需要为顶点着色模块和像素着色模块都创建一个这样的结构体。
+    end note
 }
-note top of VkShaderModule
-    **Vulkan中的着色器代码**必须以**字节码格式**<<color:#Red>SPIR-V</color>>指定。
-    ================
-    1. 使用<color:#Red>glslc.exe</color>将着色器文件翻译成字节码文件（已经包含在Vulkan SDK中）
-    2. 读取字节码文件，存放在<color:#Red>std::vector<char></color>中。
-    3. 在将代码传递给管道之前，必须将其封装在<color:#Red>VkShaderModule</color>对象中
-    =============
-    NOTE : 一旦管道创建好，就可以立马删除此对象。
-end note
-
-class VkShaderModuleCreateInfo{
-    +sType : 
-    +codeSize : std::vector::size()
-    +pCode : reinterpret_cast<const uint32_t*>(code.data()); 指向存放字节码的缓冲区。
-}
-
-class VkPipelineShaderStageCreateInfo{
-    +sType : VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO
-    +stage : 告诉Vulkan将在哪个管道阶段使用着色器。例如：顶点着色器阶段VK_SHADER_STAGE_VERTEX_BIT。
-    +module : 代码的着色器模块。VkShaderModule。
-    +pName : 要调用的函数，称为入口点。 "main"。
-    +pSpecializationInfo : 为**着色器常量**指定值。优化选项，具体见笔记。
-}
-note right of VkPipelineShaderStageCreateInfo
-    为了**实际使用着色器**，需要通过此结构体将<color:#Red>ShaderModule</color>分配到管道的<color:#Red>一个特定阶段</color>。
-    =============
-    例如，我们需要为顶点着色模块和像素着色模块都创建一个这样的结构体。
-end note
-
 VkShaderModuleCreateInfo --> VkShaderModule : vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule)
 VkShaderModule .. VkPipelineShaderStageCreateInfo
+
+class VkPipelineVertexInputStateCreateInfo #GreenYellow/LightGoldenRodYellow{
+    +vertexBindingDescriptionCount
+    +pVertexBindingDescriptions : 数据间距，以及数据的形式（顶点还是索引instance)
+    +vertexAttributeDescriptionCount
+    +pVertexAttributeDescriptions : 传递给顶点着色器的属性的类型
+}
+note right : <color:#Red>InputAssembly</color>：传递到顶点着色器的顶点数据的格式
+
+class VkPipelineInputAssemblyStateCreateInfo #GreenYellow/LightGoldenRodYellow{
+    +topology : POINT_LIST/STRIP、LINE_LIST/STRIP、TRIANGLE_LIST/STRIP（最多使用）
+    +primitiveRestartEnable : 可以让我们进行诸如**重用顶点之类的优化**。
+}
+note right : <color:#Red>InputAssembly</color>主要描述两件事：\n 1. 将从顶点绘制什么样的几何图形：点、线、三角形。\n 2. 是否应启用原始重启。
+
+together {
+    class VkViewport{
+        +x.
+        +y.
+        +width : swapChainExtent.width
+        +height : swapChainExtent.height
+        +minDepth : 0.0f
+        +maxDepth : 1.0f
+    }
+    note top : 主要描述**与输出相关的framebuffer区域**
+
+    class VkRect2D{
+        +offset
+        +extent
+    }
+    note top : <color:#Red>scissor rectangles</color> : 定义像素将实际存储在哪个区域，之外的像素在**光栅化过程**中会被丢弃 \n 它的功能像一个<color:#Red>过滤器</color>，而不是一个转换。
+
+    class VkPipelineViewportStateCreateInfo #GreenYellow/LightGoldenRodYellow{
+        +viewportCount : 1
+        +pViewports
+        +scissorCount : 1
+        +pScissors
+    }
+    note top of VkPipelineViewportStateCreateInfo
+        ViewportState：将Viewport和scissor rectangles组合成一个**视口状态**
+    end note
+}
+VkPipelineViewportStateCreateInfo::pViewports --> VkViewport
+VkPipelineViewportStateCreateInfo::pScissors --> VkRect2D
+
+class VkPipelineRasterizationStateCreateInfo #GreenYellow/LightGoldenRodYellow{
+    +depthClampEnable : 超出裁剪平面的fragment会被clamp到裁剪平面。
+    +rasterizerDiscardEnable : 设置为true，那么永远不会通过光栅化阶段。
+    +polygonMode : 如何为几何体生成fragment。
+    +lineWidth : 1.0f。
+    +cullMode : 面剔除的类型 : 禁用剔除，剔除正面，剔除背面，或两者兼用
+    +frontFace : 正面的顶点顺序 : 逆时针、顺时针
+    +depthBiasEnable.
+    +depthBiasConstantFactor.
+    +depthBiasClamp.
+    +depthBiasSlopeFactor.
+}
+note right of VkPipelineRasterizationStateCreateInfo::depthClampEnable
+    在某些情况是有用的，比如shadow map。
+    使用这个需要启动**某个GPU Feature**。
+end note
+note right of VkPipelineRasterizationStateCreateInfo::polygonMode
+    VK_POLYGON_MODE_<color:#Red>FILL\LINE\POINT</color>
+    使用Fill之外的其它模式都需要**额外的GPU Feature**
+end note
+
+class VkPipelineMultisampleStateCreateInfo #GreenYellow/LightGoldenRodYellow{
+    +sampleShadingEnable.
+    +rasterizationSamples.
+    +minSampleShading.
+    +pSampleMask.
+    +alphaToCoverageEnable.
+    +alphaToOneEnable.
+}
+note top of VkPipelineMultisampleStateCreateInfo
+    MultisampleState: 配置<color:#Red>MSAA</color>。
+end note
+
+together {
+    class VkPipelineColorBlendAttachmentState{
+        +colorWriteMask.
+        +blendEnable.
+        +srcColorBlendFactor : VK_BLEND_FACTOR_ONE。
+        +dstColorBlendFactor : VK_BLEND_FACTOR_ZERO。
+        +colorBlendOp : VK_BLEND_OP_ADD。
+        +srcAlphaBlendFactor : VK_BLEND_FACTOR_ONE。
+        +dstAlphaBlendFactor : VK_BLEND_FACTOR_ZERO。
+        +alphaBlendOp : VK_BLEND_OP_ADD。
+    }
+    note top of VkPipelineColorBlendAttachmentState
+        为每个附加的framebuffer都要配置<color:#Red>颜色混合</color>。
+        作为数组存放在<color:#Red>ColorBlendState<color:#Red>中。
+    end note
+
+    class VkPipelineColorBlendStateCreateInfo #GreenYellow/LightGoldenRodYellow{
+        +logicOpEnable.
+        +logicOp.
+        +attachmentCount.
+        +pAttachments: VkPipelineColorBlendAttachmentState。
+        +blendConstants[0].
+        +blendConstants[4].
+    }
+    note top of VkPipelineColorBlendStateCreateInfo
+        全局ColorBlend设置
+    end note
+}
+VkPipelineColorBlendStateCreateInfo::pAttachments --> VkPipelineColorBlendAttachmentState
+
+class VkDynamicState #GreenYellow/LightGoldenRodYellow{
+    +dynamicStateCount : 2。
+    +pDynamicStates : { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH }。
+}
+note top of VkDynamicState
+    **有限数量的状态**可以在不重新创建管道的情况下更改。
+    例如：视口的大小、线宽和混合常量。
+end note 
+
+class VkPipelineLayout #GreenYellow/LightGoldenRodYellow{
+   +setLayoutCount.
+   +pSetLayouts.
+   +pushConstantRangeCount.
+   +pPushConstantRanges.
+}
+
+
+package RenderPass {
+    class VkAttachmentDescription{
+        +format : swapChainImageFormat。
+        +samples : VK_SAMPLE_COUNT_1_BIT。
+        +loadOp : Render前**如何处理附件中的数据**。
+        +storeOp : Render后**如何处理附件中的数据**。
+        +stencilLoadOp : 可选项和loadOp一样。
+        +stencilStoreOp : 可选项一样。
+        +initialLayout: 渲染过程开始之前图像将具有哪种布局。
+        +finalLayout：染结束时自动转换到的布局
+    }
+    note right of VkAttachmentDescription::loadOp
+        VK_ATTACHMENT_LOAD_OP_<color:#Red>LOAD\CLEAR\DONT_CARE</color>。
+        保留/清除/未定义（不关心）。
+        针对的是**颜色和深度缓冲**
+    end note
+    note right of VkAttachmentDescription::storeOp
+        VK_ATTACHMENT_STORE_OP_<color:#Red>STORE\DONT_CARE</color>。
+        写入/未定义。
+        针对的是**颜色和深度缓冲**
+    end note
+    note right of VkAttachmentDescription::initialLayout
+        在Vulkan中，**纹理和帧缓冲**由具有特定像素格式的**VkImage对象**表示。
+        但是内存中**像素的布局**可以改变，常用的布局有：
+            1. VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL ：用作color attachment。
+            2. VK_IMAGE_LAYOUT_PRESENT_SRC_KHR ：要在交换链中显示的Image。
+            3. VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ：用作**内存复制操作目标**的Image。
+            4. VK_IMAGE_LAYOUT_UNDEFINED ：不关心图像的布局
+    end note
+    note left of VkAttachmentDescription
+        用来描述<color:#Red>VkAttachmentReference</color>
+    end note
+
+    class VkAttachmentReference{
+        +attachment : VkAttachmentDescription数组里面的索引。
+        +layout : 当subpass启动时，Vulkan将自动将Attachment转换到此布局。
+    }
+
+    class VkSubpassDescription{
+        +pipelineBindPoint : VK_PIPELINE_BIND_POINT_GRAPHICS。
+        +colorAttachmentCount : 0 (或者多个)。
+        +pColorAttachments : VkAttachmentReference数组。
+        +pInputAttachments : 从着色器中读取的附件。
+        +pResolveAttachments : 用于MSAA的颜色附件。
+        +pDepthStencilAttachment : Attachment for depth and stencil data。
+        +pPreserveAttachments : Subpass不使用的附件，但必须保留其数据。
+    }
+    note left of VkSubpassDescription
+        使用VkSubpassDescription结构描述<color:#Red>subpass</color>。
+    end note
+    note right of VkSubpassDescription::pColorAttachments
+        这个数组中附件的索引，直接对应的是如下的代码
+        <s>layout(location = 0) out vec4 outColor</s>
+    end note
+
+    class VkRenderPass #GreenYellow/LightGoldenRodYellow{
+
+    }
+    note right of VkRenderPass
+        vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) 
+        =========================
+        RenderPass里面拥有该Pass所需的所有附件，以<color:#Red>附件描述符数组</color>的形式存储，这是个全集。
+        SubPass可能只需要用到总集的一部分，也就是子集。笨的做法就是也存储<color:#Red>附件描述符数组</color>,
+        而好的做法，就是存储<color:#Red>附件描述符的引用数组</color>。
+    end note
+
+    class VkRenderPassCreateInfo{
+        +attachmentCount.
+        +pAttachments : VkAttachmentDescription数组。
+        +subpassCount : 1。
+        +pSubpasses : VkSubpassDescription数组
+    }
+
+    VkSubpassDescription::pColorAttachments --> VkAttachmentReference
+    VkAttachmentReference::attachment --> VkAttachmentDescription
+    VkRenderPassCreateInfo::pSubpasses --> VkSubpassDescription
+    VkRenderPassCreateInfo::pAttachments --> VkAttachmentDescription
+    
+    VkRenderPass --> VkRenderPassCreateInfo
+
+
+}
+note top of RenderPass
+在渲染时**将使用的framebuffer附件** ，有多少个颜色和深度缓冲区，每个缓冲区要使用多少个样本，以及在整个渲染操作中如何处理其内容。
+所有这些信息都被封装在一个<color:#Red>**Render Pass对象**</color>。
+end note
+
+class VkGraphicsPipelineCreateInfo #red-green{
+    +stageCount : 2.
+    +pStages : VkPipelineShaderStageCreateInfo。
+    +pVertexInputState : VkPipelineVertexInputStateCreateInfo。
+    +pInputAssemblyState : VkPipelineInputAssemblyStateCreateInfo。
+    +pViewportState : VkPipelineViewportStateCreateInfo。
+    +pRasterizationState : VkPipelineRasterizationStateCreateInfo。
+    +pMultisampleState : VkPipelineMultisampleStateCreateInfo。
+    +pDepthStencilState.
+    +pColorBlendState : VkPipelineColorBlendStateCreateInfo。
+    +pDynamicState : VkDynamicState。
+    +layout : VkPipelineLayout。
+    +renderPass : 要使用的subpass。
+    +subpass : 要使用的subpass的索引，这里是0。
+    +basePipelineHandle : 指定一个**现有管道的句柄**
+    +basePipelineIndex : 引用另一个**即将创建的管道的索引**
+}
+
+class VkPipeline #red-green{
+
+}
+note right of VkPipeline
+ vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline)
+ =============
+ 这个创建函数可以接受多个VkGraphicsPipelineCreateInfo对象，并在单个调用中**创建多个VkPipeline对象**。
+ 第二个参数引用一个**可选的VkPipelineCache对象**。
+ 管道缓存（VkPipelineCache）可用于：在多次调用vkCreateGraphicsPipelines的过程中存储和重用**与管道创建相关的数据**。
+end note
+
+VkGraphicsPipelineCreateInfo::pStages -up-> VkPipelineShaderStageCreateInfo
+VkGraphicsPipelineCreateInfo::pVertexInputState -right-> VkPipelineVertexInputStateCreateInfo
+VkGraphicsPipelineCreateInfo::pInputAssemblyState -right-> VkPipelineInputAssemblyStateCreateInfo
+VkGraphicsPipelineCreateInfo::pViewportState -right-> VkPipelineViewportStateCreateInfo
+VkGraphicsPipelineCreateInfo::pRasterizationState -right-> VkPipelineRasterizationStateCreateInfo
+VkGraphicsPipelineCreateInfo::pMultisampleState -left-> VkPipelineMultisampleStateCreateInfo
+VkGraphicsPipelineCreateInfo::pColorBlendState -left-> VkPipelineColorBlendStateCreateInfo
+VkGraphicsPipelineCreateInfo::pDynamicState -left-> VkDynamicState
+VkGraphicsPipelineCreateInfo::layout -down-> VkPipelineLayout
+VkGraphicsPipelineCreateInfo::renderPass -right-> VkRenderPass
+
+VkPipelineVertexInputStateCreateInfo -[hidden]right-> VkPipelineShaderStageCreateInfo
+VkPipelineInputAssemblyStateCreateInfo -[hidden]up-> VkPipelineVertexInputStateCreateInfo
+VkPipelineViewportStateCreateInfo -[hidden]up-> VkPipelineInputAssemblyStateCreateInfo
+VkPipelineRasterizationStateCreateInfo -[hidden]up-> VkPipelineViewportStateCreateInfo
+
+VkDynamicState -[hidden]up-> VkPipelineMultisampleStateCreateInfo
+
+VkPipeline -left-> VkGraphicsPipelineCreateInfo
 @enduml
