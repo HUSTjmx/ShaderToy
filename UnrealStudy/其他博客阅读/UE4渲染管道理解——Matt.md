@@ -233,7 +233,7 @@ VertexShader = InMaterial.GetShader<TBasePassVS<TUniformLightMapPolicy<Policy>, 
 
 在第三部分中，我们完成了对C++方面的研究。我们将更深入地研究**顶点工厂**如何控制输入到普通`base pass`的**顶点着色器代码**，以及如何处理`tessellation `（包括其额外的`Hull`和`Domain`阶段）。在我们了解了这些部分是如何组合在一起的之后，我们将通过**延迟pass**。
 
-![image-20210514103225787](C:\Users\xueyaojiang\Desktop\JMX_Update\UE4渲染管道理解——Matt.assets\image-20210514103225787.png)
+![image-20210514103225787](UE4渲染管道理解——Matt.assets\image-20210514103225787.png)
 
 
 
@@ -265,7 +265,7 @@ VertexShader = InMaterial.GetShader<TBasePassVS<TUniformLightMapPolicy<Policy>, 
 
 例如，在顶点着色器的底部，我们可以看到一个定义`#if WRITES_VELOCITY_TO_GBUFFER`，它通过计算上一帧和这一帧的**位置差**来计算每个顶点的速度。一旦计算出来，它就会存储在`BasePassInterpolants`变量中，但是如果你看那边，他们已经把这个**变量的声明**包装在一个匹配的`#if WRITES_VELOCITY_TO_GBUFFER`中。这意味着只有将速度写入`GBuffer`的**着色器变体**才会计算它——这有助于减少阶段间传递的数据量，这意味着更少的带宽，从而导致更快的着色器。
 
-![image-20210514143628050](C:\Users\xueyaojiang\Desktop\JMX_Update\UE4渲染管道理解——Matt.assets\image-20210514143628050.png)
+![image-20210514143628050](UE4渲染管道理解——Matt.assets\image-20210514143628050.png)
 
 
 
@@ -277,7 +277,7 @@ VertexShader = InMaterial.GetShader<TBasePassVS<TUniformLightMapPolicy<Policy>, 
 
 这种文本替换并不仅仅限于`structures`，`MaterialTemplate.ush`还包括几个没有实现的函数。例如，`half3 GetMaterialCustomData0`，`half3 GetMaterialBaseColor`，`half3 GetMaterialNormal`都是不同的函数，它们的内容是根据你的材质`graph`填写的。这使得你可以从像素着色器中调用这些函数，并知道它将执行你在**材质图表**中创建的计算，并将返回结果值。 
 
-![image-20210514151208827](C:\Users\xueyaojiang\Desktop\JMX_Update\UE4渲染管道理解——Matt.assets\image-20210514151208827.png)
+![image-20210514151208827](UE4渲染管道理解——Matt.assets\image-20210514151208827.png)
 
 ### The “Primitive” Variable
 
@@ -293,7 +293,7 @@ VertexShader = InMaterial.GetShader<TBasePassVS<TUniformLightMapPolicy<Policy>, 
 
 在`BasePassPixelShader.usf`中，`FPixelShaderInOut_MainPS函数`作为像素着色器的==入口点==。由于有大量的**预处理器定义**，这个函数看起来相当复杂，但是它主要是由**模板代码**组成的。虚幻使用了几种不同的方法来计算`GBuffer`的所需数据，这取决于启用了什么**光照模型**和**功能**。除非需要改变其中的一些模板代码，否则**第一个重要的函数**是在中间位置，在那里着色器获得BaseColor、Metallic、Specular、MaterialAO和Roughness的值。它通过调用`MaterialTemplate.ush`中声明的函数来实现，它们的实现由你的`material graph`定义。
 
-![image-20210514152022455](C:\Users\xueyaojiang\Desktop\JMX_Update\UE4渲染管道理解——Matt.assets\image-20210514152022455.png)
+![image-20210514152022455](UE4渲染管道理解——Matt.assets\image-20210514152022455.png)
 
 现在我们已经对一些数据通道进行了采样，虚幻要为**某些着色模型**修改其中的**一些数据通道**。例如，如果使用的是==次表面散射模型==（Subsurface, Subsurface Profile, Preintegrated Skin, two sided foliage or cloth)，那么虚幻将根据对`GetMaterialSubsurfaceData`的调用计算出一个**次表面颜色**。如果照明模型不是这些之一，它就会使用默认值`0`。
 
@@ -366,7 +366,7 @@ void RadialPixelMain( float4 InScreenPosition, float4 SVPos, out float4 OutColor
 
 最后我们计算这个像素的`surface shading`。`surface shading`需要考虑`GBuffer`、表面粗糙度、区域灯高光、光照方向、视图方向和法线。粗糙度是由我们的GBuffer数据决定的。Area Light Specular使用基于物理的渲染（基于light数据和粗糙度）来计算一个新值，并可以修改粗糙度和光线向量。
 
-![image-20210514163811651](C:\Users\xueyaojiang\Desktop\JMX_Update\UE4渲染管道理解——Matt.assets\image-20210514163811651.png)
+![image-20210514163811651](UE4渲染管道理解——Matt.assets\image-20210514163811651.png)
 
 `surface shading`最后给了我们一个机会来修改每个表面对这些数据的反应。这个函数位于`ShadingModels.ush`中，只是一个大的开关语句，看的是`ShadingModel ID`，这个ID早先被写进了GBuffer中。许多**光照模型**共享一个标准的着色函数，但一些更特殊的着色模型使用自定义实现。`surface shading`并不考虑衰减，所以它**只处理计算没有阴影的表面颜色**。衰减（也就是距离+阴影）要到==光累积器==`Light Accumulator`运行时才会被考虑进去。**光线累加器**将表面光照和衰减考虑在内，并在乘以光线衰减值后，将表面和次表面光照正确地加在一起。
 
