@@ -82,20 +82,75 @@
 
 <img src="Forward Light Cuts.assets/image-20220316171750308.png" alt="image-20220316171750308" style="zoom:67%;" />
 
-其中¯u = ?u? , ?u,?v?+ = max(0, ?u,?v?), L(ti, ¯yix)是离开以yi∈ti为中心的VPL的辐射度? L(ti, ¯yix)是离开以yi∈ti为中心的VPL向¯yix方向的辐射度，di = max(ε, ?xyi?) 是yi和x之间的距离，夹在用户参数ε中以避免奇异性。我们用以下VPL出射辐射度表达式来模拟第一次漫反射。
-3
+其中 $\overline{u}=\frac{u^{\rightarrow}}{||u^{\rightarrow}||}$ ， $<u^{\rightarrow},v^{\rightarrow}>^+=max(0,<u^{\rightarrow},v^{\rightarrow}>)$，$L(t_i,y_i^-x)$是以 $y_i \in t_i$ 为中心的`VPL`的、射向$y_i^-x$的**辐射度**，$d_i=max(\varepsilon,||x^{\rightarrow}y_i||)$是 $y_i$ 和 $x$ 之间的距离。作者用以下**`VPL`出射辐射度表达式**来模拟**第一次漫反射**：
+
+<img src="Forward Light Cuts.assets/image-20220317095427842.png" alt="image-20220317095427842" style="zoom:67%;" />
+
+$\frac{3}{2\pi}$ 是为了确保==能量守恒==，辐射度$B(t_i)$和辐照度$E(t_i)$的关系为：
+
+<img src="Forward Light Cuts.assets/image-20220317095707174.png" alt="image-20220317095707174" style="zoom:67%;" />
 
 
 
 
 
+### 4.1 Approximating VPL lighting
+
+作者建议通过总结**VPLs子集的贡献**，来近似计算 $L^{ML}(x,n_x)$。因此，作者定义$K(x,n^{\rightarrow}_x)$为 $L^{ML}(x,n_x)$的 近似：
+
+<img src="Forward Light Cuts.assets/image-20220317101537059.png" alt="image-20220317101537059" style="zoom:67%;" />
+
+$F^k(t_i,x)$是位置`x`、发射器$t_i$和索引`k`的未知函数。通过计算 $K(x,n^{\rightarrow}_x)$ 在每个可能的分区（$L^0,...,L^N$）集合上的**期望值**，可以得到：
+
+<img src="Forward Light Cuts.assets/image-20220317102037786.png" alt="image-20220317102037786" style="zoom:67%;" />
+
+其中$1_{[t_i \in L^k]}$是**指标函数**，如果$t_i \in L^k$则等于`1`，否则等于`0`。如果想让$K(x,n^{\rightarrow}_x)$代表入射辐射度$L^{ML}(x,n_x)$的**无偏估计**，必须在$F^k$上验证以下函数方程：
+
+<img src="Forward Light Cuts.assets/image-20220317102242041.png" alt="image-20220317102242041" style="zoom:67%;" />
+
+根据==VPL分区策略==（见公式`3`），作者将 $F^k$ 定义为：
+
+<img src="Forward Light Cuts.assets/image-20220317102401002.png" alt="image-20220317102401002" style="zoom:67%;" />
+
+它将**无偏条件（公式9）**转化为一个**统一的分割问题**，寻求一组函数 $(f^k)_k$，从而使：
+
+<img src="Forward Light Cuts.assets/image-20220317102519712.png" alt="image-20220317102519712" style="zoom:67%;" />
 
 
 
+### 4.2 Choice of partition of unity
+
+受**PPGI树形切割策略**的启发，作者引入了一个以 $h>0$ 为特征的**嵌套球族** $B_h(t_i)$。对于给定的 $h$，$B_h(t_i)$代表**点集合**（对VPL的贡献是重要的）。这意味着对于$B_h(t_i)$之外的每个点`x`，无论接收器的方向如何，函数 $H(t_i,x,n^{\rightarrow}_x)$ 的值都小于 $h$ : 
+
+<img src="Forward Light Cuts.assets/image-20220317103049766.png" alt="image-20220317103049766" style="zoom:67%;" />
+
+此外，$H(t_i,x,n^{\rightarrow}_x)$（公式`5`）在接收者正面朝向发射者时是最大的，即 $n^{\rightarrow}=x^-y_i$。因此：
+
+<img src="Forward Light Cuts.assets/image-20220317103241598.png" alt="image-20220317103241598" style="zoom:67%;" />
+
+因此，由于$D(h)$不依赖于`x`，$(B_h(t_i))_{h\in R^*}$ 是一个**嵌套球族**——中心位于线$(y_i,n_i)$上。作者规定：三维单位分区 $(f^k)_k$ 在作为$B_h(t_i)$的前沿球体上是**恒定的**。然后，通过定义以下从$R^3$到$R$的映射：
+
+<img src="Forward Light Cuts.assets/image-20220317103639957.png" alt="image-20220317103639957" style="zoom:67%;" />
+
+<img src="Forward Light Cuts.assets/image-20220317103732535.png" alt="image-20220317103732535" style="zoom:67%;" />
+
+由于 $(f^k)_k$ 将在渲染过程中被用作**拼接函数**，作者的目标是使它们**尽可能平滑**，同时保持它们**易于计算**，并将它们定义为以下一组**连续片状仿射函数**：
+
+<img src="Forward Light Cuts.assets/image-20220317103900287.png" alt="image-20220317103900287" style="zoom:67%;" />
+
+其中 $\{D_k\}$ 允许指定每个级别的**影响距离**。
+
+<img src="Forward Light Cuts.assets/image-20220317103951886.png" alt="image-20220317103951886" style="zoom:67%;" />
 
 
 
+### 4.3 Parameters setting
 
+为了模仿传统的**用于光场的层次表征**，作者用**子集大小的期望值**生成分区，该期望值以**几何级数**递减。此外，虽然$S_k$可以被理解为位于$L^k$层的三角形的平均表面，但作者通过以下方式定义它们：
 
+<img src="Forward Light Cuts.assets/image-20220317104152532.png" alt="image-20220317104152532" style="zoom:67%;" />
 
+其中$\mu>1$是一个用户定义的实数。根据**场景和层次的数量**，通常将$\mu$设置在`1.4`到`5`之间。此外，仍然通过模仿**分层方法**，作者建议定义**`VPLs`的影响距离**，使空间中的每个点的**可以到达的VPLs的数量**是可控的，这可以被转化为：
+
+<img src="Forward Light Cuts.assets/image-20220317104401661.png" alt="image-20220317104401661" style="zoom: 67%;" />
 
