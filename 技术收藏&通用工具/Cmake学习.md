@@ -214,12 +214,3 @@ make
 ```
 
 
-
-
-
-
-
-严重性	代码	说明	项目	文件	行	禁止显示状态
-错误		CMake Error at RayMarchingPipeline/CMakeLists.txt:9 (target_link_libraries):
-  Cannot specify link libraries for target "RayMarchingPipeline," which is
-  not built by this project.		C:\Users\ZoroD\source\repos\RayMarchingPipeline\RayMarchingPipeline/CMakeLists.txt	9	
