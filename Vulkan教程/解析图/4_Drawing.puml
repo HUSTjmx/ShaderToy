@@ -25,9 +25,11 @@ class VkFramebuffer{
 note right of VkFramebuffer
     vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i])。
     ==================
+    一个**framebuffer对象**会引用所有**代表附件的VkImageView对象**
+    ==================
     必须为交换链中的所有<color:#Red>VkImage</color>都创建一个帧缓冲区
     ==================
-    <color:#Red>frameBuffer</color>应该和<color:#Red>RenderPass</color>兼容，这大致意味着：使用相同数量和类型的附件。
+    <color:#Red>frameBuffer</color>应该和<color:#Red>RenderPass</color>兼容，不然不能使用，这大致意味着：必须使用相同数量和类型的附件。
 end note
 
 VkFramebuffer --> VkFramebufferCreateInfo
@@ -85,6 +87,21 @@ package Command_buffers {
     VkCommandBuffer --> VkCommandBufferAllocateInfo
     VkCommandBufferAllocateInfo::commandPool --> VkCommandPool
 
+    class VkCommandBufferBeginInfo{
+        +flags : 如何使用命令缓冲区。
+        +pInheritanceInfo : 只与<color:#Red>辅助命令缓冲区</color>相关。
+    }
+    note left of VkCommandBufferBeginInfo::flags
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : 命令缓冲区在执行一次后就会被重新记录。
+        VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT : 这是一个二级命令缓冲区（不能跨pass）。
+        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : 当命令缓冲区也已经在等待执行时，可以重新提交。
+    end note
+
+    class VkRenderPassBeginInfo{
+        +renderPass : VkRenderPass.
+        +framebuffer : VkFramebuffer. swapChainFramebuffers[i].
+        +renderArea.offset
+    }
 }
 
 @enduml
