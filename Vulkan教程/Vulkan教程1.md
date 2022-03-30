@@ -2122,9 +2122,9 @@ for (size_t i = 0; i < swapChainImageViews.size(); i++) {
 
 **framebuffer的创建**非常简单。我们首先需要指定：`framebuffer`需要与哪个渲染通道兼容。只能将**一个framebuffer**与它**所兼容的渲染通道**一起使用，这大致上意味着：==它们使用相同数量和类型的附件==。
 
-`attachmentCount`和`pAttachments`参数指定了**`VkImageView`对象**，这些对象应该被绑定到`render passd`的**pAttachment数组**中的**各自的附件描述**。
+`attachmentCount`和`pAttachments`参数指定了**`VkImageView`对象**，这些对象应该被绑定到`render passd`的**pAttachment数组**中的**附件描述**。
 
-在图像视图和`Render pass`之前，**删除framebuffer**。
+在`ImageView`和`Render pass`之前，**删除`framebuffer`**。
 
 ```c
 void cleanup() {
@@ -2259,19 +2259,21 @@ for (size_t i = 0; i < commandBuffers.size(); i++) {
 }
 ```
 
-`flags`参数：如何使用命令缓冲区。可以使用以下值：
+`flags`参数：==如何使用命令缓冲区==。可以使用以下值：
 
-- `VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT`: 命令缓冲区将在执行一次后立即重新录制。
-- `VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT`: This is a secondary command buffer that will be entirely within a single render pass。这是一个次要的命令缓冲区，它将完全在一个渲染传递中。
-- `VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT`: 可以在命令缓冲区已经挂起时看，重新提交它。
+- `VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT`：**命令缓冲区**在执行一次后就会被**重新记录**。
+- `VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT`：这是一个**二级命令缓冲区**（不能跨`pass`）。
+- `VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT`：当**命令缓冲区**也已经在等待执行时，可以**重新提交**。
 
-`pInheritanceInfo`参数只与辅助命令缓冲区相关。它指定了要从·调用的主命令缓冲区·继承哪种状态。如果命令缓冲区已经被记录过一次，那么调用`vkBeginCommandBuffer`将隐含地重置它。在以后的时间内，也不会将命令追加到缓冲区。
+`pInheritanceInfo`参数只与**辅助命令缓冲区**相关。它指定了要从·**调用的主命令缓冲区**·继承哪种状态。如果**命令缓冲区**已经被记录过一次，那么调用`vkBeginCommandBuffer`将隐含地重置它。在以后的时间内，也不会将命令追加到缓冲区。
 
 
 
 ##### Starting a render pass
 
 Drawing starts by beginning the render pass with vkCmdBeginRenderPass. The render pass is configured using some parameters in a VkRenderPassBeginInfo struct.
+
+> ==Drawing==开始于**用`vkCmdBeginRenderPass`开始的渲染通道**。**渲染通道**是通过`VkRenderPassBeginInfo`结构中的一些参数配置的。
 
 ```c
 VkRenderPassBeginInfo renderPassInfo{};
@@ -2287,7 +2289,7 @@ renderPassInfo.renderArea.offset = {0, 0};
 renderPassInfo.renderArea.extent = swapChainExtent;
 ```
 
-接下来的两个参数定义了渲染区域的大小。`Render Area`定义了着色器加载和存储的位置。该区域以外的像素具有未定义的值。它应该与附件的大小匹配，以获得最佳性能。
+接下来的两个参数定义了**渲染区域的大小**。`Render Area`定义了着色器加载和存储的位置。该区域以外的像素具有未定义的值。它应该与附件的大小匹配，以获得最佳性能。
 
 ```c
 VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};

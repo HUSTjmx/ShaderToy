@@ -156,6 +156,10 @@ class VkPipelineLayout #GreenYellow/LightGoldenRodYellow{
    +pushConstantRangeCount.
    +pPushConstantRanges.
 }
+note bottom of VkPipelineLayout
+    可以在着色器中使用<color:#Red>uniform value</color>。
+    这些<color:#Red>uniform value</color>需要在**创建管道的过程**中，创建一个</color>VkPipelineLayout</color>对象。
+end note
 
 
 package RenderPass {
