@@ -87,19 +87,87 @@
 
 ## 3. RESULTS AND DISCUSSION
 
+主要是介绍实验场景（复杂度：三角形面片数）。还有就是实验的硬件条件（CPU、显卡等）和头戴设备的数据。
+
 ### 3.1 实现
 
 `foveal`区域的像素半径是公式`7`来计算的：
 
 ![image-20211206183617534](Foveated Photon Mapping.assets/image-20211206183617534.png)
 
-其中，`foveal`区域的角度半径$e_f$被设定为$9.78^o$；`PPI`是HMD的像素密度，以每英寸像素衡量，HTC Vive为`615`ppi；b是HMD的瞳孔到镜头的距离，HTC Vive为`18`mm。
+其中，`foveal`区域的角度半径 $e_f$ 被设定为$9.78^o$；`PPI`是HMD的像素密度，以每英寸像素衡量，HTC Vive为`615` `ppi`；`b`是HMD的瞳孔到镜头的距离，HTC Vive为`18`mm。
+
+然后是**具体加速算法**的介绍，这里略。
 
 
 
 ### 3.2 Quality
 
-Todo
+:one:将本文方法、原始光子映射方法（VPLs的数量一致） $PM_{3M}$、`Ground Truth`进行了比较。其中，`Ground Truth`是用**1亿个光子的光子映射方法**得到的。本文方法和原始光子映射方法都使用**300万个光子**。之后是本文方法光子的分配细节，这里略过。
+
+本方法的结果比 $PM_{3M}$ 的结果更接近于`Ground Truth`的结果。在 $PM_{3M}$ 渲染的裁剪区域中显示了一些伪影。之后介绍了此方法导致的一些问题。（似乎可以在同等条件下，除了性能，也可以就画面表现，来间接展现论文方法的进步）
+
+<img src="Foveated Photon Mapping.assets/image-20220411112344934.png" alt="image-20220411112344934" style="zoom:67%;" />
+
+:two:作者用**两个指标**来**量化质量**：==平均平方误差== $MSE$ （和`Ground Truth`的所有像素进行比较） 和==平均时间误差== $MSE^/$，它被定义为$(n-1)$个连续**帧对**之间所有像素的**平均平方误差**，公式如下。作者分别测量`foveal regions`和`peripheral regions`的 $MSE$ 和 $MSE^/$ 。（感觉这个可以直接使用）
+
+<img src="Foveated Photon Mapping.assets/image-20220411114426089.png" alt="image-20220411114426089" style="zoom:67%;" />
+
+之后主要是根据**下表的数据**，来分析对比本文方法和$PM_{3M}$ ，进而来验证本文方法在正确性上的优越性。
+
+<img src="Foveated Photon Mapping.assets/image-20220411114924481.png" alt="image-20220411114924481" style="zoom:67%;" />
+
+**图4**直观地显示了实验场景的 $MSE$ 和 $MSE^/$，$MSE^/$是通过稍微移动视角来计算的。**较白的像素代表较大的误差**。通过误差可视化显示，进一步显示本文方法的优越性。
+
+<img src="Foveated Photon Mapping.assets/image-20220411115052534.png" alt="image-20220411115052534" style="zoom:67%;" />
+
+:three:本文方法有几个参数会影响图像质量。下图显示了本文方法在`Room`和`Cornellbox`中针对不同数量的`foveated photons`和`light photons`，产生的不同的渲染结果。第`1-2`行的图像显示的是**总光子数固定时的渲染结果**，`foveated photons`在总光子中的比例从左到右逐渐增加：20%、30%、40%、50%、60%。在`Room`中，虽然比例在变化，但注视点区域的图像没有明显的视觉差异，而周围区域的图像由于光子数量的减少，噪声也随之增加。在`Conellbox`中，当`foveated photons`的比例从$20\%$增加到$40\%$时，注视点区域的噪声会减少，但从$40\%$到$60\%$，注视点区域的噪声又会增加。这是因为当光子的数量达到一定数量时，增加注视点区域的光子密度可以减少噪声。然而，由于`foveated photons`的通量是根据`light photons`来估计的，如果`light photons`太稀少，即使增加注视点区域的`light photons`的密度，也不能减少噪声。光子越少，噪声就越大。这两个场景**注视点区域**和**围周区域**的`MSE`如图6(a)所示。
+
+之后是在固定`foveated photons`的数量的情况下，增加`light photons`的数量，来看看表现，得到图6b；倒过来得到图6c。
+
+<img src="Foveated Photon Mapping.assets/image-20220411121017506.png" alt="image-20220411121017506" style="zoom:67%;" />
+
+![image-20220411154130396](Foveated Photon Mapping.assets/image-20220411154130396.png)
+
+
+
+### 3.3 性能
+
+![image-20220411154621777](Foveated Photon Mapping.assets/image-20220411154621777.png)
+
+:one:表2显示了本文方法的**帧渲染时间**，以及与**光子映射方法**相比的**速度提升**。第`2`行和第`3`行显示了本文方法在没有（$Ours_{wo}$）和有时间性光子管理（$Ours$）的情况下的**时间成本**。本文方法加上**时间性光子管理**，得到了$1.9-2.6$ 倍的速度提升，这是由于`foveated photons`的**高重用率**（第`4`行）。与$PM_{3M}$相比（第`5`行），本文方法实现了 $3.5-4.5$ 倍的速度提升。之后的行同上。
+
+:two:图9显示了使用本文方法（左）和 $PM_{3M}$（右）渲染`Cornellbox`的每一步的时间成本。本文方法有`4`个步骤。1）光子追踪（LPT）；2）注视点光子追踪（FPT）；3）时间光子管理（TPM）；4）渲染，而 $PM_{3M}$ 有两个步骤。1）光子追踪（PT）；2）渲染。我们的FPT和TPM只花费了大约10ms。有了FPT和TPM，LPT时间可以减少到PM3M LPT的10%。两种方法的渲染时间几乎相同。因此，本文方法比 $PM_{3M}$ 快4倍。
+
+![image-20220411155502927](Foveated Photon Mapping.assets/image-20220411155502927.png)
+
+:three:表3显示了`Room`和`Cornellbox`在不同数量的不同光子的情况下的表现。当`foveated photons`的比例增加时，时间成本就会增加（第`1-3`行）。这是因为随着`foveated photons`比例的增加，`foveated photons`的数量也在增加。为了确定`foveated photons`的流量和反弹方向，我们需要为每个`foveated photons`找到最近的光子。这个搜索过程是很耗时的。因此，即使减少了光子的数量，整个计算过程的性能仍然下降。
+
+![image-20220411155831480](Foveated Photon Mapping.assets/image-20220411155831480.png)
+
+
+
+## 4. USER STUDY
+
+作者设计了一个**within-subject研究**，以评估本文方法和`PM`之间的**感观GI质量**。
+
+
+
+***Conditions***。作者使用本文方法作为**实验条件**（`experimental condition`、`EC`）。它由五个场景{房间，Sponza，书房，Cornellbox，厨房}，三个注视点半径 $e_f$ {6.78◦，9.78◦，12.78◦}，和三个总光子数 $\#Photon$ {2M，3M，4M}的全因子组合组成。`EC`中的每一项都是一个简短的动画序列，表示为 $EC(e_f,\#Photon)$。第一个`control condition`（`CC1`）使用 $PM$ 来渲染五个场景的短动画序列，并保持`MSE`等于$EC(6.78^o,4M)$。第二个`control condition`（`CC2`）使用与`EC`相同的光子数量{2M, 3M, 4M}。`CC2`中的每项都是一个简短的动画序列，表示为 $CC2(\#Photon)$。
+
+***Participants***。在这项用户研究中，作者招募了`32`名参与者，其中`20`名男性和`12`名女性，年龄在`20`到`28`岁之间。每个参与者按随机顺序完成**85次试验**，`EC`中的项目被展示一次，`CC1`和`CC2`中的项目被展示两次。
+
+***Task***。在这个任务中，每个参与者都会以**随机的顺序**看到`EC`、`CC1`和`CC2`的短动画序列。每个短的动画序列长`8`秒，中间有一个短的黑色间隔（`0.5`s）。在任务过程中，参与者被要求在呈现每个动画序列后，回答这个序列的质量是否可接受。
+
+***Result and Discussion***。
+
+![image-20220411164312092](Foveated Photon Mapping.assets/image-20220411164312092.png)
+
+
+
+
+
+
 
 
 
