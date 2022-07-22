@@ -41,7 +41,8 @@ package Command_buffers {
     note right of VkCommandPool
         vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool)。
         <size:20><color:#Red>命令池</color></size>管理内存，从中分配Command buffers。
-        有多少个需要使用的队列族，我们就应该创建多少个对应的CommandPool。
+        Command buffers是通过device queues提交的，而queues分属于不同的队列族。
+        因此，有多少个需要使用的队列族，我们就应该创建多少个对应的CommandPool。
     end note    
 
     class VkCommandPoolCreateInfo{
@@ -64,7 +65,8 @@ package Command_buffers {
 
     }
     note right of VkCommandBuffer
-        我们必须为交换链中的每个<color:#Red>Image</color>记录一个**命令缓冲区**。
+        像**绘制**和**内存传输**这样的命令不是通过**函数调用**直接执行的。我们必须要在<color:#Red>Command Buffer</color>中记录**要执行的所有操作**。
+        因此，我们必须为交换链中的每个<color:#Red>Image</color>记录一个**命令缓冲区**。
         所以：commandBuffers.size() == swapChainFramebuffers.size()。
         ==============
         vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data())。
