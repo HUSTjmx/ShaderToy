@@ -162,7 +162,7 @@ float expStep( float x, float k, float n )
 
 ### Gain
 
-![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/IQ%E5%A4%A7%E7%A5%9E%E5%8D%9A%E5%AE%A2%E9%98%85%E8%AF%BB/%E5%9B%BE%E7%89%87/useful%20little%20functions/Gain1.png)
+![](useful little functions.assets/Gain1.png)
 
 > k<1 on the left, k>1 on the right
 
@@ -182,7 +182,7 @@ float gain(float x, float k)
 
 ### Parabola
 
-![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/IQ%E5%A4%A7%E7%A5%9E%E5%8D%9A%E5%AE%A2%E9%98%85%E8%AF%BB/%E5%9B%BE%E7%89%87/useful%20little%20functions/Parabola.png)
+![](useful little functions.assets/Parabola.png)
 
 ​	一个很好的选择是将[0,1]区间重映射为[0,1]，但是边界被映射为0，中心被映射为1，也就是说，抛物线(0)=抛物线(1)=0，抛物线(1/2)=1。
 
@@ -199,7 +199,7 @@ float parabola( float x, float k )
 
 ### Power curve
 
-![](https://jmx-paper.oss-cn-beijing.aliyuncs.com/IQ%E5%A4%A7%E7%A5%9E%E5%8D%9A%E5%AE%A2%E9%98%85%E8%AF%BB/%E5%9B%BE%E7%89%87/useful%20little%20functions/Powercurve.png)
+![](useful little functions.assets/Powercurve.png)
 
 ​	这是对上面的Parabola()的泛化。但在这个泛化中，你可以控制曲线两边的形状，这在==创建树叶、眼睛和其他有趣的形状时非常方便==。
 
