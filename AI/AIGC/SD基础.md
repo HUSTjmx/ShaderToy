@@ -1,3 +1,9 @@
+[toc]
+
+
+
+
+
 # SD参数指南
 
 ## 1. CFG Scale
@@ -666,6 +672,70 @@ ToDo
 
 [Inpainting抠图](https://stable-diffusion-art.com/how-to-remove-a-person-with-ai-inpainting/)
 
+[Inpainting换衣]()
+
+
+
+------
+
+# LoRA模型
+
+## 1. 什么是LoRA
+
+==LoRA模型==是**小型的稳定扩散模型**，它对**标准checkpoint模型**进行微小的更改。它们通常比检查点模型小`10`到`100`倍。
+
+**LoRA (Low-Rank adaptive)**是一种用于微调**SD模型**的训练技术。但我们已经有了`Dreambooth`和`Embedding`等技术。`LoRA`有什么用？`LoRA`在文件大小和训练能力之间提供了一个很好的权衡：`Dreambooth`功能强大，但会产生较大的模型文件(2~7gb)；Embedding很小(大约100kb)，但功能受限。
+
+与`Embedding`一样，我们不能单独使用LoRA模型，必须与checkpoint模型一起使用。LoRA通过对**附带的模型文件**应用**微小的更改**，来修改样式。
+
+
+
+## 2. LoRA库
+
+[Civitai](https://civitai.com/)拥有大量的LoRA模型。hugs Face是LoRA库的另一个来源
+
+
+
+## 3. 如何使用LoRA
+
+要使用LoRA模型，请在提示符中输入以下短语：**\<lora:filename:multiplier>**。`filename`是LoRA模型的文件名，不包括扩展名(`.pt`， `.bin`等)；`multiplier`是应用于LoRA模型的**权重**，默认为`1`，将其设置为`0`禁用模型。如何确定文件名是正确的？我们应该单击**模型按钮**，而不是编写这个短语。
+
+<img src="SD基础.assets/image-20230422211316611.png" alt="image-20230422211316611" style="zoom:67%;" />
+
+一些LoRA模型是用`Dreambooth`训练的。我们需要使用**触发器关键字**来使用LoRA模型——可以在模型页面上找到**触发器关键字**。与`Embedding`类似，我们可以同时使用多个LoRA模型，也可以将它们与`Embedding`一起使用。
+
+
+
+## 4. 推荐的LoRA
+
+:one:我们使用 [Guo Feng](https://civitai.com/models/10415)这个大模型和[Shukezouma LoRA](https://civitai.com/models/12597/moxin)，可以绘制出中国水墨画主题，触发关键词：**shukezouma**
+
+> **Prompt**：(shukezouma:0.5) ,\<lora:Moxin_Shukezouma:1> , chinese painting, half body, female, perfect symmetric face, detailed chinese dress, mountains, flowers, 1girl, tiger
+>
+> **Negative Prompt**：disfigured, ugly, bad, immature
+>
+> <img src="SD基础.assets/image-189.png" alt="img" style="zoom:50%;" />
+
+:two:我们使用[AbyssOrangeMix2 model](https://civitai.com/models/4437/abyssorangemix2-sfw)和[Akemi Takada LoRA](https://civitai.com/models/5737/akemi-takada-1980s-style-lora)。==高田明美==是一位日本漫画插画家。如果你喜欢20世纪80年代和90年代的日本动漫，这是个不错的选择。
+
+> **Prompt**：takada akemi, Tifa lockhart as magician, Final Fantasy VII, 1girl, small breast, beautiful eyes, brown hair, smiling, red eyes, highres, diamond earring, long hair, side parted hair, hair behind ear, upper body, stylish dress, indoors, bar 1980s (style), painting (medium), retro artstyle, watercolor (medium) \<lora:akemiTakada1980sStyle_1:0.6>
+>
+> **Negative prompt**：(worst quality, low quality:1.4), (painting by bad-artist-anime:0.9), (painting by bad-artist:0.9), watermark, text, error, blurry, jpeg artifacts, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, artist name, bad anatomy
+>
+> <img src="SD基础.assets/image-195.png" alt="img" style="zoom:50%;" />
+
+:three:使用 [Anything v4.5 model](https://huggingface.co/andite/anything-v4.0/blob/main/anything-v4.5.ckpt)和[Cyberpunk 2077 Tarot card LoRA](https://civitai.com/models/6628/cyberpunk-2077-tarot-card-512x1024)。这种LoRA模型产生具有未来主义赛博朋克风格的机器人和城市。
+
+> **Prompt**：cyberpunk, tarot card, close up, portrait, bionic body, cat, young man, perfect human symmetric face, leather metallic jacket, circuit, city street in background, natural lighting, masterpiece \<lora:cyberpunk2077Tarot_tarotCard512x1024:0.6>
+>
+> **Negative prompt**：(worst quality, low quality:1.4), (painting by bad-artist-anime:0.9), (painting by bad-artist:0.9), watermark, text, error, blurry, jpeg artifacts, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, artist name, bad anatomy, big breast
+>
+> <img src="SD基础.assets/image-1682169935689-5.png" alt="img" style="zoom:50%;" />
+
+
+
+
+
 
 
 # **Embedding**技术（**textual inversion**）
@@ -675,6 +745,8 @@ ToDo
 `Embedding`是文本反转（`textual inversion`）的结果，==一种在模型中定义**新关键词**而不修改模型的方法==。该方法因其能够以**3~5个样本图像**为模型注入新的样式或对象而受到关注。
 
 **文本反转**的神奇之处不在于添加新样式或对象的能力，其他微调方法也可以做到这一点，甚至更好。关键是它可以在不改变模型的情况下做到这一点。
+
+每个embedding都是基于一款模型生成的，如果我们下载的embedding是基于SD1.5模型训练的，那它只能针对SD1.5模型来生效
 
 
 
@@ -732,6 +804,84 @@ ToDo
 
 
 
+
+
+# 超网络模型hypernetworks
+
+准备好把**SD技能**提高到一个新的水平了吗？如果是这样，让我们谈谈==超网络模型==。
+
+## 1. 什么是hypernetworks
+
+**hypernetworks**是一种微调技术，最初由`Novel AI`开发，是稳定扩散的早期采用者。它是一个**小的神经网络**，连接到一个**Stable Diffusion model**来修改它的风格。
+
+**hypernetworks**插入到哪里？稳定扩散模型中**最关键的部分**：噪声预测器UNet的交叉注意模块。==LoRA模型类似地修改了稳定扩散模型的这一部分，但方式不同==。
+
+在训练过程中，**Stable Diffusion model**被锁定，但附加的**hypernetworks**允许变化。由于**hypernetworks**较小，训练速度快，所需资源有限，可以在一台普通的电脑上进行。**快速训练**和**小文件**是其主要技术吸引力。
+
+
+
+## 2. 和其他模型的区别
+
+:one:**hypernetworks**无法单独运行，它也需要使用checkPoint模型来生成图像。
+
+:two:**LoRA模型**与**hypernetworks**最为相似。它们都很小，只修改**交叉注意模块**。不同之处在于他们如何修改它：**LoRA模型**通过改变交叉注意的权重，来修改交叉注意；**Hypernetwork**通过插入额外的网络来实现。
+
+> 用户通常会发现**LoRA模型**产生更好的结果
+
+:three:**Embeddings**和**hypernetworks**作用于稳定扩散模型的不同部分。:three:**Embeddings**在文本编码器中创建**新的嵌入**。**hypernetworks**将一个小网络插入到**交叉注意模块**。
+
+> 根据大佬的经验，**Embeddings**比**hypernetworks**更强大。
+
+
+
+## 3. 怎么使用hypernetworks
+
+将下载好的hypernetworks模型文件放入以下文件夹中：*stable-diffusion-webui/models/hypernetworks*。
+
+要使用hypernetworks，请在提示符中输入以下短语：**\<hypernet:filename:multiplier>**。
+
+为了成功解锁预期的风格，首先将其**与训练时使用的模型**一起使用。但不要止步于此，有些hypernetworks需要==特定的提示==，或者只能处理==特定的主题==，因此请务必查看**模型页面上的提示示例**，以了解哪种提示最有效。
+
+这里有一个专业建议：如果注意到图像看起来有点太饱和了，这可能是我们需要**调整倍率的信号**。一旦确认了超网络正在发挥它的魔力，我们也可以在其他模型上试用它（这不是炼丹，只是配药~~）。
+
+
+
+## 4. 推荐的hypernetworks
+
+- [Water Elemental ](https://civitai.com/models/1399/water-elemental)：使用 [Stable Diffusion v1.5](https://stable-diffusion-art.com/models/#Stable_diffusion_v15)。可以把任何东西变成水！在`subejct`前使用短语 *water elemental*（PS：一定要描述背景）。
+
+  - Prompt：water elemental woman walking across a busy street \<hypernet:waterElemental_10:0.7>
+
+    <img src="SD基础.assets/image-90.png" alt="img" style="zoom:50%;" />
+
+  - Prompt：water elemental a boy running on water \<hypernet:waterElemental_10:1>
+
+    ![hypernetwork water elemental](SD基础.assets/image-91.png)
+
+- [InCase Style](https://civitai.com/models/5124/incase-style-hypernetwork)：使用[Anything v3 Model](https://huggingface.co/Linaqruf/anything-v3.0)。它修改了任何v3模型，以产生**更成熟的动画风格**。
+
+  - Prompt：detailed face, a beautiful woman, explorer in forest, white top, short brown pants, hat, sky background, realism, small breast \<hypernet:incaseStyle_incaseAnythingV3:1>
+
+  - Negative prompt：moon, ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, large breast
+
+    <img src="SD基础.assets/image-85.png" alt="img" style="zoom:50%;" />
+
+- [Gothic RPG Artstyle](https://civitai.com/models/5814/gothic-rpg-artstyle)：使用[Protogen v2.2 Model](https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release)。
+
+  - Prompt：drawing male leather jacket cyberpunk 2077 on a city street by WoD1 \<hypernet:gothicRPGArtstyle_v1:1>
+
+    <img src="SD基础.assets/image-96.png" alt="img" style="zoom:50%;" />
+
+
+
+
+
+
+
+
+
+
+
 # VAE技术
 
 `VAE`是SD1.4或1.5模型的部分更新，将使眼睛渲染的更好。VAE代表**变分自动编码器**（`variational autoencoder`）。它是神经网络模型的一部分，对图像进行**编码和解码**，使其与较小的潜在空间相匹配，从而使计算速度更快。
@@ -751,6 +901,35 @@ ToDo
 ![img](SD基础.assets/image-11-1682145567216-40.png)
 
 
+
+
+
+# AI放大器:star:
+
+<img src="SD基础.assets/image.png" alt="img" style="zoom:67%;" />
+
+对于游戏开发者而言，**放大器**是一个节省游戏资源的方法，而`SD`为什么也需要呢？因为`SD`生成的图片的分辨率较低，一般是512*512， 这对于现代电子设备来说是不够的，因此我们需要对生成的图像进行放大，将其分辨率提升到2K，甚至8K。
+
+
+
+## 1. 怎么在SD中使用AI放大器
+
+- 转到**附加功能选项卡**，然后选择图像。
+- 设置缩放比例因子。默认设置为`4`。
+  - 如果源图像是512\*512像素，那么因子`2`产生的结果就是1024*\*1024像素，因子`4`就是2048\*2048像素。
+- 选择==R-ESRGAN 4x+==，这是一款适用于大多数图像的AI升级器。
+- 开始放大
+
+<img src="SD基础.assets/image-20230422155402462-1682150044351-3.png" alt="image-20230422155402462" style="zoom:50%;" />
+
+
+
+## 2. AI upscaler options
+
+- **Latent Diffusion Super Resolution** (LDSR) ：质量上乘，但速度极慢，不推荐！
+- **Enhanced Super-Resolution Generative Adversarial Networks** ([ESRGAN](https://github.com/xinntao/ESRGAN)) ：赢得了2018年感知图像恢复和操作挑战赛。它是对SRGAN模型的增强。
+-  **Real-ESRGAN 4x** ([R-ESRGAN](https://github.com/xinntao/Real-ESRGAN))：对`ESRGAN`的增强，可以恢复各种真实世界的图像。它模拟了相机镜头和数字压缩产生的不同程度的失真。与ESRGAN相比，它倾向于生成更平滑的图像。==R-ESRGAN在逼真的照片中表现最好==。
+- **动画图像**需要专门训练放大器。访问[Upscaler模型数据库](https://upscale.wiki/wiki/Model_Database)下载其他Upscaler。将其放入文件夹中：*stable-diffusion-webui/models/ESRGAN*
 
 
 
