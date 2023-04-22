@@ -173,7 +173,7 @@ void FsrEasuF(
 
 然后，参考下图的`12 tap`窗口的编号：
 
-![image-20220322142319686](FSR技术分析.assets/image-20220322142319686.png)
+![image-20220322142319686](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322142319686.png)
 
 首先，我们获得`f`的位置，得到`fp`：
 
@@ -186,7 +186,7 @@ pp -= fp;
 
 然后，根据**输入的const向量**，我们可以得到四个`tap`的中心：
 
-![image-20220321180118495](FSR技术分析.assets/image-20220321180118495.png)
+![image-20220321180118495](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220321180118495.png)
 
 ```c++
 // Allowing dead-code removal to remove the 'z's.
@@ -280,7 +280,7 @@ if(biV) w =              pp.x  *              pp.y ;
 
 > ==上面的权重计算怎么来的==？首先，我们需要知道，`12 tap`窗口默认是套在`f`编号上的（下图`Q`点），也就是我们应该按照下图计算双线性插值：
 >
-> <img src="FSR技术分析.assets/image-20220322151538060.png" alt="image-20220322151538060" style="zoom:50%;" />
+> <img src="https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322151538060.png" alt="image-20220322151538060" style="zoom:50%;" />
 >
 > ![[公式]](https://www.zhihu.com/equation?tex=Q) 点通常不是整数， ![[公式]](https://www.zhihu.com/equation?tex=O%3Dfloor%28Q%29) 。假设 ![[公式]](https://www.zhihu.com/equation?tex=Q) 点在以 ![[公式]](https://www.zhihu.com/equation?tex=O) 点为原点的坐标系中坐标为 ![[公式]](https://www.zhihu.com/equation?tex=%28x%2Cy%29) ,则双线性插值之后的结果为：
 >
@@ -290,7 +290,7 @@ if(biV) w =              pp.x  *              pp.y ;
 
 然后，我们给`tap`窗口进行编号，如下所示：
 
-![image-20220322145232446](FSR技术分析.assets/image-20220322145232446.png)
+![image-20220322145232446](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322145232446.png)
 
 先以`x`轴方向为例，计算`direction`很简单，就是**梯度**，然后乘上**双线性插值权重**：
 
@@ -317,7 +317,7 @@ len += lenX * w;
 
 根据[大佬博客](https://zhuanlan.zhihu.com/p/401030221)和直接推导，可以很容易得到：`EASU`定义的==边缘特征的计算公式==为：
 
-![image-20220322151145343](FSR技术分析.assets/image-20220322151145343.png)
+![image-20220322151145343](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322151145343.png)
 
 以上代码就是$FX^2$的计算。
 
@@ -355,7 +355,7 @@ dir *= AF2_(dirR);
 
 然后，根据以下公式，由`length`计算出实际的`Feature`（$F/2$ 是了从$[0,2]$映射回$[0,1]$）：
 
-![image-20220322152511046](FSR技术分析.assets/image-20220322152511046.png)
+![image-20220322152511046](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322152511046.png)
 
 ```c#
 // Transform from {0 to 2} to {0 to 1} range, and shape with square.
@@ -382,7 +382,7 @@ AF2 len2 = AF2(AF1_(1.0) + (stretch - AF1_(1.0)) * len,AF1_(1.0) + AF1_(-0.5) * 
 
 数学上的形式如下：
 
-![image-20220322153916466](FSR技术分析.assets/image-20220322153916466.png)
+![image-20220322153916466](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322153916466.png)
 
 > 大佬指出：为了减少锯齿，`EASU`还提出可以根据**梯度和边缘信息**进行缩放，EASU定义的缩放比例如上。
 
@@ -393,7 +393,7 @@ AF2 len2 = AF2(AF1_(1.0) + (stretch - AF1_(1.0)) * len,AF1_(1.0) + AF1_(-0.5) * 
 - `X`轴：缩放区间是$[\frac{\sqrt{2}}{2},1]$，对应的是从**轴对齐**到**对角线**。这意味着：对角线情况下使用更大的内核，来避免**带状伪影**（`band`）。
 - `Y`轴：缩放区间是$[0.5,1]$​，对应的是从`small feature`到`large feature`。这意味着：对**小的特征**使用无比例，这样就得到了一个**小的对称核**，它不会在特征本身之外采样。而当特征变大时，使用一个**较长的核**，这样我们可以更好地**还原边缘**。
 
-> ![image-20220420154146280](../../../../image-20220420154146280.png)
+> ![image-20220420154146280](D:\Study\ShaderToy\技术收藏&通用工具\抗锯齿和放大算法\FSR技术分析.assets\image-20220420154146280.png)
 >
 > 为什么<Unity FSR>中写的是上诉呢？考虑一下，==我们把**输入值**进行缩小，不就相当于放大过滤核嘛==。所以实际上我们做的，确实是放大操作。
 >
