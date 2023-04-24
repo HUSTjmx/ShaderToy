@@ -546,13 +546,105 @@
 
 
 
-# 采样器
+# 采样器Samplers
 
 > 详见[如何选取采样器](https://stable-diffusion-art.com/samplers/)
+>
+> 如果想要深入了解，阅读 [“How does Stable Diffusion work?”](https://stable-diffusion-art.com/how-stable-diffusion-work/) 
 
-ToDo
+## 1. 什么是采样器
 
-## X. 使用建议
+为了生成图像，`Stable Diffusion`首先在潜在空间中生成一个完全随机的图像，然后 **noise predictor** 估计图像的噪声，从图像中减去预测的噪声，这个过程要重复十几次。最后，你会得到一个干净的形象。
+
+![denoising steps](SD基础.assets/image-84.png)
+
+这个去噪过程被称为采样` sampling`，因为`Stable Diffusion`在每一步都会产生一个新的样本图像。用于采样的方法称为**采样器**或**采样方法**。
+
+> 下面是一个实际的采样过程，采样器逐渐产生越来越清晰的图像：
+>
+> <img src="SD基础.assets/cat_euler_15-1682314579463-5.gif" alt="stable diffusion euler" style="zoom:50%;" />
+
+
+
+## 2. 采样器前瞻
+
+目前有19个采样器可供我们选择，我们依次进行讲解。
+
+### 2.1 老式的ODE求解器
+
+一些采样器是一百多年前发明的，它们是**常微分方程**(ODE)的` old-school solvers`：
+
+- **Euler**：最简单的求解器
+- **Heun**：一个**更精确**但更慢的欧拉版本
+- **LMS** (Linear multi-step method)：和欧拉一样的速度，但**更准确**
+
+
+
+### 2.2 Ancestral samplers
+
+名字中带有`a`的采样器都是：`ancestral samplers`——Euler a、DPM2 a、DPM++ 2S a、DPM++ 2S a Karras
+
+**Ancestral采样器**在每个采样步骤向图像中**添加噪声**。使用**Ancestral采样器**的缺点是==图像不会收敛==。
+
+| **Euler a**                                                  | **Euler**                                                    |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![img](https://i0.wp.com/stable-diffusion-art.com/wp-content/uploads/2023/03/euler-a-2-40.gif?resize=512%2C512&ssl=1) | ![img](https://i0.wp.com/stable-diffusion-art.com/wp-content/uploads/2023/03/euler-2-40.gif?resize=512%2C512&ssl=1) |
+
+用**Euler a**生成的图像在高采样步长时不收敛。相反，来自**Euler**的图像收敛得很好。
+
+> 所以，我感觉还是少用**Ancestral采样器**，哪怕是为了复现结果
+
+
+
+### 2.3 Karras noise schedule
+
+标签为Karras的采样器使用 [Karras article](https://arxiv.org/abs/2206.00364)中推荐的**噪声时间表**（`noise schedule`）。==这种采样器可以提高图像的质量==。
+
+<img src="SD基础.assets/image-102.png" alt="img" style="zoom:67%;" />
+
+
+
+### 2.4 DDIM and PLMS
+
+**DDIM**（去噪扩散隐式模型，Denoising Diffusion Implicit Model）和**PLMS**（伪线性多步骤方法，Pseudo Linear Multi-Step method）是原始的[Stable Diffusion v1](https://github.com/CompVis/stable-diffusion)附带的采样器。**DDIM**是最早为扩散模型设计的采样器之一，**PLMS**是**DDIM**的更新和更快的替代品。
+
+
+
+### 2.5 DPM and DPM++
+
+**DPM**（扩散概率模型求解器，Diffusion probabilistic model solver）和**DPM++**是针对2022年发布的扩散模型设计的新采样器。它们代表了一组具有类似架构的求解器。
+
+**DPM**和**DPM2**相似，但**DPM2**是二阶的，==更准确但更慢==。**DPM++**是对**DPM**的改进。
+
+**DPM adaptive**自适应调整步长，它可能很慢，因为它不能保证在采样步骤数内完成。
+
+
+
+### 2.6 UniPC
+
+[UniPC](https://unipc.ivg-research.xyz/)是2023年发布的新采样器。受**ODE求解器**中的预测校正方法的启发，该方法可以==在5-10步内实现高质量的图像生成==。
+
+
+
+### 2.7 k-diffusion
+
+它只是指Katherine Crowson的 [k-diffusion](https://github.com/crowsonkb/k-diffusion) GitHub库和**与之相关的采样器**。该库实现了Karras 2022文章中研究的采样器。
+
+> 基本上，AUTOMATIC1111中除了DDIM, PLMS和UniPC之外的所有采样器都是从 [k-diffusion](https://github.com/crowsonkb/k-diffusion) 中来的。
+
+
+
+## 3. 如何选取采样器
+
+### 3.1 图像融合Image Convergence
+
+> 实验过程和分析见[如何选取采样器](https://stable-diffusion-art.com/samplers/)
+
+![img](SD基础.assets/image-113.png)
+
+
+
+### X. 使用建议
 
 1. 如果想使用一些快速、融合、新颖、质量不错的东西，那么很好的选择是：
    - **DPM++ 2M Karras**：20~30 steps
@@ -563,6 +655,10 @@ ToDo
 3. 如果喜欢稳定的、可复制的图像，请避免使用任何ancestral  samplers
 4. 如果喜欢简单的东西，**Euler**和**Heun**是不错的选择
    - 使用**Heun**时，可以减少迭代次数，以节省时间
+
+
+
+
 
 
 
@@ -734,6 +830,126 @@ ToDo
 
 
 
+## 5. 如何训练自己的LoRA库
+
+- [stable diffusion打造自己专属的LORA模型](https://www.cnblogs.com/wangiqngpei557/p/17301360.html)
+- [Stable Diffusion Lora训练定制角色（二次元向）](https://zhuanlan.zhihu.com/p/616500728)
+
+
+
+# ControlNet模型
+
+**ControlNet**是一个`stable diffusion model`，==可以复制构图和人体姿势==。经验丰富的SD用户知道生成想要的确切姿势有多难。**ControlNet**解决了这个问题，它功能强大，用途广泛，可以与任何稳定的扩散模型一起使用。
+
+
+
+## 1. 什么是ControlNet模型
+
+`ControlNet`是一个==改进的稳定扩散模型==。稳定扩散模型最基本的形式是`text-to-image`——它使用文本提示作为控制图像生成的条件。`ControlNet`又增加了一个条件。以两个ControlNet为例子：**边缘检测**和**人体姿态检测**。
+
+
+
+### 1.1 Edge detection
+
+在下面的工作流程中，**ControlNet**需要一个额外的输入图像，并使用**Canny边缘检测器**检测其轮廓——检测到的边缘被保存为**控制图**`control map `，然后作为文本提示之外的额外条件输入**ControlNet模型**。
+
+![Stable Diffusion ControlNet model workflow.](SD基础.assets/openpose-workflow.jpg)
+
+从输入图像中提取特定信息（在这种情况下是边缘）的过程称为**注释**`annotation`（在研究文章中）或**预处理**`preprocessing`（在**ControlNet扩展**中）。
+
+
+
+### 1.2 Human pose detection
+
+**边缘检测**并不是图像预处理的唯一方法。 [Openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) 是一个快速的**keypoint detection**模型，可以提取人体姿势，如手、腿和头的位置。
+
+下面是使用`OpenPose`的**ControlNet工作流程**。使用`OpenPose`从输入图像中提取关键点，并保存为**包含关键点位置的控制图**，然后将其作为附加条件与文本提示一起馈送给`Stable Diffusion`。
+
+![img](SD基础.assets/image-120.png)
+
+使用**Canny边缘检测**和**Openpose**有什么区别？**Canny边缘检测**提取边缘的`subject`和`background`。它倾向于更忠实地诠释场景——你可以看到跳舞的男人变成了女人，但**轮廓和发型**都很相似。
+
+**OpenPose**只检测**关键点**，因此图像生成更自由，但遵循原始姿态。在上面的例子中，它生成了一个女人跳起来，左脚指向侧面，不同于原始图像和Canny边缘的例子——原因是**OpenPose的关键点检测**没有指定**脚的方向**。
+
+
+
+## 2. 可用的ControlNet模型
+
+### 2.1 OpenPose detector
+
+[OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) 检测人体关键点，如头部、肩膀、手等的位置。它对模仿人体姿势很有效果，但不能模仿服装、发型和背景等其他细节。
+
+![img](SD基础.assets/image-131.png)
+
+
+
+### 2.2 Canny edge detector
+
+[Canny edge detector](https://en.wikipedia.org/wiki/Canny_edge_detector)是一个通用的边缘检测器。它提取图像的轮廓，有助于==保留原始图像的组成==。
+
+![img](SD基础.assets/image-123.png)
+
+
+
+### 2.3 Straight line detector
+
+**ControlNet**可以与 [M-LSD](https://github.com/navervision/mlsd)（**Mobile Line Segment Detection**）一起使用，这是==一种快速的直线检测器==。它对于提取像室内设计、建筑、街景、相框和纸边这样的直边轮廓很有用。
+
+![img](SD基础.assets/image-124.png)
+
+
+
+### 2.4 HED edge detector
+
+[HED (Holistically-Nested Edge Detection)](https://arxiv.org/abs/1504.06375) 是一种边缘检测器，擅长产生像真人一样的轮廓。==HED适用于重新着色和重新设计图像==。
+
+![img](SD基础.assets/image-125.png)
+
+
+
+### 2.5 Scribbles
+
+Controlnet还可以把你涂鸦的东西变成图像
+
+![img](SD基础.assets/image-126.png)
+
+
+
+### 2.6 Other models
+
+- [Human Pose](https://github.com/lllyasviel/ControlNet#controlnet-with-human-pose) ：Use OpenPose to detect keypoints.
+- [Semantic Segmentation](https://github.com/lllyasviel/ControlNet#controlnet-with-semantic-segmentation)：Generate images based on a segmentation map extracted from the input image
+- [Depth Map](https://github.com/lllyasviel/ControlNet#controlnet-with-depth) ：与Stable diffusion v2中的[depth-to-image](https://stable-diffusion-art.com/depth-to-image/)一样，ControlNet可以从输入图像中推断出深度图。ControlNet的深度图具有比Stable Diffusion v2更高的分辨率。
+- [Normal map](https://github.com/lllyasviel/ControlNet#controlnet-with-normal-map)
+
+
+
+## 3. 下载Stable Diffusion ControlNet
+
+要安装**ControlNet扩展**，请转到**扩展选项卡**并选择**可用子选项卡**，按Load from按钮：
+
+![img](https://i0.wp.com/stable-diffusion-art.com/wp-content/uploads/2023/02/image-112.png?resize=750%2C218&ssl=1)
+
+在新出现的列表中，找到扩展名为`sd-web -controlnet`的扩展安装：
+
+![img](SD基础.assets/image-113-1682318024161-25.png)
+
+如果扩展成功安装，将在**txt2img选项卡**中看到一个名为**ControlNet的新可折叠部分**——它应该在Script下拉菜单的正上方。
+
+![img](SD基础.assets/image-115.png)、
+
+
+
+### 3.1 下载ControlNet Models
+
+ControlNet的作者已经发布了一些预训练的ControlNet模型，可以在[this page](https://huggingface.co/lllyasviel/ControlNet/tree/main/models)找到。web社区拥有半精确版本的ControlNet模型，这些模型具有较小的文件大小。它们下载速度更快，也更容易存储——可以在 [here](https://huggingface.co/webui/ControlNet-modules-safetensors/tree/main)找到它们。
+
+要使用这些模型，请下载模型文件并将它们放在扩展的模型文件夹中。模型文件夹的路径是：*stable-diffusion-webui/extensions/sd-webui-controlnet/models*
+
+> 不需要下载所有模型，如果这是你第一次使用ControlNet，你可以下载[openpose model](https://huggingface.co/lllyasviel/ControlNet/blob/main/models/control_sd15_openpose.pth).。
+
+
+
 
 
 
@@ -884,7 +1100,7 @@ ToDo
 
 # VAE技术
 
-`VAE`是SD1.4或1.5模型的部分更新，将使眼睛渲染的更好。VAE代表**变分自动编码器**（`variational autoencoder`）。它是神经网络模型的一部分，对图像进行**编码和解码**，使其与较小的潜在空间相匹配，从而使计算速度更快。
+`VAE`是SD1.4或1.5模型的部分更新，使眼睛渲染的更好。VAE代表**变分自动编码器**（`variational autoencoder`）。它是神经网络模型的一部分，对图像进行**编码和解码**，使其与较小的潜在空间相匹配，从而使计算速度更快。
 
 我们不需要安装一个VAE文件来运行Stable Diffusion，我们使用的任何模型，无论是`v1`, `v2`还是自定义，都已经有一个**默认的VAE**。当人们说下载和使用VAE时，他们指的是使用**它的改进版本**。
 
@@ -896,7 +1112,7 @@ ToDo
 >
 > 改进的VAE表现都不差：要么做得更好，要么什么都不做。
 
-将下载的VAE文件放入目录：*stable-diffusion-webui/models/VAE*。要使用VAE，请转到**设置选项卡**，并单击左侧的**Stabe Diffusion**部分，找到`SD VAE`部分。在下拉菜单中，选择想要使用的VAE文件。
+将下载的VAE文件放入目录：*stable-diffusion-webui/models/VAE*。要使用VAE，转到**设置选项卡**，并单击左侧的**Stabe Diffusion**部分，找到`SD VAE`部分。在下拉菜单中，选择想要使用的VAE文件。
 
 ![img](SD基础.assets/image-11-1682145567216-40.png)
 
