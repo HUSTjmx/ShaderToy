@@ -936,7 +936,7 @@ Controlnet还可以把你涂鸦的东西变成图像
 
 如果扩展成功安装，将在**txt2img选项卡**中看到一个名为**ControlNet的新可折叠部分**——它应该在Script下拉菜单的正上方。
 
-![img](SD基础.assets/image-115.png)、
+![img](SD基础.assets/image-115.png)
 
 
 
@@ -949,6 +949,215 @@ ControlNet的作者已经发布了一些预训练的ControlNet模型，可以在
 > 不需要下载所有模型，如果这是你第一次使用ControlNet，你可以下载[openpose model](https://huggingface.co/lllyasviel/ControlNet/blob/main/models/control_sd15_openpose.pth).。
 
 
+
+## 4. 使用ControlNet Models
+
+展开**ControlNet面板**：
+
+<img src="SD基础.assets/image-116.png" alt="img" style="zoom:50%;" />
+
+我将使用下面的图片展示如何使用**ControlNet**。可以[下载图像](https://stable-diffusion-art.com/wp-content/uploads/2023/02/controlNet_demo_image.jpg)以遵循本教程。
+
+![img](SD基础.assets/controlNet_demo_image.jpg)
+
+
+
+### 4.1 Text-to-image settings
+
+**ControlNet**将需要与**稳定扩散模型**一起使用，选择[v1-5-pruned-emaonly.ckpt](https://stable-diffusion-art.com/models/#Stable_diffusion_v15)。
+
+在txt2image选项卡中，编写**正面提示词**：*full-body, a young female, highlights in hair, dancing outside a restaurant, brown eyes, wearing jeans*；编写负面提示词：*disfigured, ugly, bad, immature*。
+
+设置图像生成的图像大小：我将使用$$512*776$$为演示图像。注意==，图像大小是在txt2img部分设置的，而不是在ControlNet部分设置的==。
+
+<img src="SD基础.assets/image-128.png" alt="img" style="zoom:67%;" />
+
+
+
+### 4.2 ControlNet settings
+
+先将图像上传到画布，选中**启用复选框**：
+
+<img src="SD基础.assets/image-129.png" alt="img" style="zoom:67%;" />
+
+现在按`Generate`开始使用**ControlNet**生成图像。我们会看到按照**输入图像的姿态**生成的图像，最后一个图像是**预处理步骤的结果**。在本例中，它是检测到的关键点。
+
+<img src="SD基础.assets/image-130.png" alt="img" style="zoom:67%;" />
+
+这是使用ControlNet的基础知识！
+
+
+
+## 5. ControlNet设置全解
+
+### 5.1 输入控制Input controls
+
+<img src="SD基础.assets/image-143.png" alt="img" style="zoom:67%;" />
+
+**Invert input color**（反转输入颜色）：调换黑色和白色，可以用于上传涂鸦：**ControlNet**期望黑色背景与白色涂鸦。如果我们使用白色背景的外部软件创建涂鸦，则**必须使用此选项**。如果使用ControlNet的界面创建涂鸦，则不需要使用此选项。
+
+**RGB到BGR**：这是为了改变上传图像的**颜色通道的顺序**，或者是上传的法线贴图的坐标顺序。如果上传图像并使用预处理，则不需要勾选此框。
+
+**Low VRAM**：适用于VRAM小于8GB的GPU。这是一个实验性的功能：检查是否GPU内存不足，或者想要增加处理的图像数量。
+
+**Guess Mode**：也称为 **non-prompt mode** （非提示模式）。==图像生成可以完全不受文本提示的引导==。它强制**ControlNet编码器**遵循输入控制映射（如深度，边缘等）。使用此模式时，请使用**更高的步长**，例如`50`。我们一般不使用这个功能。
+
+
+
+### 5.2 Preprocessor and model
+
+**Preprocessor**（预处理器）:star:：用于预处理输入图像的预处理器——detecting edges, depth, and normal maps
+
+**Model**：==要使用的ControlNet模型==。如果我们选择了一个预处理器，我们应该选择相应的模型。ControlNet模型与Stable Diffusion model一起使用。
+
+
+
+### 5.3 Weight and guidance strength
+
+<img src="SD基础.assets/image-144.png" alt="img" style="zoom:67%;" />
+
+我将用下面的图片来说明**weight**和**guidance strength**的影响。这是一个女孩坐着的形象。
+
+<img src="SD基础.assets/01976-1737435102-full-body-a-young-female-highlights-in-hair-sitting-outside-restaurant-blue-eyes-wearing-a-dress-side-light.png" alt="img" style="zoom:67%;" />
+
+但在提示中，我会要求生成一个站起来的女人：*full body, a young female, highlights in hair, **standing** outside restaurant, blue eyes, wearing a dress, side light*。
+
+:one:**weight** 权重：相对于提示词，应该给予控制图多少重视。它类似于**提示符中的关键字权重**，但用于控制映射。以下图像是使用**ControlNet OpenPose预处理器**和**OpenPose模型**生成的：
+
+<img src="SD基础.assets/image-20230424155007542.png" alt="image-20230424155007542" style="zoom:50%;" />
+
+**Controlnet权重**控制相对于**提示符**，生成图像遵循**控制映射**的程度。权值越低，遵循控制映射的程度就越低。
+
+:two:**Guidance strength** 引导强度：==ControlNet的执行步数==。它类似于 [image-to-image](https://stable-diffusion-art.com/how-stable-diffusion-work/#Image-to-image)的 [denoising strength](https://stable-diffusion-art.com/inpainting_basics/#Denoising_strength)。如果引导强度为`1`，则**ControlNet**应用于$$100\%$$的采样步骤。如果指导强度为`0.7`，并且执行50步，则**ControlNet**应用于前$$70\%$$的采样步骤，即前`35`步。
+
+<img src="SD基础.assets/image-20230424155506596.png" alt="image-20230424155506596" style="zoom: 50%;" />
+
+由于` initial steps`设置了图片的全局组成，因此即使只将`Guidance strength`设置为`0.2`，也可以设置姿势。
+
+
+
+### 5.4 Resize model
+
+当输入图像或控制映射的大小与要生成的图像的大小==不同==时，Resize model可以提供什么操作。如果它们具有相同的宽高比，则无需担心这些选项。
+
+<img src="SD基础.assets/image-145.png" alt="img" style="zoom:67%;" />
+
+我将通过设置**text-to-image**生成一个**横向图像**，而**input image/control map** 是一个**纵向图像**，来演示**Resize model**的效果。
+
+**Envelope (Outer Fit)**: 裁剪control map，使其与画布的尺寸相同。因为control map在顶部和底部被裁剪，所以我们的女孩也是如此。
+
+<img src="SD基础.assets/image-20230424160437414-1682323478461-48.png" alt="image-20230424160437414" style="zoom:67%;" />
+
+**Scale to Fit**： 调整control map。用空值扩展控制图，使其与图像画布的大小相同。与原始输入图像相比，边上有更多的空间。
+
+<img src="SD基础.assets/image-20230424160755954-1682323677213-50.png" alt="image-20230424160755954" style="zoom:67%;" />
+
+**Just Resize**： 独立缩放control map的宽度和高度以适应图像画布。这将**改变control map的长宽比**。女孩现在需要向前倾斜，以便她仍然在画布内。你可以用这种模式创造一些有趣的效果。
+
+<img src="SD基础.assets/image-20230424160901379-1682323742835-52.png" alt="image-20230424160901379" style="zoom: 67%;" />
+
+
+
+### 5.5 Scribble canvas settings
+
+<img src="SD基础.assets/image-147.png" alt="img" style="zoom: 67%;" />
+
+如果你使用**ControlNet GUI**来创建**草图**`scribbles`，则需要考虑这个设置。当我们上传输入图像并使用预处理器时，==这些设置没有影响==。
+
+**画布宽度和画布高度**是按下**创建空白画布按钮**时创建的空白画布的宽度和高度。
+
+
+
+### 5.6 Preview annotation
+
+<img src="SD基础.assets/image-148.png" alt="img" style="zoom:67%;" />
+
+**ControlNet extension**会在每轮图像生成后向你显示一份控制图。但有时你只想看看控制图，并对参数进行实验。
+
+**Preview annotator result**：根据**预处理器的设置**生成控制图。控制图会在输入图像的旁边显示。
+
+<img src="SD基础.assets/image-149.png" alt="img" style="zoom:67%;" />
+
+**Hide annotator result**：Hide the control map.
+
+
+
+## 6. 不同Preprocessors的实践
+
+> 见[原文](https://stable-diffusion-art.com/controlnet/)
+
+
+
+
+
+## 7. ControlNet的实际应用:star:
+
+- **从图像复制姿势**（最明显的功能）
+
+- **重写电影场景**：可以把《纸醉金迷》中的标志性舞蹈场景改编成公园里的一些瑜伽练习。
+
+  | ![img](SD基础.assets/image-171.png) | <img src="SD基础.assets/image-133.png" alt="img" style="zoom:80%;" /> |
+  | ----------------------------------- | ------------------------------------------------------------ |
+
+- 许多ControlNet模型在复制人类姿势方面效果很好，但有**不同的优势和劣势**。让我们以**贝多芬的画**为例，用不同的控制网模型对其进行改造。
+
+  > 使用[DreamShaper](https://stable-diffusion-art.com/models/#DreamShaper) ，配合提示词：*elegant snobby rich Aerith Gainsborough looks intently at you in wonder and anticipation. ultra detailed painting at 16K resolution and epic visuals. epically surreally beautiful image. amazing effect, image looks crazily crisp as far as it’s visual fidelity goes, absolutely outstanding. vivid clarity. ultra. iridescent. mind-breaking. mega-beautiful pencil shadowing. beautiful face. Ultra High Definition. process twice.*
+  >
+  > ![image-20230424162522770](SD基础.assets/image-20230424162522770-1682324724116-64.png)
+
+  - **HED模型最忠实地复制了原始图像**，精确到小的细节。
+  - **Canny Edge**、**深度**和**法线图**都做得很好，但变化也比较大。
+  - **OpenPose**复制了姿势，但允许DreamShaper模型做其余的工作，包括发型、脸部和服装。
+  - **m-LSD**在这里完全失败（在复制姿势方面）。
+
+- 有些姿势太魔幻，比如JoJo立，我们可以直接自己摆弄模型生成，都不用我们去Unity，这里有个[现成的网站](https://webapp.magicposer.com/)
+
+  - 去[MagicPose](https://webapp.magicposer.com/)
+
+  - 摆弄出我们想要的姿势
+
+  - 按下**预览**。对该模型进行截图。你应该得到一个像下面这样的图像。
+
+    ![img](SD基础.assets/pose2.jpg)
+
+  - 作为ControlNet的输入图像
+
+- ==室内设计==
+
+  - 使用**Stable Diffusion ControlNet**的<straight-line detector M-LSD model >。以下是ControlNet的设置：
+
+    <img src="SD基础.assets/image-137.png" alt="img" style="zoom:67%;" />
+
+  - Prompt：*award winning living room*。Model: Stable Diffusion v1.5
+
+    | 原图像                                            | 生成1                                                        | 生成2                                                        |
+    | ------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+    | ![img](SD基础.assets/living-room-2732939_640.jpg) | ![img](SD基础.assets/00133-475383634-award-winning-living-room.png) | ![img](SD基础.assets/00129-1768390595-award-winning-living-room.png) |
+
+  - 也可以使用**深度模型**，它将强调保留深度信息。
+
+
+
+## 8. Stable Diffusion depth model和ControlNet之间的差异
+
+Stability AI发布了一个 [depth-to-image](https://stable-diffusion-art.com/depth-to-image/)模型。它与**ControlNet**有很多相似之处，但也有重要区别。让我们先来谈谈什么是相似的：
+
+- 它们都是**稳定扩散模型**...
+- 它们都使用两个条件（预处理的图像和文本提示）。
+- 它们都使用**MiDAS**来估计深度图。
+
+不同之处是：
+
+- [depth-to-image](https://stable-diffusion-art.com/depth-to-image/)是**v2模型**。**ControlNet**可以与**任何v1或v2模型**一起使用。这一点很重要，因为v2模型是出了名的难用。ControlNet可以使用任何v1模型的原因：不仅为**v1.5基本模型**打开了深度调节，而且还为社区发布的数千种特殊模型打开了深度调节。
+- **ControlNet**的功能更加全面。除了深度之外，它还可以用边缘检测、姿势检测等进行调节。
+- **ControlNet**的深度图比[depth-to-image](https://stable-diffusion-art.com/depth-to-image/)的分辨率更高。
+
+## More readings
+
+- [Some images](https://www.reddit.com/r/StableDiffusion/comments/112t4fl/controlnet_experiments_from_magic_poser_input/) generated with Magic Poser and OpenPose.
+
+- Research article: [Adding Conditional Control to Text-to-Image Diffusion Models](https://arxiv.org/abs/2302.05543) (Feb 10, 2023)
+- [ControlNet Github page](https://github.com/lllyasviel/ControlNet)
 
 
 
@@ -978,7 +1187,7 @@ ControlNet的作者已经发布了一些预训练的ControlNet模型，可以在
 
 1. 首先，从[概念库](https://huggingface.co/sd-concepts-library)下载一个`.bin`嵌入文件，例如：*learned_embedds.bin*。
 
-2. 接下来，将文件重命名为要使用的关键字——它必须是模型中不存在的东西。*Marc allante.bin*是个不错的选择。
+2. 接下来，将文件重命名为要使用的关键字——它必须是模型中不存在的东西。*Marc_allante.bin*是个不错的选择。
 
 3. 将其放在GUI工作目录中的embeddings文件夹中：*stable-diffusion-webui/embeddings*
 
@@ -1017,6 +1226,13 @@ ControlNet的作者已经发布了一些预训练的ControlNet模型，可以在
 **Dreambooth**：通过对整个模型进行微调，注入新的概念。文件大小是典型的`Stable Diffusion`，大约2~4 GB。文件扩展名与其他模型相同，为`.ckpt`
 
 **Hypernetwork**：是附加在稳定扩散模型**去噪单元**上的==附加网络==。其目的是在不更改模型的情况下对模型进行微调。文件大小一般为100 MB左右。
+
+
+
+## 6. 怎么训练自己的Embedding
+
+- [【Stable Diffusion】头像训练篇](https://zhuanlan.zhihu.com/p/618040302?utm_id=0)
+- [训练Embdedding](https://ivonblog.com/posts/stable-diffusion-webui-manuals/zh-cn/training/embedding/)
 
 
 
