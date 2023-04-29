@@ -415,6 +415,14 @@
 
 
 
+### 3.3 使用规则:star:
+
+==顺序很重要==：提示符前面的单词比提示符后面的单词重。
+
+==提示顺序==：内容类型 > 描述 > 样式 > 组合 （*content type > description > style > composition*）
+
+
+
 
 
 ## 4. 提示词技术 Prompting techniques
