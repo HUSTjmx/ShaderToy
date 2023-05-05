@@ -130,7 +130,7 @@
 
 首先，我们需要计算每个像素到地面的距离。打开`Materials\PP DepthCheck`，然后创建以下内容
 
-![image-20210609114747731](https://i.loli.net/2021/12/02/EfeS6mRpxh54ZiJ.png)
+![image-20210609114747731](RT应用.assets/EfeS6mRpxh54ZiJ-16597532240192.png)
 
 现在，如果像素在地面的`25`个单位内，它就会显示在遮蔽中。遮罩的强度取决于像素离地面有多近。点击应用，然后回到主编辑器。
 
@@ -239,7 +239,7 @@ Tessellation Multipler控制`tessellation`的数量。在本教程中，不连�
 
 那么肯定是乒乓缓冲。
 
-![unreal engine snow](RT应用.assets\unreal-engine-snow-persistent.gif)
+![unreal engine snow](RT应用.assets/unreal-engine-snow-persistent-16597537139614.gif)
 
 创建一个名为RT Persistent的渲染目标。接下来，需要一个将**捕获**复制到**持久缓冲区**的材料。打开`Materials\M_DrawToPersistent`，然后添加一个Texture Sample节点。将其纹理设置为RT Capture并像这样连接它
 
@@ -430,7 +430,9 @@ Tessellation Multipler控制`tessellation`的数量。在本教程中，不连�
 
 ## 只捕获粒子
 
+
 如果我们现在捕捉粒子，我们会在没有粒子的地方得到不想要的弯曲。这是因为**渲染目标**的背景颜色会是**黑色**。弯曲的发生是因为黑色代表了向**负XY轴的运动**（重新映射后）。为了确保空白区域没有运动，我们需要确保渲染目标的背景颜色是`（0.5, 0.5, 0）`。一个简单的方法是创建一个巨大的平面，并将其附加到玩家身上。
+
 
 首先，让我们为背景创建材质。打开`Materials/M_Background`。之后，将一个（0.5, 0.5, 0）的常数连接到Emissive Color。
 

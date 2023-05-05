@@ -173,7 +173,7 @@ void FsrEasuF(
 
 然后，参考下图的`12 tap`窗口的编号：
 
-![image-20220322142319686](FSR技术分析.assets/image-20220322142319686.png)
+![image-20220322142319686](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322142319686.png)
 
 首先，我们获得`f`的位置，得到`fp`：
 
@@ -186,7 +186,7 @@ pp -= fp;
 
 然后，根据**输入的const向量**，我们可以得到四个`tap`的中心：
 
-![image-20220321180118495](FSR技术分析.assets/image-20220321180118495.png)
+![image-20220321180118495](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220321180118495.png)
 
 ```c++
 // Allowing dead-code removal to remove the 'z's.
@@ -280,7 +280,7 @@ if(biV) w =              pp.x  *              pp.y ;
 
 > ==上面的权重计算怎么来的==？首先，我们需要知道，`12 tap`窗口默认是套在`f`编号上的（下图`Q`点），也就是我们应该按照下图计算双线性插值：
 >
-> <img src="FSR技术分析.assets/image-20220322151538060.png" alt="image-20220322151538060" style="zoom:50%;" />
+> <img src="https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322151538060.png" alt="image-20220322151538060" style="zoom:50%;" />
 >
 > ![[公式]](https://www.zhihu.com/equation?tex=Q) 点通常不是整数， ![[公式]](https://www.zhihu.com/equation?tex=O%3Dfloor%28Q%29) 。假设 ![[公式]](https://www.zhihu.com/equation?tex=Q) 点在以 ![[公式]](https://www.zhihu.com/equation?tex=O) 点为原点的坐标系中坐标为 ![[公式]](https://www.zhihu.com/equation?tex=%28x%2Cy%29) ,则双线性插值之后的结果为：
 >
@@ -290,7 +290,7 @@ if(biV) w =              pp.x  *              pp.y ;
 
 然后，我们给`tap`窗口进行编号，如下所示：
 
-![image-20220322145232446](FSR技术分析.assets/image-20220322145232446.png)
+![image-20220322145232446](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322145232446.png)
 
 先以`x`轴方向为例，计算`direction`很简单，就是**梯度**，然后乘上**双线性插值权重**：
 
@@ -317,7 +317,7 @@ len += lenX * w;
 
 根据[大佬博客](https://zhuanlan.zhihu.com/p/401030221)和直接推导，可以很容易得到：`EASU`定义的==边缘特征的计算公式==为：
 
-![image-20220322151145343](FSR技术分析.assets/image-20220322151145343.png)
+![image-20220322151145343](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322151145343.png)
 
 以上代码就是$FX^2$的计算。
 
@@ -335,7 +335,9 @@ lenY *= lenY;
 len += lenY*w;
 ```
 
+注意：`len`越大，说明这个特征越是`Large Feature`
 
+正如前文所说，算法会忽略`thin Feature`——所以结果上，`thin Feature`和平坦区域的计算结果都会一致的：$len=0$
 
 #### 回到主函数1
 
@@ -353,7 +355,7 @@ dir *= AF2_(dirR);
 
 然后，根据以下公式，由`length`计算出实际的`Feature`（$F/2$ 是了从$[0,2]$映射回$[0,1]$）：
 
-![image-20220322152511046](FSR技术分析.assets/image-20220322152511046.png)
+![image-20220322152511046](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322152511046.png)
 
 ```c#
 // Transform from {0 to 2} to {0 to 1} range, and shape with square.
@@ -365,7 +367,7 @@ len *= len;
 
 ```c++
 // Stretch kernel {1.0 vert|horz, to sqrt(2.0) on diagonal}.
-// 因为归一化了，分母不就是1吗
+// 因为归一化了，分子不就是1吗
 AF1 stretch = (dir.x * dir.x + dir.y * dir.y) * APrxLoRcpF1(max(abs(dir.x), abs(dir.y)));
 ```
 
@@ -380,11 +382,26 @@ AF2 len2 = AF2(AF1_(1.0) + (stretch - AF1_(1.0)) * len,AF1_(1.0) + AF1_(-0.5) * 
 
 数学上的形式如下：
 
-![image-20220322153916466](FSR技术分析.assets/image-20220322153916466.png)
+![image-20220322153916466](https://raw.githubusercontent.com/HUSTjmx/CloudImage/master/data/image-20220322153916466.png)
 
 > 大佬指出：为了减少锯齿，`EASU`还提出可以根据**梯度和边缘信息**进行缩放，EASU定义的缩放比例如上。
 
 回顾第一大节，我们也说了：“**长度**用于在`X`和`Y`轴上对**旋转后的内核**进行**缩放**”。所以，我们得到的`len2`是为了缩放过滤核的`size`。这里就是我们要计算`Feature`的两大目的之一了。
+
+这里，回顾下缩放的解释。对于**缩放**，更加准确的算法解释是，此外，针对上诉公式，我对缩放区间进行了修改（为什么不一致呢？）：
+
+- `X`轴：缩放区间是$[\frac{\sqrt{2}}{2},1]$，对应的是从**轴对齐**到**对角线**。这意味着：对角线情况下使用更大的内核，来避免**带状伪影**（`band`）。
+- `Y`轴：缩放区间是$[0.5,1]$​，对应的是从`small feature`到`large feature`。这意味着：对**小的特征**使用无比例，这样就得到了一个**小的对称核**，它不会在特征本身之外采样。而当特征变大时，使用一个**较长的核**，这样我们可以更好地**还原边缘**。
+
+> ![image-20220420154146280](D:\Study\ShaderToy\技术收藏&通用工具\抗锯齿和放大算法\FSR技术分析.assets\image-20220420154146280.png)
+>
+> 为什么<Unity FSR>中写的是上诉呢？考虑一下，==我们把**输入值**进行缩小，不就相当于放大过滤核嘛==。所以实际上我们做的，确实是放大操作。
+>
+> 然后来思考下==缩放输入值（放大内核）的作用==：我后续观察**lanczos核**，它的特点很明显：$[0,1]$区间是正权重，$[1,\frac{1}{\sqrt{w}}]$是负权重。而我们传入该核的输入值$x$，实际上是该像素到目标像素的距离，而且这个距离还是在屏幕空间算的！——距离都会大于1！感觉讲不清楚，直接上图：
+>
+> ![未命名文件](FSR技术分析.assets/未命名文件.png)
+>
+> ![未命名文件 (1)](FSR技术分析.assets/未命名文件 (1).png)
 
 :four:然后计算：
 
@@ -400,7 +417,7 @@ AF1 clp = APrxLoRcpF1(lob);
 $$
 w=\frac{1}{2}-\frac{1}{4}Feature
 $$
-那么上诉`lob`的计算其实就是这个公式，也就是 $lob=w$。那第二行呢，这个其实是为了==裁剪==——至于为什么，以及怎么得出裁剪值是$\frac{1}{\sqrt{w}}$，具体见：https://zhuanlan.zhihu.com/p/401030221。
+那么上诉`lob`的计算其实就是这个公式，也就是 $lob=w$。那第二行呢，这个其实是为了==裁剪==——至于为什么，以及怎么得出裁剪值是$\frac{1}{\sqrt{w}}$，具体见：https://zhuanlan.zhihu.com/p/401030221。但作用实际就是：**超过这个区间的像素值**的权重都是`0`。
 
 :five:计算得到`12 tap`窗口的**最大值**和**最小值**：
 
@@ -449,7 +466,7 @@ FsrEasuTapF(aC,aW,AF2( 0.0, 2.0)-pp,dir,len2,lob,clp,AF3(zzonR.w,zzonG.w,zzonB.w
  AF3 c){ // Tap color.  tap的颜色
 ```
 
-:two:使用方向渲染`offset`（本质就是**旋转过滤核**）：
+:two:使用方向`offset`（本质就是**旋转过滤核**）：
 
 ```c++
 // Rotate offset by direction.
@@ -457,6 +474,8 @@ AF2 v;
 v.x = (off.x * ( dir.x)) + (off.y * dir.y);
 v.y = (off.x * (-dir.y)) + (off.y * dir.x);
 ```
+
+> 关于旋转，和之前讨论的**缩放区间问题**是一致的，我们原理是要**旋转过滤核**，但操作上更方便的，还是**旋转输入值**，但也要注意：==旋转输入值，是要反方向旋转==，这才对应的正确的过滤核旋转！
 
 然后，继续缩放：
 
@@ -527,7 +546,7 @@ pix = min(max4, max(min4, aC * AF3_(ARcpF1(aW))));
 
 <img src="FSR技术分析.assets/image-20220323112432257.png" alt="image-20220323112432257" style="zoom:67%;" />
 
-`RCAS` 通过查看信号可能超出 $[0,1]$ 输入范围的位置，来求解`w`：
+`RCAS` 通过查看可能超出 $[0,1]$ 输入范围的权重值，来求解`w`：
 $$
 0==\frac{w*(n+e+w+s)+m}{4*w+1}\rightarrow w=-\frac{m}{n+e+w+s}=w_1
 \\

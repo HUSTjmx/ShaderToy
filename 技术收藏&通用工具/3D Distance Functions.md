@@ -221,5 +221,5 @@ float sdCapsule( vec3 p, vec3 a, vec3 b, float r )
 
 ### and more：
 
-https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+https://www.iquilezles.org/www/articles/distfunctions/distfunctions.html
 
